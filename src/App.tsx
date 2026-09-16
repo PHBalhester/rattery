@@ -15,6 +15,7 @@ import { truncateCA } from "./copy/pons";
 export default function App() {
   const {language,setLanguage}=useLanguage();
   useEffect(()=>{document.documentElement.lang=language==='zh'?'zh-Hans':'en';},[language]);
+  const staging = import.meta.env.VITE_STAGING === "true";
   const cinema = useStore((s) => s.cinema);
   const toggleCinema = useStore((s) => s.toggleCinema);
   const version = useStore((s) => s.version);
@@ -49,7 +50,7 @@ export default function App() {
 
         <header className="topbar floating-panel top-panel">
           <div className="brand">
-            <span className="brand-mark">RATTERY</span>
+            <span className="brand-mark">RATTERY{staging&&<small className="staging-label"> · STAGING</small>}</span>
             <span className="brand-tag">{tr('A colony shaped by its environment.','随环境变化的生命群落。')}</span>
           </div>
           <div className="topbar-right"><button type="button" className="language-toggle" aria-label="Language / 语言" aria-pressed={language==='zh'} title={language==='en'?'Switch to Chinese':'切换到英语'} onClick={()=>setLanguage(language==='en'?'zh':'en')}><span className={language==='en'?'active':''}>EN</span><span className={language==='zh'?'active':''}>CH</span></button>
@@ -85,7 +86,7 @@ export default function App() {
           <span>{tr('Drag to orbit · select a rat','拖动旋转视角 · 选择大鼠')}</span>
         </div>
 
-        <div className="tape-wrap floating-panel trade-panel"><TradeTape /><footer className="colony-footer"><span>{tr("RATTERY · A living colony.","RATTERY · 生机勃勃的群落。")}</span><nav aria-label={tr("Project links","项目链接")}><a href={SITE.x} target="_blank" rel="noopener noreferrer">X / Twitter</a><a href={SITE.github} target="_blank" rel="noopener noreferrer">GitHub</a></nav></footer></div>
+        <div className="tape-wrap floating-panel trade-panel"><TradeTape /><footer className="colony-footer"><span>{staging?tr("STAGING · Demo only · No real payments","测试环境 · 仅演示 · 无真实支付"):tr("RATTERY · A living colony.","RATTERY · 生机勃勃的群落。")}</span><nav aria-label={tr("Project links","项目链接")}><a href={SITE.x} target="_blank" rel="noopener noreferrer">X / Twitter</a><a href={SITE.github} target="_blank" rel="noopener noreferrer">GitHub</a></nav></footer></div>
       </main>
     </div>
   );

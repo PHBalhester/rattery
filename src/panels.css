@@ -67,3 +67,5 @@
 @media(max-width:780px){.colony-app .panel-deck{bottom:104px}.colony-app .colony-scene .scene-controls{bottom:calc(35vh + 114px)}}
 @media(max-width:480px){.colony-app .topbar .audio-toggle{display:inline-flex;width:28px;min-width:28px;height:32px;padding:4px}.colony-app .colony-footer{font-size:9px;padding:0 8px;gap:6px}}
 .colony-app.cinema .topbar .audio-toggle{display:none}
+
+.staging-label{font-size:9px;letter-spacing:.02em;color:#e4c77e}@media(max-width:480px){.staging-label{display:block;font-size:8px}}

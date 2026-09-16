@@ -1,4 +1,4 @@
-import { CONFIG } from "../config";
+import { CONFIG } from "../config.js";
 import type { World } from "../types";
 import type { ReplayCursor } from "./replay";
 

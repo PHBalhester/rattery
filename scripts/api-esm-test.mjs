@@ -1,0 +1,13 @@
+import {spawnSync} from 'node:child_process';
+import {pathToFileURL} from 'node:url';
+import {resolve} from 'node:path';
+import assert from 'node:assert/strict';
+const out='test-results/api-esm';
+const r=spawnSync(process.execPath,['node_modules/typescript/bin/tsc','-p','api','--noEmit','false','--outDir',out],{stdio:'inherit'});
+if(r.status!==0)process.exit(r.status??1);
+process.env.RATTERY_CA='';process.env.RATTERY_SNAPSHOT_URL='';
+const {default:handler}=await import(pathToFileURL(resolve(out,'api/snapshot.js')).href);
+let status,body;const headers={};
+await handler({method:'GET'},{setHeader:(k,v)=>headers[k]=v,status:(code)=>{status=code;return {json:value=>body=value}}});
+assert.equal(status,200);assert.deepEqual(body,{ok:true,snapshot:null});assert.equal(headers['Cache-Control'],'no-store');
+console.log('PASS: compiled Node ESM snapshot endpoint imports and prelaunch response');
