@@ -43,6 +43,7 @@ const record=(intent:any)=>{const hash='0x'+randomUUID().replaceAll('-','').padE
 let server:ReturnType<typeof stagingServer>|undefined;
 try{
  await db.query(readFileSync('server/migrations/001_staging.sql','utf8'));
+ await db.query(readFileSync('server/migrations/002_auth_expiry.sql','utf8'));
  const challenge=await auth.challenge(a.address),signature=await a.signMessage(challenge.message);
  for(const changed of [challenge.message.replace('staging.rattery.invalid','evil.invalid'),challenge.message.replace('46630','4663'),challenge.message.replace(/Nonce: .*/,'Nonce: deadbeef')])await assert.rejects(auth.verify(challenge.id,changed,await a.signMessage(changed)));
  await assert.rejects(auth.verify(challenge.id,challenge.message,await b.signMessage(challenge.message)));
@@ -109,10 +110,16 @@ try{
  assert.equal((await post('/auth/challenge',{address:a.address},{origin:'https://evil.invalid'})).status,403);
  assert.equal((await post('/care/reserve',{requestId:randomUUID(),ratId:ids[3],action:'mint',name:'X'})).status,401);
  assert.equal((await post('/auth/challenge',{padding:'x'.repeat(9000)})).status,413);
- const c=await (await post('/auth/challenge',{address:a.address})).json() as any;
- const response=await post('/auth/verify',{...c,signature:await a.signMessage(c.message)});
+ const challengeResponse=await post('/auth/challenge',{address:a.address});
+ const c=await challengeResponse.json() as any;
+ const challengeCookies={cookie:challengeResponse.headers.get('set-cookie')!.split(';')[0]};
+ assert.equal((await post('/auth/verify',{...c,signature:await a.signMessage(c.message)})).status,403);
+ assert.equal((await post('/auth/verify',{...c,signature:await a.signMessage(c.message)},{cookie:'rattery_challenge='+c.id})).status,403);
+ const response=await post('/auth/verify',{...c,signature:await a.signMessage(c.message)},challengeCookies);
  const cookie=response.headers.get('set-cookie')!;assert.equal(response.status,200);assert(cookie.includes('HttpOnly')&&cookie.includes('Secure')&&cookie.includes('SameSite=Strict'));
  const cookies={cookie:cookie.split(';')[0]};
+ assert.equal((await (await post('/auth/session',{},cookies)).json() as any).wallet,a.address.toLowerCase());
+ assert.equal((await post('/auth/verify',{...c,signature:await a.signMessage(c.message)},challengeCookies)).status,400);
  const reserveResponse=await post('/care/reserve',{requestId:randomUUID(),ratId:ids[3],action:'mint',name:'HTTP Rat'},cookies);
  assert.equal(reserveResponse.status,200);
  const httpIntent=await reserveResponse.json() as any;

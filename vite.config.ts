@@ -9,7 +9,13 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
   const target = env.RATTERY_API_PROXY;
   return {
-    plugins: [react()],
+    plugins: [react(), {
+      name: 'staging-noindex',
+      transformIndexHtml(html: string) {
+        return (process.env.VITE_STAGING ?? env.VITE_STAGING) === 'true'
+          ? html.replace('<head>', '<head><meta name="robots" content="noindex,nofollow" />') : html;
+      },
+    }],
     server: target ? { proxy: { "/api": { target, changeOrigin: true } } } : undefined,
   };
 });

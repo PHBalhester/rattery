@@ -1,6 +1,6 @@
 # Persistent staging service
 
-This milestone is an isolated server-side test implementation. It is not wired to the production browser's payment buttons and does not expose a new public financial API.
+This milestone is an isolated server-side test implementation. Staging now exposes wallet sign-in; payment buttons and public financial execution remain disabled.
 
 ## Implemented and tested
 - PostgreSQL 18 migration: authentication challenges/sessions, authoritative world checkpoint, immutable rat identity/death, genealogy foreign keys, intents, receipt uniqueness and action journal.
@@ -36,7 +36,7 @@ A real local PostgreSQL restart and pg_dump/pg_restore round-trip preserved the 
 - Scheduled encrypted managed backups and full hosted-service disaster recovery.
 - Real testnet token deployment/funding plus explicit wallet confirmation of transactions.
 - EIP-1271 contract-wallet authentication (current milestone accepts EOA signatures only).
-- Login UI/session integration and secure deployment adapter.
+- Payment UI, authoritative colony integration and financial deployment adapter (the staging sign-in adapter is implemented).
 - Authoritative continuously running simulation/action replay integration.
 - A bounded anti-abuse/reconciliation policy for abandoned reservations and paid review cases. Do not use automatic expiry to sell a rat twice.
 - Operator resolution of review cases, financial monitoring and independent review.
@@ -54,3 +54,10 @@ The current colony still uses its existing fixed reference. A real quote provide
 All 12 integration groups also passed against the separate Neon staging resource, in database rattery_staging_test with a unique test schema and verified TLS. Its backup was restored into a separate local PostgreSQL database and full row fingerprints matched across six persistent tables, including ownership and genealogy records.
 
 The operator-only script `scripts/hosted-persistence-test.mjs` reads an ignored staging environment export, checks the linked staging project and disabled payments, and creates only the isolated test database. It suppresses raw connection diagnostics. Standard local/CI runs remain unchanged. Generic remote test connections may use RATTERY_TEST_DATABASE_URL, without query parameters; the database name must end in _test and TLS certificates are verified. Never put credentials in shell arguments or commit environment exports.
+
+## Staging browser sign-in
+The Wallet panel offers a separate, explicit SIWE sign-in on testnet 46630. The browser checks domain, account, network, statement and expiry before personal_sign. Connection alone does not request a signature. Account/network changes invalidate the app connection, and logout is queued after in-flight verification. Sessions use Secure, HttpOnly, SameSite=Strict cookies with a one-hour expiry. Challenges are additionally bound to an opaque browser cookie; only its digest is stored in PostgreSQL.
+
+The public adapter is disabled unless staging and auth flags are enabled, uses a fixed canonical staging origin, and has no payment route. It connects to a separate authentication database with a runtime role limited to auth/rate tables, not ownership or receipts. It enforces IP/address/global limits, bounded expiry cleanup, body limits and verified database TLS. Local HTTP tests and deployed browser tests cover a real ephemeral EOA signature, logout, rejection, account changes during signing, and wrong network. No real-wallet transaction is requested.
+
+See [mainnet fork evidence](MAINNET-FORK-TEST.md) for the separate local EVM payment test.

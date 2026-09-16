@@ -1,0 +1,11 @@
+.env*
+**/.env*
+test-results/
+node_modules/
+.git/
+.tools/
+.codex/
+.agents/
+art/
+*.log
+*.dump

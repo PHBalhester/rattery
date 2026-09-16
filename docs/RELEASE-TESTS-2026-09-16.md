@@ -24,8 +24,11 @@ Physical Android/iOS, actual Safari, battery/thermal measurements and 30–60 mi
 Kaspersky requests appeared in the Windows Chromium environment; the Linux Firefox/WebKit runs did not show those origins. No antivirus setting was changed.
 
 ## Financial boundaries
-Cryptographic test wallets were ephemeral and generated in memory. Burn receipts/RPC were controlled fixtures; no testnet/mainnet transaction was signed or broadcast by these tests. The persistent service is not enabled in the public client. Real testnet token/wallet execution, contract-wallet signatures, operator reconciliation and authoritative continuously running simulation integration remain pending.
+Cryptographic test wallets were ephemeral and generated in memory. Burn receipts/RPC were controlled fixtures; no testnet/mainnet transaction was signed or broadcast by these tests. Only persistent staging authentication is enabled in the public client; paid interactions remain disabled. Real testnet token/wallet execution, contract-wallet signatures, operator reconciliation and authoritative continuously running simulation integration remain pending.
 
 A separate Neon database, rattery-staging-db, was provisioned on the free plan and connected only to the staging project. After explicit authorization, all 12 persistence groups passed against its isolated rattery_staging_test database using a direct connection with verified TLS. A pg_dump backup was restored into isolated local PostgreSQL; complete row fingerprints matched for identities, ownership, intents, receipts, action events and colony state. Connection variables and backups remain local and ignored by Git. No production database is used. Managed backup scheduling and a full hosted-service disaster recovery exercise remain pending.
 
 See [persistent service](PERSISTENCE-STAGING.md) and [release gates](RELEASE.md).
+
+## Further evidence
+Eight mainnet-fork payment groups passed; see [exact scope and pinned block](MAINNET-FORK-TEST.md). Staging browser sign-in also passed using a real ephemeral signature with no transaction RPC.

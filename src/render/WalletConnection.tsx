@@ -1,7 +1,7 @@
 import {useEffect,useRef} from 'react';
 import {tr,useLanguage} from '../i18n';
 import {useStore} from '../store';
-import {useWallet,discoverWallets,connectWallet,disconnectWallet} from '../wallet';
+import {useWallet,discoverWallets,connectWallet,disconnectWallet,signInWallet,signOutWallet,stagingSignIn} from '../wallet';
 
 export default function WalletConnection(){
  useLanguage(s=>s.language);
@@ -25,11 +25,17 @@ export default function WalletConnection(){
  <div className="wallet-scope">{tr('Connection shares your public wallet address. It requests no signature, token approval or transaction.','连接仅共享您的公开钱包地址，不请求签名、代币授权或交易。')}</div>
  {w.account?<><dl><dt>{tr('Wallet','钱包')}</dt><dd>{w.name}</dd><dt>{tr('Address','地址')}</dt><dd>{w.account}</dd><dt>{tr('Network ID','网络编号')}</dt><dd>{w.chainId?BigInt(w.chainId).toString():''}</dd></dl>
  {expected&&w.chainId&&BigInt(w.chainId)!==BigInt(expected)&&<p className="wallet-error">{tr('This wallet is on a different network from the colony. Change networks in your wallet before reconnecting.','钱包网络与群落网络不同。请在钱包中切换网络后重新连接。')}</p>}
+ {stagingSignIn&&<div className="wallet-scope">
+ <strong>{w.authenticated?tr('Verified staging sign-in','测试环境身份已验证'):tr('Verify wallet ownership','验证钱包所有权')}</strong>
+ <p>{tr('Sign a readable login message for this site on testnet 46630. This does not authorize spending. Real mint and paid care are not enabled.','在测试网46630为本站签署可读的登录消息。这不会授权支出，真实铸造与付费照护尚未启用。')}</p>
+ <button className="chip" disabled={w.signing} onClick={()=>w.authenticated?signOutWallet():void signInWallet()}>{w.signing?tr('Confirm signature in your wallet…','请在钱包中确认签名…'):w.authenticated?tr('Sign out','退出登录'):tr('Sign in with wallet','使用钱包登录')}</button>
+ {w.authError&&<p role="alert" className="wallet-error">{w.authError==='network'?tr('Switch to testnet 46630 and reconnect.','请切换至测试网46630并重新连接。'):w.authError==='rejected'?tr('Signature declined. You are not signed in.','签名已拒绝，尚未登录。'):w.authError==='rate'?tr('Too many attempts. Wait a minute before retrying.','尝试次数过多，请等待一分钟后重试。'):tr('Sign-in could not be completed. Reconnect and try again.','无法完成登录，请重新连接后重试。')}</p>}
+ </div>}
  <button className="chip" onClick={disconnectWallet}>{tr('Disconnect from RATTERY','断开与RATTERY的连接')}</button>
  <p className="wallet-fine">{tr('This clears the app connection. Revoke site permissions in your wallet if desired.','这会清除应用连接。如需撤销网站权限，请在钱包中操作。')}</p></>:
  <div className="wallet-choices">{w.choices.map(c=><button className="chip" key={c.id} disabled={w.pending} onClick={()=>void connectWallet(c.id)}>{c.name}</button>)}
  {!w.choices.length&&<p>{tr('No compatible browser wallet detected. Open RATTERY in a wallet-enabled browser. Mobile QR connection is not available yet.','未检测到兼容的钱包。请在支持钱包的浏览器中打开RATTERY，暂不支持手机扫码连接。')}</p>}</div>}
  <p role="status" className={w.error?'wallet-error':''}>{w.pending?tr('Confirm the connection in your wallet…','请在钱包中确认连接…'):w.error?tr(...errors[w.error]):''}</p>
- <footer>{tr('Connection is not a verified sign-in. Minting and paid care remain unavailable until the RATTERY token and secure payment service are configured. Demo accounts use fictional tokens.','连接并非经过验证的登录。RATTERY代币和安全支付服务配置完成前，铸造与付费照护仍不可用。演示账户使用虚拟代币。')}</footer>
+ <footer>{w.authenticated?tr('Your staging session expires after one hour. Signing in does not enable payments.','测试会话将在一小时后过期，登录不会启用支付。'):tr('Connection is not a verified sign-in. Minting and paid care remain unavailable until the RATTERY token and secure payment service are configured. Demo accounts use fictional tokens.','连接并非经过验证的登录。RATTERY代币和安全支付服务配置完成前，铸造与付费照护仍不可用。演示账户使用虚拟代币。')}</footer>
  </dialog></>;
 }

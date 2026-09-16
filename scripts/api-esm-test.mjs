@@ -11,3 +11,10 @@ let status,body;const headers={};
 await handler({method:'GET'},{setHeader:(k,v)=>headers[k]=v,status:(code)=>{status=code;return {json:value=>body=value}}});
 assert.equal(status,200);assert.deepEqual(body,{ok:true,snapshot:null});assert.equal(headers['Cache-Control'],'no-store');
 console.log('PASS: compiled Node ESM snapshot endpoint imports and prelaunch response');
+
+const {default:session}=await import(pathToFileURL(resolve(out,'api/session.js')).href);
+process.env.RATTERY_AUTH_ENABLED='false';
+const response={statusCode:0,setHeader(){},end(value){body=JSON.parse(value);}};
+await session({method:'POST',url:'/api/session?op=challenge'},response);
+assert.equal(response.statusCode,404);
+console.log('PASS: compiled authentication adapter imports and fails closed when disabled');
