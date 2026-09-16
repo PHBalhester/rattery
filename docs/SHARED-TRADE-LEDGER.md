@@ -30,3 +30,6 @@ TradeLedger is operator-only and has no public HTTP mutation. Its caller still n
 Also pending: a historical quote provider, retries/alerts for pending quotes, a bounded initial backfill policy, persistent worker hosting, least-privilege worker credentials, monitoring and restore/reconciliation rehearsal. The current ledger does not infer new holders, so it does not award new-holder bonuses from unverified data.
 
 The public staging site remains authentication-only. No live trade ingestion, shared public worker or real paid-care transactions are enabled by this change. Vercel request functions have finite lifetimes and are not an always-on simulation host: https://vercel.com/docs/functions/limitations.
+
+## Collector follow-up
+The canonical read-only collector, persistent Coinbase historical reference and staging worker entrypoint are now implemented. See [MARKET-COLLECTOR.md](MARKET-COLLECTOR.md) for live evidence and remaining coverage/deployment limits. Railway hosting has been selected but not provisioned.

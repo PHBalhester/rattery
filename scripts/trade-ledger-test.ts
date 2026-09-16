@@ -89,5 +89,17 @@ try{
  assert.equal((await db.query('SELECT halted FROM trade_stream')).rows[0].halted,true);
  assert.equal(Number((await db.query('SELECT last_block FROM trade_stream')).rows[0].last_block),19);
  ok('Parent mismatch halts without silently replacing the accepted cursor');
+ await db.query('UPDATE trade_stream SET halted=false');
+ const range=[20,21,22].map(n=>({block:block(n,[event(n)]),quote}));
+ await db.query("CREATE FUNCTION fail_batch() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.block_number=21 THEN RAISE EXCEPTION 'batch rollback'; END IF; RETURN NEW; END $$; CREATE TRIGGER fail_batch BEFORE INSERT ON colony_trades FOR EACH ROW EXECUTE FUNCTION fail_batch()");
+ await assert.rejects(ledger.ingestRange(range),/batch rollback/);
+ assert.equal(Number((await db.query('SELECT last_block FROM trade_stream')).rows[0].last_block),19);
+ assert.equal(Number((await db.query('SELECT count(*) FROM trade_blocks WHERE block_number>=20')).rows[0].count),0);
+ await db.query('DROP TRIGGER fail_batch ON colony_trades; DROP FUNCTION fail_batch()');
+ await ledger.ingest(range[0].block,quote);
+ await ledger.ingestRange(range);
+ assert.equal((await ledger.ingestRange(range)).duplicate,true);
+ assert.equal(Number((await db.query('SELECT count(*) FROM colony_trades WHERE block_number>=20')).rows[0].count),3);
+ ok('Range commit is atomic and overlapping retries insert only the missing suffix');
  console.log('ALL PASS',groups);
 }finally{await db.end();}

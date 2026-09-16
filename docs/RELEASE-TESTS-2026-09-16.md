@@ -40,3 +40,6 @@ Shared simulation: nine additional PostgreSQL groups passed; the fork/browser la
 ## Shared market ledger follow-up
 
 Nine PostgreSQL ledger groups passed with controlled market/quote fixtures, alongside nine shared-engine groups and 13 payment/auth groups. Build, compiled server/API ESM loading and valuation regression passed. See [SHARED-TRADE-LEDGER.md](SHARED-TRADE-LEDGER.md). No live collector, new public deployment or chain transaction was used in this follow-up.
+
+## Live collector follow-up
+A bounded live mainnet read at ZZZ block 54672454 plus Coinbase historical ETH/USD passed (25 RPC reads, one 0.5 ETH curve buy, USD 1227.39, local PostgreSQL effects only). See [MARKET-COLLECTOR.md](MARKET-COLLECTOR.md). Railway staging runtime is prepared, not deployed.

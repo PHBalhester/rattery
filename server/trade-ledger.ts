@@ -35,36 +35,51 @@ export class TradeLedger {
   });
  }
  async ingest(block:MarketBlock,quote:HistoricalQuote|null){
-  if(!natural(block.number)||!natural(block.timestamp)||!hash(block.hash)||!hash(block.parentHash)||!Array.isArray(block.events)||block.events.length>1000)throw Error('Invalid market block');
-  const events=[...block.events].sort((a,b)=>a.logIndex-b.logIndex);
-  const entries=events.map(e=>{
-   if(e.timestamp!==block.timestamp||!['buy','sell'].includes(e.side)||!['curve','pool'].includes(e.venue)||!address(e.trader))throw Error('Invalid market event');
-   const raw:MarketEvent={chainId:e.chainId,token:e.token,hash:e.hash,logIndex:e.logIndex,timestamp:e.timestamp,ethWei:e.ethWei,side:e.side,venue:e.venue,trader:e.trader};
-   const value=historicalValuation(raw,quote,this.quoteSources);
-   if(value.status==='classified'&&BigInt(value.usdMicros)>BigInt(Number.MAX_SAFE_INTEGER))throw Error('Trade notional exceeds supported range');
-   return {raw,value};
+  return this.ingestRange([{block,quote}]);
+ }
+ async ingestRange(batch:{block:MarketBlock;quote:HistoricalQuote|null}[]){
+  if(!Array.isArray(batch)||!batch.length||batch.length>100)throw Error('Invalid market batch');
+  let total=0;
+  const prepared=batch.map(({block,quote},index)=>{
+   if(!natural(block.number)||!natural(block.timestamp)||!hash(block.hash)||!hash(block.parentHash)||!Array.isArray(block.events)||block.events.length>1000)throw Error('Invalid market block');
+   if(index){const previous=batch[index-1].block;if(block.number!==previous.number+1||block.parentHash!==previous.hash||block.timestamp<previous.timestamp)throw Error('Noncontiguous market batch');}
+   total+=block.events.length;if(total>2000)throw Error('Market batch event limit');
+   const events=[...block.events].sort((a,b)=>a.logIndex-b.logIndex);
+   const entries=events.map(e=>{
+    if(e.timestamp!==block.timestamp||!['buy','sell'].includes(e.side)||!['curve','pool'].includes(e.venue)||!address(e.trader))throw Error('Invalid market event');
+    const raw:MarketEvent={chainId:e.chainId,token:e.token,hash:e.hash,logIndex:e.logIndex,timestamp:e.timestamp,ethWei:e.ethWei,side:e.side,venue:e.venue,trader:e.trader};
+    const value=historicalValuation(raw,quote,this.quoteSources);
+    if(value.status==='classified'&&BigInt(value.usdMicros)>BigInt(Number.MAX_SAFE_INTEGER))throw Error('Trade notional exceeds supported range');
+    return {raw,value};
+   });
+   if(new Set(events.map(e=>e.logIndex)).size!==events.length)throw Error('Duplicate block log');
+   const fingerprint=digest(JSON.stringify({number:block.number,hash:block.hash,parentHash:block.parentHash,timestamp:block.timestamp,events:entries.map(e=>e.raw)}));
+   return {block,entries,fingerprint};
   });
-  if(new Set(events.map(e=>e.logIndex)).size!==events.length)throw Error('Duplicate block log');
-  const fingerprint=digest(JSON.stringify({number:block.number,hash:block.hash,parentHash:block.parentHash,timestamp:block.timestamp,events:entries.map(e=>e.raw)}));
   const result=await this.service.transaction(async c=>{
    const state=(await c.query('SELECT * FROM colony_state WHERE id=1 FOR UPDATE')).rows[0];
    if(!state||state.simulation_at===null)throw Error('Initialize shared simulation first');
    const stream=(await c.query('SELECT * FROM trade_stream WHERE id=1')).rows[0];
    if(!stream||stream.halted)throw Error('Market stream unavailable');
-   if(entries.some(e=>e.raw.chainId!==stream.chain_id||e.raw.token!==stream.token))throw Error('Market identity mismatch');
-   const prior=(await c.query('SELECT * FROM trade_blocks WHERE block_number=$1',[block.number])).rows[0];
-   if(prior){
-    if(prior.fingerprint===fingerprint)return {duplicate:true};
+   if(prepared.some(p=>p.entries.some(e=>e.raw.chainId!==stream.chain_id||e.raw.token!==stream.token)))throw Error('Market identity mismatch');
+   const priors=(await c.query('SELECT * FROM trade_blocks WHERE block_number=ANY($1::bigint[])',[prepared.map(p=>p.block.number)])).rows;
+   const known=new Map(priors.map(p=>[Number(p.block_number),p]));
+   for(const p of prepared){
+    const prior=known.get(p.block.number);
+    if(prior&&prior.fingerprint!==p.fingerprint){await c.query('UPDATE trade_stream SET halted=true WHERE id=1');return {halted:true};}
+   }
+   const fresh=prepared.filter(p=>!known.has(p.block.number));
+   if(!fresh.length)return {duplicate:true};
+   if(fresh[0].block.number!==Number(stream.last_block)+1)throw Error('Noncontiguous market block');
+   if(fresh[0].block.parentHash!==stream.last_hash||fresh[0].block.timestamp<Number(stream.last_timestamp)){
     await c.query('UPDATE trade_stream SET halted=true WHERE id=1');return {halted:true};
    }
-   if(block.number!==Number(stream.last_block)+1)throw Error('Noncontiguous market block');
-   if(block.parentHash!==stream.last_hash||block.timestamp<Number(stream.last_timestamp)){
-    await c.query('UPDATE trade_stream SET halted=true WHERE id=1');return {halted:true};
-   }
-   if(block.timestamp>this.service.clock())throw Error('Future market block');
-   await c.query('INSERT INTO trade_blocks VALUES($1,$2,$3)',[block.number,block.hash,fingerprint]);
-   for(const e of entries)await c.query('INSERT INTO colony_trades(identity,block_number,log_index,raw,valuation,status,available_at) VALUES($1,$2,$3,$4,$5,$6,$7)',[e.value.identity,block.number,e.raw.logIndex,e.raw,e.value,e.value.status==='pending'?'pending':'ready',Math.max(block.timestamp,Number(state.simulation_at)+CONFIG.time.tickMs)]);
-   await c.query('UPDATE trade_stream SET last_block=$1,last_hash=$2,last_timestamp=$3 WHERE id=1',[block.number,block.hash,block.timestamp]);
+   if(fresh.some(p=>p.block.timestamp>this.service.clock()))throw Error('Future market block');
+   await c.query('INSERT INTO trade_blocks SELECT * FROM jsonb_to_recordset($1::jsonb) AS x(block_number bigint,block_hash text,fingerprint text)',[JSON.stringify(fresh.map(p=>({block_number:p.block.number,block_hash:p.block.hash,fingerprint:p.fingerprint})))]);
+   const rows=fresh.flatMap(p=>p.entries.map(e=>({identity:e.value.identity,block_number:p.block.number,log_index:e.raw.logIndex,raw:e.raw,valuation:e.value,status:e.value.status==='pending'?'pending':'ready',available_at:Math.max(p.block.timestamp,Number(state.simulation_at)+CONFIG.time.tickMs)})));
+   if(rows.length)await c.query('INSERT INTO colony_trades(identity,block_number,log_index,raw,valuation,status,available_at) SELECT * FROM jsonb_to_recordset($1::jsonb) AS x(identity text,block_number bigint,log_index integer,raw jsonb,valuation jsonb,status text,available_at bigint)',[JSON.stringify(rows)]);
+   const last=fresh.at(-1)!.block;
+   await c.query('UPDATE trade_stream SET last_block=$1,last_hash=$2,last_timestamp=$3 WHERE id=1',[last.number,last.hash,last.timestamp]);
    return {duplicate:false};
   });
   if('halted' in result)throw Error('Market continuity conflict; stream halted for review');

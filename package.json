@@ -54,7 +54,12 @@
     "test:server:esm": "node scripts/server-esm-test.mjs",
     "test:care:build": "node scripts/local-care-build-test.mjs",
     "test:simulation:shared": "tsx scripts/shared-simulation-test.ts",
-    "test:trades:ledger": "tsx scripts/trade-ledger-test.ts"
+    "test:trades:ledger": "tsx scripts/trade-ledger-test.ts",
+    "test:market:collector": "tsx scripts/market-collector-test.ts",
+    "build:worker": "tsc -p server/tsconfig.worker.json",
+    "worker:staging": "node dist-worker/scripts/worker.js",
+    "test:market:live": "tsx scripts/market-live-test.ts",
+    "test:worker:runtime": "tsx scripts/worker-runtime-test.ts"
   },
   "dependencies": {
     "ethers": "6.17.0",

@@ -41,3 +41,5 @@ scripts/render-active-benchmark.json
 !/CHANGELOG.md
 !/THIRD_PARTY_NOTICES.md
 !/LICENSE.md
+
+dist-worker/

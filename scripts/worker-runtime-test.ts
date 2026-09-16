@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {startWorkerRuntime} from '../server/worker-runtime.js';
+import type {Persistence} from '../server/persistence.js';
+import type {MarketCollector} from '../server/market-collector.js';
+const delay=(ms:number)=>new Promise(r=>setTimeout(r,ms));
+let release!:()=>void,biology=0,market=0,quotes=0,active=0,peak=0;
+const gate=new Promise<void>(r=>{release=r;});
+const logs:Record<string,unknown>[]=[];
+const service={async advanceSimulation(){biology++;active++;peak=Math.max(peak,active);await gate;active--;return {steps:1,tick:1,lagMs:0,version:'test'};}} as unknown as Persistence;
+const collector={async poll(){market++;throw Error('sensitive fixture must not be logged');},async retryPrices(){quotes++;return {resolved:0,pending:0};}} as unknown as MarketCollector;
+const stop=startWorkerRuntime(service,collector,e=>logs.push(e));
+await delay(180);assert.equal(biology,1);assert.equal(market,1);assert.equal(quotes,0);assert.equal(peak,1);
+let stopped=false;const finishing=stop().then(()=>{stopped=true;});await delay(10);assert.equal(stopped,false);
+release();await finishing;await delay(150);assert.equal(biology,1);assert.equal(market,1);
+assert(!JSON.stringify(logs).includes('sensitive'));assert(logs.some(l=>l.event==='market_error'));
+console.log('PASS: in-flight work does not overlap; errors back off; shutdown awaits work and cancels retries; raw errors are withheld');
