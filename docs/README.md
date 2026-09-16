@@ -15,3 +15,5 @@
 | [Roadmap](ROADMAP.md) | Completed and remaining work |
 
 Machine-specific handoffs, raw captures and audit artifacts are retained locally, not published.
+
+[OpenSSF Scorecard assessment (5.4/10, dated)](security/SCORECARD.md) · [Raw result](security/scorecard-2026-09-16.json)
