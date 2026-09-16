@@ -61,3 +61,8 @@ The Wallet panel offers a separate, explicit SIWE sign-in on testnet 46630. The 
 The public adapter is disabled unless staging and auth flags are enabled, uses a fixed canonical staging origin, and has no payment route. It connects to a separate authentication database with a runtime role limited to auth/rate tables, not ownership or receipts. It enforces IP/address/global limits, bounded expiry cleanup, body limits and verified database TLS. Local HTTP tests and deployed browser tests cover a real ephemeral EOA signature, logout, rejection, account changes during signing, and wrong network. No real-wallet transaction is requested.
 
 See [mainnet fork evidence](MAINNET-FORK-TEST.md) for the separate local EVM payment test.
+
+## Submission and recovery protocol
+Migration 003 adds a single-use submission marker and optional recovery hash to intents. Authenticated overview returns at most 50 rats and 20 wallet-scoped intents. `beginSubmission` uses a conditional database update to allow one caller only; an expired or already-started attempt cannot open a second payment. `rememberSubmission` stores a hint and never authorizes an action; `finalize` independently checks the chain. Pending attempts remain held after cancellation/uncertainty until recovery or operator review. No automatic cancellation or resale is introduced.
+
+The PostgreSQL suite now includes 13 groups, including 12 competing begin-submission calls and the fractional-second timestamp regression. See the mainnet-fork report for the browser recovery test. Public `/api/session` continues to whitelist authentication operations only; these payment methods are exercised solely by the local lab.

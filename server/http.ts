@@ -50,6 +50,9 @@ export function stagingHandler(auth:StagingAuth,service:Persistence|null,clientI
     res.setHeader('Set-Cookie',[cookie(token,auth.origin),challengeCookie('',auth.origin,0)]);return send(200,{authenticated:true});
    }
    if(req.url==='/auth/logout'){await auth.logout(session);res.setHeader('Set-Cookie',cookie('',auth.origin,0));return send(200,{ok:true});}
+   if(req.url==='/care/overview')return send(200,await service!.overview(session));
+   if(req.url==='/care/begin')return send(200,await service!.beginSubmission(session,data.id));
+   if(req.url==='/care/submitted')return send(200,await service!.rememberSubmission(session,data.id,data.hash));
    if(req.url==='/care/reserve')return send(200,await service!.reserve(session,data.requestId,data.ratId,data.action,data.name));
    if(req.url==='/care/finalize')return send(200,await service!.finalize(session,data.id,data.hash));
    return send(404,{error:'Not found'});

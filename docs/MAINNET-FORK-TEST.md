@@ -32,3 +32,17 @@ This validates the selected token's burn behavior and server-side payment applic
 Reference: [official Anvil fork documentation](https://www.getfoundry.sh/anvil/index.html).
 
 A repeat run against block **64654252** also passed all eight groups after final script cleanup.
+
+## Browser payment recovery milestone
+A further run at block **64672560** passed nine groups, including the local browser lab. Its three browser actions (mint, feed and water) produced exactly three local burn transactions:
+- Before-finalization network loss: reload, reconnect and recover the saved receipt without another burn.
+- After-commit response loss: refresh restores the database result; cooldown prevents another paid action.
+- Wallet response/hash loss: automatic rebroadcast is disabled; entering the existing hash completes recovery.
+
+`--browser` starts the development-only UI on localhost:18756, using a local fake wallet provider backed by the actual forked EVM and ephemeral accounts. Run `node scripts/care-payment-browser.cjs` in a second terminal with a supported Playwright Chromium installation. The harness stops after success/failure or four minutes. The ordinary colony UI and public staging payments are unchanged. This checks the application protocol, not the internals of a real wallet extension.
+
+The backend grants one submission attempt atomically across tabs/devices. A missing response stays reserved for recovery/review. Client-submitted hashes are hints only; chain verification remains mandatory. Stored hints do not monopolize a transaction hash across users. Actual verified receipts remain unique in the database.
+
+A timing regression was reproduced with a reservation made at a fractional second. EVM timestamps have whole-second precision; the reservation verification window now begins at the start of that second, avoiding false rejection of an immediate burn. This permits less than one second of clock-granularity overlap, not an unbounded grace period. Domain, wallet, amount, token, chain, confirmation and receipt-uniqueness checks remain required.
+
+The production-build test asserts that the lab UI, payment endpoint client and browser payment journal are absent from generated assets, even though their source is versioned. Public payments remain disabled. Connecting these actions to a continuously running shared colony, handling abandoned/review reservations operationally, and testing real wallet extensions/public testnet are still pending.

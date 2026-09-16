@@ -9,6 +9,7 @@ import {verifyBurn} from '../api/_lib/burn.js';
 import {StagingAuth} from '../server/auth.js';
 import {Persistence} from '../server/persistence.js';
 import {createWorld} from '../src/sim/colony.js';
+import {ecologyStep} from '../src/sim/ecology.js';
 import {burnCall} from '../src/market/burn.js';
 
 const source='https://rpc.mainnet.chain.robinhood.com/rpc';
@@ -103,6 +104,7 @@ try{
  const auth=new StagingAuth(db,'http://localhost:18756',()=>now);
  const challenge=await auth.challenge(address),session=await auth.verify(challenge.id,challenge.message,await a.signMessage(challenge.message));
  const service=new Persistence(db,auth,contractAddress,18,local,()=>now),world=createWorld();
+ ecologyStep(world,0);
  await service.initialize(world);const ratId=Object.keys(world.rats)[0];
  const reservations=await Promise.allSettled(Array.from({length:12},()=>service.reserve(session,randomUUID(),ratId,'mint','Fork Rat')));
  const wins=reservations.filter(x=>x.status==='fulfilled') as PromiseFulfilledResult<any>[];assert.equal(wins.length,1);
@@ -128,6 +130,11 @@ try{
  await assert.rejects(service.reserve(session,randomUUID(),ratId,'feed'));
  assert.equal((await db.query('SELECT count(*) FROM care_events')).rows[0].count,'2');
  ok('Paid feeding applies once after real local burn; per-rat cooldown rejects repeat');
+ if(process.argv.includes('--browser')){
+  const {runCareBrowserLab}=await import('./care-browser-lab.js');
+  await runCareBrowserLab(db,local,a,b,contractAddress,Object.keys(world.rats)[2]);
+  ok('Browser login, mint, care, reload and lost-response recovery without duplicate burns');
+ }
  mkdirSync('test-results/mainnet-fork',{recursive:true});
  writeFileSync('test-results/mainnet-fork/report.json',JSON.stringify({passed,contractAddress,symbol,decimals,sourceChain:4663,executionChain:46630,forkBlock:block,forkBlockHash:anchor.hash,bytecodeHash:keccak256(code),syntheticBalanceSlot:balanceSlot,syntheticBalance:funds.toString(),readCount,upstreamMethods:methods,blockedUpstreamRequests,mainnetTransactionsSent:0,schema,scope:'Actual mainnet bytecode/storage fork; synthetic local wallet balance; real local EVM transactions and PostgreSQL. Not a public testnet transaction.'},null,2));
  console.log('ALL PASS',passed.length,'contractAddress',symbol,'fork block',block,'mainnet transactions sent: 0');

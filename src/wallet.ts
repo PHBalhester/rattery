@@ -1,4 +1,5 @@
 import {create} from 'zustand';
+import {localCareLab} from './localCareGate';
 
 type Listener=(value:unknown)=>void;
 export interface Provider {
@@ -114,7 +115,7 @@ export async function signInWallet(){
   if(current!==generation)return; // Disconnect queued logout after any in-flight verification.
   const session=await authRequest('session');
   if(current!==generation)return;
-  if(session.wallet!==state.account||session.chainId!==46630||session.paymentsEnabled!==false)throw Error('service');
+  if(session.wallet!==state.account||session.chainId!==46630||(session.paymentsEnabled!==false&&!localCareLab))throw Error('service');
   useWallet.setState({authenticated:true});
   window.setTimeout(()=>{if(current===generation){useWallet.setState({authenticated:false});void authRequest('logout').catch(()=>{});}},3600000);
  }catch(error){
@@ -126,3 +127,12 @@ export async function signInWallet(){
  }finally{if(current===generation)useWallet.setState({signing:false});}
 }
 export function signOutWallet(){disconnectWallet();}
+
+export async function localCareWalletRequest(method:string,params:unknown[]=[]){
+ const w=useWallet.getState(),p=activeProvider,current=generation;
+ if(!localCareLab||!p||!w.authenticated||!w.account||w.chainId!=='0xb626')throw Error('Local authenticated wallet required');
+ if(!['eth_sendTransaction','eth_call'].includes(method))throw Error('Unsupported local wallet method');
+ if(!/anvil/i.test(String(await p.request({method:'web3_clientVersion'}))))throw Error('Local Anvil required');
+ if(account(await p.request({method:'eth_accounts'}))!==w.account||chain(await p.request({method:'eth_chainId'}))!==w.chainId||current!==generation)throw Error('Wallet changed');
+ return p.request({method,params});
+}

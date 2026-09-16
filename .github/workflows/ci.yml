@@ -24,6 +24,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run check:publication
       - run: npm run build
+      - run: npm run test:care:build
       - run: npm run typecheck:api
       - run: npm run test:api:esm
       - run: npm run typecheck:server

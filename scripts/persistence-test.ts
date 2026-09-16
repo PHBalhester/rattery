@@ -17,7 +17,7 @@ const pool=new Pool({...connection,max:30});
 const schema='test_'+randomUUID().replaceAll('-','');
 await pool.query('CREATE SCHEMA '+schema);await pool.end();
 const db=new Pool({...connection,max:30,options:'-c search_path='+schema+',public'});
-let now=Math.floor(Date.now()/1000)*1000;
+let now=Math.floor(Date.now()/1000)*1000+123;
 const origin='https://staging.rattery.invalid';
 const auth=new StagingAuth(db,origin,()=>now);
 const a=Wallet.createRandom(),b=Wallet.createRandom();
@@ -44,6 +44,7 @@ let server:ReturnType<typeof stagingServer>|undefined;
 try{
  await db.query(readFileSync('server/migrations/001_staging.sql','utf8'));
  await db.query(readFileSync('server/migrations/002_auth_expiry.sql','utf8'));
+ await db.query(readFileSync('server/migrations/003_submission_recovery.sql','utf8'));
  const challenge=await auth.challenge(a.address),signature=await a.signMessage(challenge.message);
  for(const changed of [challenge.message.replace('staging.rattery.invalid','evil.invalid'),challenge.message.replace('46630','4663'),challenge.message.replace(/Nonce: .*/,'Nonce: deadbeef')])await assert.rejects(auth.verify(challenge.id,changed,await a.signMessage(changed)));
  await assert.rejects(auth.verify(challenge.id,challenge.message,await b.signMessage(challenge.message)));
@@ -59,7 +60,15 @@ try{
  await assert.rejects(service.reserve(owner,winner.request_id,ids[1],'mint','Stage Rat'));
  await assert.rejects(service.finalize(foreign,winner.id,'0x'+'1'.repeat(64)));
  ok('24 concurrent mints yield one reservation; idempotency and foreign ownership protected');
- const hash=record(winner);rpcDown=true;await assert.rejects(service.finalize(owner,winner.id,hash));rpcDown=false;
+ const attempts=await Promise.allSettled(Array.from({length:12},()=>service.beginSubmission(owner,winner.id)));
+ assert.equal(attempts.filter(r=>r.status==='fulfilled').length,1);
+ await assert.rejects(service.beginSubmission(foreign,winner.id));
+ const hash=record(winner);
+ await service.rememberSubmission(owner,winner.id,hash);
+ assert.equal((await service.overview(owner)).intents.find(i=>i.id===winner.id)?.submitted_hash,hash);
+ assert(!(await service.overview(foreign)).intents.some(i=>i.id===winner.id));
+ ok('Single broadcast permission across 12 callers; wallet-scoped recovery hash');
+ rpcDown=true;await assert.rejects(service.finalize(owner,winner.id,hash));rpcDown=false;
  assert.equal((await db.query('SELECT count(*) FROM burn_receipts')).rows[0].count,'0');
  await db.query("CREATE FUNCTION fail_event() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'simulated process failure'; END $$; CREATE TRIGGER fail_event BEFORE INSERT ON care_events FOR EACH ROW EXECUTE FUNCTION fail_event()");
  await assert.rejects(service.finalize(owner,winner.id,hash));
@@ -73,6 +82,9 @@ try{
  ok('RPC failure, transaction rollback, service recreation and 16 concurrent retries apply exactly once');
  await assert.rejects(service.reserve(foreign,randomUUID(),ids[0],'feed'));
  const duplicate=await service.reserve(owner,randomUUID(),ids[1],'mint','Second');
+ await service.beginSubmission(owner,duplicate.id);
+ // Unverified hints must not monopolize a receipt; only the verified ledger is unique.
+ await service.rememberSubmission(owner,duplicate.id,hash);
  await assert.rejects(service.finalize(owner,duplicate.id,hash));
  assert.equal((await db.query('SELECT status FROM care_intents WHERE id=$1',[duplicate.id])).rows[0].status,'reserved');
  await assert.rejects(db.query('INSERT INTO rat_ownership(rat_id,wallet,mint_intent) VALUES($1,$2,$3)',[winner.rat_id,b.address.toLowerCase(),duplicate.id]));

@@ -58,8 +58,9 @@ export class Persistence{
    if(ownership&&(ownership.wallet!==wallet||action==='mint'))throw Error('Ownership conflict');
    const world=state.world as World,care=world.care??careState(),now=this.clock();
    validateCare(world,care,{sequence:care.lastSequence+1,ratId,wallet,action,name,timestamp:now,amount:CARE_RULES[action].cost});
+   // EVM timestamps have whole-second precision. Include the reservation's second.
    const cost=CARE_RULES[action].cost,units=cost===0?0n:tokenUnits(cost,this.decimals);
-   return (await c.query('INSERT INTO care_intents(id,wallet,rat_id,request_id,action,name,cost,units,chain_id,token,created_at,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,46630,$9,$10,$11) RETURNING *',[randomUUID(),wallet,ratId,requestId,action,name??null,cost,units.toString(),this.token,now,now+300000])).rows[0];
+   return (await c.query('INSERT INTO care_intents(id,wallet,rat_id,request_id,action,name,cost,units,chain_id,token,created_at,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,46630,$9,$10,$11) RETURNING *',[randomUUID(),wallet,ratId,requestId,action,name??null,cost,units.toString(),this.token,Math.floor(now/1000)*1000,now+300000])).rows[0];
   });
  }
  async finalize(session:string,id:string,hash?:string){
@@ -94,6 +95,31 @@ export class Persistence{
    await c.query('UPDATE care_intents SET status=$2 WHERE id=$1',[id,status]);
    return {status,id};
   });
+ }
+ async overview(session:string){
+  const wallet=await this.auth.wallet(session);
+  const state=(await this.pool.query('SELECT world,revision FROM colony_state WHERE id=1')).rows[0];
+  if(!state)throw Error('Colony unavailable');
+  const world=state.world as World;
+  return {wallet,chainId:46630,token:this.token,decimals:this.decimals,revision:Number(state.revision),
+   rats:Object.values(world.rats).slice(0,50).map(r=>({id:r.id,name:r.name,dead:r.deadAt!==null,owner:world.care?.owners[r.id]??null,energy:r.energy,hydration:r.wellbeing?.hydration??null})),
+   intents:(await this.pool.query('SELECT id,rat_id,request_id,action,name,cost,units,chain_id,token,created_at,expires_at,status,submission_started_at,submitted_hash FROM care_intents WHERE wallet=$1 ORDER BY created_at DESC,id LIMIT 20',[wallet])).rows};
+ }
+ async beginSubmission(session:string,id:string){
+  const wallet=await this.auth.wallet(session);
+  if(!uuid(id))throw Error('Invalid intent');
+  // Single-use gate shared across all tabs and devices. Ambiguous attempts stay held.
+  const result=await this.pool.query("UPDATE care_intents SET submission_started_at=$3 WHERE id=$1 AND wallet=$2 AND status='reserved' AND cost>0 AND submission_started_at IS NULL AND expires_at>$3 RETURNING id",[id,wallet,this.clock()]);
+  if(result.rowCount!==1)throw Error('Submission already started or unavailable');
+  return {id,started:true};
+ }
+ async rememberSubmission(session:string,id:string,hash:string){
+  const wallet=await this.auth.wallet(session);
+  if(!uuid(id)||typeof hash!=='string'||!/^0x[0-9a-f]{64}$/i.test(hash))throw Error('Invalid submission');
+  const result=await this.pool.query("UPDATE care_intents SET submitted_hash=$3 WHERE id=$1 AND wallet=$2 AND status='reserved' AND submission_started_at IS NOT NULL AND (submitted_hash IS NULL OR submitted_hash=$3) RETURNING id",[id,wallet,hash.toLowerCase()]);
+  if(result.rowCount!==1)throw Error('Submission unavailable');
+  // This is a recovery hint, not evidence. finalize still verifies the chain independently.
+  return {id,remembered:true};
  }
  async memorial(after='',limit=20){
   if(typeof after!=='string'||after.length>80||!Number.isInteger(limit)||limit<1||limit>50)throw Error('Invalid pagination');
