@@ -27,6 +27,7 @@ jobs:
       - run: npm run typecheck:api
       - run: npm run test:api:esm
       - run: npm run typecheck:server
+      - run: npm run test:server:esm
       - run: npm run test:valuation
       - run: npm run test:ci
       - run: npm audit --audit-level=high

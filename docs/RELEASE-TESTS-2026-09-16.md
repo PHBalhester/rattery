@@ -5,6 +5,7 @@
 - Real database restart and pg_dump/pg_restore: world hash plus rat, intent, receipt and event counts preserved.
 - Genealogy cycle/identity constraints, death records, bounded memorial pagination and stale-checkpoint rejection.
 - Existing 18 controlled suites passed again.
+- Stress matrix: 51 runs, 61,200 ticks, 17 stressors, snapshot round-trips and invalid inputs passed.
 - Historical USD candidate: 10,000 deterministic round trips, exact tier boundaries, missing/stale/future/unapproved quote behavior. Not connected to the live ruleset.
 - Tail collision regression: 72 cases; tested obstacle penetration metric zero with protection enabled. This does not establish full mesh collision or rat-to-rat tail collision.
 - Public HTTPS staging: https://rattery-staging.vercel.app; visibly labeled, demo-only, no real financial endpoints enabled.
@@ -25,6 +26,6 @@ Kaspersky requests appeared in the Windows Chromium environment; the Linux Firef
 ## Financial boundaries
 Cryptographic test wallets were ephemeral and generated in memory. Burn receipts/RPC were controlled fixtures; no testnet/mainnet transaction was signed or broadcast by these tests. The persistent service is not enabled in the public client. Real testnet token/wallet execution, contract-wallet signatures, operator reconciliation and authoritative continuously running simulation integration remain pending.
 
-A separate Neon database, rattery-staging-db, was provisioned on the free plan and connected only to the staging project. Remote database validation is tracked separately from local PostgreSQL results. No production database is used.
+A separate Neon database, rattery-staging-db, was provisioned on the free plan and connected only to the staging project. Remote database validation awaits explicit permission to retrieve only the staging connection variables after an automatic approval gate blocked their download. No production database is used.
 
 See [persistent service](PERSISTENCE-STAGING.md) and [release gates](RELEASE.md).

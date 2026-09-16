@@ -1,4 +1,4 @@
-import {burnCall} from '../../src/market/burn';
+import {burnCall} from '../../src/market/burn.js';
 export interface BurnIntent {chainId:number;token:string;wallet:string;amount:bigint;createdAt:number;expiresAt:number;}
 export type BurnRPC=(method:string,params:unknown[])=>Promise<any>;
 const TRANSFER='0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';

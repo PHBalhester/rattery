@@ -1,6 +1,6 @@
 import {createServer,type IncomingMessage} from 'node:http';
-import {digest,type StagingAuth} from './auth';
-import type {Persistence} from './persistence';
+import {digest,type StagingAuth} from './auth.js';
+import type {Persistence} from './persistence.js';
 export function stagingServer(auth:StagingAuth,service:Persistence){
  const server=createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');

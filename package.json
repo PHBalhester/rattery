@@ -50,7 +50,8 @@
     "test:persistence": "tsx scripts/persistence-test.ts",
     "test:valuation": "tsx scripts/valuation-test.ts",
     "test:browsers": "node scripts/cross-browser-release.cjs",
-    "test:api:esm": "node scripts/api-esm-test.mjs"
+    "test:api:esm": "node scripts/api-esm-test.mjs",
+    "test:server:esm": "node scripts/server-esm-test.mjs"
   },
   "dependencies": {
     "ethers": "6.17.0",

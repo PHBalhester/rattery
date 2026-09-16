@@ -1,10 +1,10 @@
 import {randomUUID} from 'node:crypto';
 import type {Pool,PoolClient} from 'pg';
 import type {World,Rat,MemorialRecord} from '../src/types';
-import {careState,validateCare,applyCare,CARE_RULES,type CareAction,type CareEvent} from '../src/sim/care';
-import {tokenUnits} from '../src/market/burn';
-import {verifyBurn,type BurnRPC} from '../api/_lib/burn';
-import {StagingAuth} from './auth';
+import {careState,validateCare,applyCare,CARE_RULES,type CareAction,type CareEvent} from '../src/sim/care.js';
+import {tokenUnits} from '../src/market/burn.js';
+import {verifyBurn,type BurnRPC} from '../api/_lib/burn.js';
+import {StagingAuth} from './auth.js';
 const uuid=(s:string)=>/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(s);
 export class Persistence{
  constructor(readonly pool:Pool,readonly auth:StagingAuth,readonly token:string,readonly decimals:number,readonly rpc:BurnRPC,readonly clock=Date.now){
