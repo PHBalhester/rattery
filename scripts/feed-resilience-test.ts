@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {startOnchainLive,fetchAllHistory} from '../src/market/onchain';
+const original=globalThis.fetch;
+let release!:(value:Response)=>void;
+globalThis.fetch=(()=>new Promise<Response>(r=>release=r)) as typeof fetch;
+let calls=0;const stop=startOnchainLive({startChunk:0,startKey:-1,holders:new Set(),onTrade:()=>calls++,pollMs:10});stop();release(new Response(JSON.stringify({ok:true,trades:[{id:'late',block:1,logIndex:0,ts:1,eth:1,tokens:1,side:'buy',trader:'a',venue:'curve'}]})));await new Promise(r=>setTimeout(r,20));assert.equal(calls,0);
+const rows=[{id:'b',block:2,logIndex:0,ts:2,eth:1,tokens:1,side:'sell',trader:'a',venue:'curve'},{id:'a',block:1,logIndex:0,ts:1,eth:1,tokens:1,side:'buy',trader:'b',venue:'curve'}];
+globalThis.fetch=(async()=>new Response(JSON.stringify({ok:true,launched:true,complete:false,trades:[...rows,rows[0]]}))) as typeof fetch;
+let requested=0;const savedFetch=globalThis.fetch;globalThis.fetch=((...args:any[])=>{requested++;return (savedFetch as any)(...args);}) as typeof fetch;await assert.rejects(fetchAllHistory(10000,{minTimestamp:100}),/local replay limit/);assert.equal(requested,1);globalThis.fetch=savedFetch;
+const history=await fetchAllHistory(1);assert.deepEqual(history.trades.map(t=>t.id),['a','b']);
+const delivered:string[]=[];const stop2=startOnchainLive({startChunk:0,startKey:-1,holders:new Set(),onTrade:t=>delivered.push(t.id),pollMs:5});await new Promise(r=>setTimeout(r,30));stop2();assert.deepEqual(delivered,['a','b']);
+globalThis.fetch=original;console.log('PASS: early history-limit detection, late response after cancellation, unsorted history, duplicates, repeated polling, live ordering');

@@ -1,0 +1,4 @@
+import {keccakText} from '../api/_lib/keccak.ts';
+const rpc='https://rpc.testnet.chain.robinhood.com/rpc',factory='0x50230537574FDAE0FF3550Bb76C1D6733D6515A8',wallet='0x51b303d2747C4d2552c3123DC0Bc23C1B3c7c464';
+async function call(signature:string,args=''){const data=keccakText(signature).slice(0,10)+args;const r=await fetch(rpc,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:factory,data},'latest']}),signal:AbortSignal.timeout(15000)});return r.json();}
+for(const [sig,args] of [['launchFee()',''],['launchEnabled()',''],['launchConfigCount()',''],['getLaunchConfig(uint256)','0'.repeat(64)],['previewLaunchEconomics(uint256,address)','0'.repeat(128)],['canLaunch(address)',wallet.slice(2).toLowerCase().padStart(64,'0')]])console.log(sig,JSON.stringify(await call(sig,args)));

@@ -1,0 +1,1 @@
+import {defineConfig} from 'vite';import react from '@vitejs/plugin-react';export default defineConfig({plugins:[react()],build:{outDir:'test-results/audit-2026-09-16/production',rollupOptions:{input:'scripts/audit-production.html'}}});

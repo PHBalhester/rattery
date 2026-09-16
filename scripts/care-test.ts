@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import {writeFileSync} from 'node:fs';
+import {createWorld} from '../src/sim/colony';
+import {CARE_RULES,careState,applyCare,validateCare,type CareEvent} from '../src/sim/care';
+const w=createWorld(),state=careState(),rat=Object.values(w.rats)[0];
+rat.energy=.5;rat.wellbeing={acute:.5,chronic:.1,hydration:.5,lastWater:0,cause:'test',support:0,crowding:0,zone:0};
+const alice='0x'+'1'.repeat(40),bob='0x'+'2'.repeat(40);
+const balances:Record<string,number>={[alice]:5000000,[bob]:5000000};let supply=1000000000;
+function pay(event:CareEvent){validateCare(w,state,event);if(balances[event.wallet]<event.amount)throw new Error('Insufficient balance');applyCare(w,state,event);balances[event.wallet]-=event.amount;supply-=event.amount;}
+const event=(action:CareEvent['action'],wallet=alice,timestamp=1000):CareEvent=>({sequence:state.lastSequence+1,ratId:rat.id,wallet,action,timestamp,amount:CARE_RULES[action].cost,name:'Luna'});
+pay(event('feed',bob));assert.equal(rat.energy,.65);assert.equal(supply,999990000);
+assert.throws(()=>pay(event('feed',alice)),/Cooldown/);
+pay(event('mint'));assert.equal(state.owners[rat.id],alice);assert.equal(rat.name,'Luna');
+assert.throws(()=>pay(event('water',bob)),/owner/);
+assert.throws(()=>pay(event('mint')),/Already minted/);
+assert.throws(()=>pay(event('name')),/Cooldown/);
+const water=event('water');pay(water);assert.equal(rat.wellbeing.hydration,.65);
+assert.throws(()=>pay(water),/Invalid care/);
+pay(event('prosocial'));assert.throws(()=>pay(event('aggression')),/Cooldown/);
+pay(event('aggression',alice,7201000));assert.equal(rat.careStimulus?.kind,'aggression');
+const before=JSON.stringify({w,state,balances,supply});
+assert.throws(()=>pay({...event('treat',alice,7201000),amount:1}));assert.equal(JSON.stringify({w,state,balances,supply}),before);
+assert.equal(1000000000-supply,state.burned);
+const clone=JSON.parse(JSON.stringify(w)),saved=JSON.parse(JSON.stringify(state));
+const next=event('name',alice,86401000);applyCare(clone,saved,next);pay(next);assert.deepEqual(clone,w);assert.deepEqual(saved,state);
+writeFileSync('test-results/care-test.json',JSON.stringify({passed:true,token:'LOCAL_GENERIC_TEST_TOKEN',initialSupply:1000000000,burned:state.burned,remainingSupply:supply,checks:['public unowned care','mint ownership','foreign wallet rejected','shared cooldown','duplicate receipt rejected','stimuli mutually exclusive','exact cost','supply decrease','snapshot replay']},null,2));
+console.log('PASS: generic local token burns, permissions, costs, cooldowns, replay and ownership');
