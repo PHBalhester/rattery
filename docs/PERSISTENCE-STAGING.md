@@ -2,7 +2,7 @@
 
 This milestone is an isolated server-side test implementation. It is not wired to the production browser's payment buttons and does not expose a new public financial API.
 
-## Implemented locally
+## Implemented and tested
 - PostgreSQL 18 migration: authentication challenges/sessions, authoritative world checkpoint, immutable rat identity/death, genealogy foreign keys, intents, receipt uniqueness and action journal.
 - SIWE challenges bound to configured origin, chain 46630, expiration and a cryptographic nonce; EOA signature validation and atomic nonce consumption.
 - Opaque sessions stored as SHA-256 digests. HTTP adapter sets HttpOnly/SameSite=Strict and Secure on HTTPS cookies, checks Origin and limits JSON bodies to 8 KiB.
@@ -33,7 +33,7 @@ Real PostgreSQL locks/constraints, 12 competing nonce consumptions, 24 competing
 A real local PostgreSQL restart and pg_dump/pg_restore round-trip preserved the world checksum and counts of rat identities, intents, receipts and actions.
 
 ## Still required
-- Hosted PostgreSQL verification and encrypted managed backups (a separate free Neon staging resource has been provisioned).
+- Scheduled encrypted managed backups and full hosted-service disaster recovery.
 - Real testnet token deployment/funding plus explicit wallet confirmation of transactions.
 - EIP-1271 contract-wallet authentication (current milestone accepts EOA signatures only).
 - Login UI/session integration and secure deployment adapter.
@@ -49,3 +49,8 @@ No real payment is enabled by this milestone.
 server/valuation.ts is a separate candidate ruleset. It computes exact integer micro-USD values, pins quote source/time, rejects future/stale/unapproved quotes and returns pending when no quote exists. Tests cover tier boundaries and 10,000 deterministic round trips.
 
 The current colony still uses its existing fixed reference. A real quote provider, durable immutable quote ledger and replay migration are not yet activated.
+
+## Hosted staging evidence
+All 12 integration groups also passed against the separate Neon staging resource, in database rattery_staging_test with a unique test schema and verified TLS. Its backup was restored into a separate local PostgreSQL database and full row fingerprints matched across six persistent tables, including ownership and genealogy records.
+
+The operator-only script `scripts/hosted-persistence-test.mjs` reads an ignored staging environment export, checks the linked staging project and disabled payments, and creates only the isolated test database. It suppresses raw connection diagnostics. Standard local/CI runs remain unchanged. Generic remote test connections may use RATTERY_TEST_DATABASE_URL, without query parameters; the database name must end in _test and TLS certificates are verified. Never put credentials in shell arguments or commit environment exports.

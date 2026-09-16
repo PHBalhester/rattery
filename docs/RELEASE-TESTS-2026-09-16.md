@@ -26,6 +26,6 @@ Kaspersky requests appeared in the Windows Chromium environment; the Linux Firef
 ## Financial boundaries
 Cryptographic test wallets were ephemeral and generated in memory. Burn receipts/RPC were controlled fixtures; no testnet/mainnet transaction was signed or broadcast by these tests. The persistent service is not enabled in the public client. Real testnet token/wallet execution, contract-wallet signatures, operator reconciliation and authoritative continuously running simulation integration remain pending.
 
-A separate Neon database, rattery-staging-db, was provisioned on the free plan and connected only to the staging project. Remote database validation awaits explicit permission to retrieve only the staging connection variables after an automatic approval gate blocked their download. No production database is used.
+A separate Neon database, rattery-staging-db, was provisioned on the free plan and connected only to the staging project. After explicit authorization, all 12 persistence groups passed against its isolated rattery_staging_test database using a direct connection with verified TLS. A pg_dump backup was restored into isolated local PostgreSQL; complete row fingerprints matched for identities, ownership, intents, receipts, action events and colony state. Connection variables and backups remain local and ignored by Git. No production database is used. Managed backup scheduling and a full hosted-service disaster recovery exercise remain pending.
 
 See [persistent service](PERSISTENCE-STAGING.md) and [release gates](RELEASE.md).
