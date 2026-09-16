@@ -70,7 +70,8 @@ try{
  const duplicate=await service.reserve(owner,randomUUID(),ids[1],'mint','Second');
  await assert.rejects(service.finalize(owner,duplicate.id,hash));
  assert.equal((await db.query('SELECT status FROM care_intents WHERE id=$1',[duplicate.id])).rows[0].status,'reserved');
- ok('Same on-chain receipt cannot purchase another rat');
+ await assert.rejects(db.query('INSERT INTO rat_ownership(rat_id,wallet,mint_intent) VALUES($1,$2,$3)',[winner.rat_id,b.address.toLowerCase(),duplicate.id]));
+ ok('Same on-chain receipt cannot purchase another rat; database ownership key rejects duplicate claim');
  // A valid confirmed burn remains recoverable after the app clock passes expiry:
  // RPC block timestamp is kept inside the original payment window for this case.
  const paid=record(duplicate),oldNow=now;

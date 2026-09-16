@@ -32,6 +32,11 @@ CREATE TABLE IF NOT EXISTS care_intents (
 -- Expired reservations deliberately stay held pending reconciliation:
 -- a burn cannot be undone just because the app's timer expired.
 CREATE UNIQUE INDEX IF NOT EXISTS one_open_intent_per_rat ON care_intents(rat_id) WHERE status IN ('reserved','review');
+CREATE TABLE IF NOT EXISTS rat_ownership (
+ rat_id text PRIMARY KEY REFERENCES rat_records(id),
+ wallet text NOT NULL,
+ mint_intent uuid UNIQUE NOT NULL REFERENCES care_intents(id)
+);
 CREATE TABLE IF NOT EXISTS burn_receipts (
  receipt_key text PRIMARY KEY, intent_id uuid UNIQUE NOT NULL REFERENCES care_intents(id),
  chain_id integer NOT NULL, token text NOT NULL, tx_hash text NOT NULL,

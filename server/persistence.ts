@@ -24,8 +24,9 @@ export class Persistence{
  async checkpoint(world:World,expectedRevision:number){
   if(!Number.isSafeInteger(expectedRevision)||expectedRevision<0)throw Error('Invalid revision');
   return this.transaction(async c=>{
-   const row=(await c.query('SELECT revision FROM colony_state WHERE id=1 FOR UPDATE')).rows[0];
+   const row=(await c.query('SELECT revision,world FROM colony_state WHERE id=1 FOR UPDATE')).rows[0];
    if(!row||Number(row.revision)!==expectedRevision)throw Error('Stale checkpoint');
+   if(JSON.stringify(world.care??null)!==JSON.stringify(row.world.care??null))throw Error('Checkpoint cannot replace payment state');
    await this.records(c,world);
    await c.query('UPDATE colony_state SET world=$1,revision=revision+1 WHERE id=1',[world]);
   });
@@ -53,6 +54,8 @@ export class Persistence{
     if(prior.rat_id!==ratId||prior.action!==action||prior.name!==(name??null))throw Error('Idempotency mismatch');
     return prior;
    }
+   const ownership=(await c.query('SELECT wallet FROM rat_ownership WHERE rat_id=$1',[ratId])).rows[0];
+   if(ownership&&(ownership.wallet!==wallet||action==='mint'))throw Error('Ownership conflict');
    const world=state.world as World,care=world.care??careState(),now=this.clock();
    validateCare(world,care,{sequence:care.lastSequence+1,ratId,wallet,action,name,timestamp:now,amount:CARE_RULES[action].cost});
    const cost=CARE_RULES[action].cost,units=cost===0?0n:tokenUnits(cost,this.decimals);
@@ -82,6 +85,7 @@ export class Persistence{
     status='review';
    }
    if(status==='applied'){
+    if(intent.action==='mint')await c.query('INSERT INTO rat_ownership(rat_id,wallet,mint_intent) VALUES($1,$2,$3)',[intent.rat_id,wallet,id]);
     world.care=care;
     await c.query('UPDATE colony_state SET world=$1,revision=revision+1 WHERE id=1',[world]);
     await this.records(c,world);
