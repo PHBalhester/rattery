@@ -46,6 +46,7 @@ try{
  await db.query(readFileSync('server/migrations/002_auth_expiry.sql','utf8'));
  await db.query(readFileSync('server/migrations/003_submission_recovery.sql','utf8'));
  await db.query(readFileSync('server/migrations/004_shared_simulation.sql','utf8'));
+ await db.query(readFileSync('server/migrations/005_trade_ledger.sql','utf8'));
  const challenge=await auth.challenge(a.address),signature=await a.signMessage(challenge.message);
  for(const changed of [challenge.message.replace('staging.rattery.invalid','evil.invalid'),challenge.message.replace('46630','4663'),challenge.message.replace(/Nonce: .*/,'Nonce: deadbeef')])await assert.rejects(auth.verify(challenge.id,changed,await a.signMessage(changed)));
  await assert.rejects(auth.verify(challenge.id,challenge.message,await b.signMessage(challenge.message)));

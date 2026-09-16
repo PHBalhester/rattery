@@ -99,8 +99,8 @@ export interface Trade {
   ts: number; // unix ms (block timestamp for on-chain trades)
   side: TradeSide;
   eth: number; // quote leg in ETH, straight from the chain
-  // Notional used by the sim: eth * CONFIG.market.ethUsdRef. A fixed reference
-  // (not a live price) so the same tape always grows the same colony.
+  // Browser replay uses eth * CONFIG.market.ethUsdRef. Shared server trades
+  // use an immutable historical valuation recorded in the persistent ledger.
   usd: number;
   tokens: number;
   trader: string;

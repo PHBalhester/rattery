@@ -1,4 +1,4 @@
-// Candidate ruleset; intentionally not wired into the current fixed-price replay.
+// Used by the shared server ledger; existing browser fixed-price replay is unchanged.
 export interface HistoricalQuote{source:string;observedAt:number;usdMicrosPerEth:string;}
 export interface HistoricalTrade{chainId:number;token:string;hash:string;logIndex:number;timestamp:number;ethWei:string;}
 export function historicalValuation(trade:HistoricalTrade,quote:HistoricalQuote|null,allowedSources:ReadonlySet<string>){

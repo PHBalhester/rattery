@@ -7,8 +7,9 @@ import {verifyBurn,type BurnRPC} from '../api/_lib/burn.js';
 import {StagingAuth,digest} from './auth.js';
 import {CONFIG} from '../src/config.js';
 import {tick} from '../src/sim/tick.js';
+import {applyQueuedTrades} from './trade-ledger.js';
 import {worldRng} from '../src/sim/rng.js';
-export const ENGINE_VERSION='shared-colony-v1:'+digest(JSON.stringify(CONFIG)).slice(0,16);
+export const ENGINE_VERSION='shared-colony-v2:'+digest(JSON.stringify(CONFIG)).slice(0,16);
 export const MAX_SIMULATION_BATCH=40;
 const uuid=(s:string)=>/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(s);
 export class Persistence{
@@ -120,6 +121,7 @@ export class Persistence{
    for(let i=0;i<steps;i++){
     // jsonb may reorder object keys. Pin rat traversal order before every tick.
     world.rats=Object.fromEntries(Object.entries(world.rats).sort(([a],[b])=>a<b?-1:a>b?1:0));
+    await applyQueuedTrades(c,world,previous+(i+1)*CONFIG.time.tickMs,Number(row.simulation_tick)+i+1);
     tick(world,CONFIG.time.tickMs/CONFIG.time.realMsPerSimDay,rng);
    }
    const reached=previous+steps*CONFIG.time.tickMs;

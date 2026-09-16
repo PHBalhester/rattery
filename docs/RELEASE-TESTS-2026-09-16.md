@@ -36,3 +36,7 @@ Eight mainnet-fork payment groups passed; see [exact scope and pinned block](MAI
 Local browser payment recovery passed (mint/feed/water, exactly three burns); PostgreSQL coverage increased to 13 groups. Fractional-second reservation rejection fixed. See MAINNET-FORK-TEST.md for boundaries and remaining work.
 
 Shared simulation: nine additional PostgreSQL groups passed; the fork/browser lab runs the worker and checks two 3D observers. See SHARED-SIMULATION.md. Public staging is not switched to this worker.
+
+## Shared market ledger follow-up
+
+Nine PostgreSQL ledger groups passed with controlled market/quote fixtures, alongside nine shared-engine groups and 13 payment/auth groups. Build, compiled server/API ESM loading and valuation regression passed. See [SHARED-TRADE-LEDGER.md](SHARED-TRADE-LEDGER.md). No live collector, new public deployment or chain transaction was used in this follow-up.

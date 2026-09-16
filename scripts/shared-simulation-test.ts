@@ -27,7 +27,7 @@ const rpc=async(method:string,args:unknown[])=>{
 };
 const passed:string[]=[];const ok=(s:string)=>{passed.push(s);console.log('PASS',s);};
 try{
- for(const f of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation'])await db.query(readFileSync('server/migrations/'+f+'.sql','utf8'));
+ for(const f of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation','005_trade_ledger'])await db.query(readFileSync('server/migrations/'+f+'.sql','utf8'));
  const auth=new StagingAuth(db,'http://localhost:18756',()=>now),service=new Persistence(db,auth,token,18,rpc,()=>now);
  const c=await auth.challenge(wallet.address),session=await auth.verify(c.id,c.message,await wallet.signMessage(c.message));
  const world=createWorld();world.realStartedAt=now;ecologyStep(world,0);const ratId=Object.keys(world.rats)[0];world.rats[ratId].energy=.4;
