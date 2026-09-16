@@ -1,4 +1,6 @@
 # RATTERY
+[![CI](https://github.com/PHBalhester/rattery/actions/workflows/ci.yml/badge.svg)](https://github.com/PHBalhester/rattery/actions/workflows/ci.yml)
+
 ### A living 3D colony shaped by community activity
 
 RATTERY is an interactive rat-colony simulation built with React, TypeScript and Three.js. Explore a connected habitat, follow individual residents and observe how resources, social relationships and market events influence life in the colony.
