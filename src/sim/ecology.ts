@@ -1,7 +1,7 @@
-import type {World,Rat} from '../types';
-import {habitatRoutes,wheelToys,diggingToy} from './habitatLayout';
-import {NEST_POS} from './colony';
-import {affinity,pairKey} from './social';
+import type {World,Rat} from '../types.js';
+import {habitatRoutes,wheelToys,diggingToy} from './habitatLayout.js';
+import {NEST_POS} from './colony.js';
+import {affinity,pairKey} from './social.js';
 const clamp=(n:number)=>Math.max(0,Math.min(1,n));
 export const zones=[{name:'nest',x:NEST_POS.x,y:NEST_POS.y,capacity:18},...habitatRoutes.map((r,i)=>({name:`chamber ${i+1}`,x:r[81].x,y:r[81].z,capacity:14}))];
 export function zoneOf(r:{x:number;y:number}){let best=0;for(let i=1;i<zones.length;i++)if(Math.hypot(r.x-zones[i].x,r.y-zones[i].y)<Math.hypot(r.x-zones[best].x,r.y-zones[best].y))best=i;return best;}

@@ -1,5 +1,5 @@
-import {habitatRoutes,lateralRoutes,toyApproaches,obstacles,refugeBlocked,refugePathBlocked} from './habitatLayout';
-import {NEST_POS} from './colony';
+import {habitatRoutes,lateralRoutes,toyApproaches,obstacles,refugeBlocked,refugePathBlocked} from './habitatLayout.js';
+import {NEST_POS} from './colony.js';
 export type Point={x:number;y:number};
 const dist=(a:Point,b:Point)=>Math.hypot(a.x-b.x,a.y-b.y);
 function segment(p:Point,a:Point,b:Point){const dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(p.x-a.x-dx*t,p.y-a.y-dy*t);}

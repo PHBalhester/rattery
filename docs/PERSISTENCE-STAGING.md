@@ -37,7 +37,7 @@ A real local PostgreSQL restart and pg_dump/pg_restore round-trip preserved the 
 - Real testnet token deployment/funding plus explicit wallet confirmation of transactions.
 - EIP-1271 contract-wallet authentication (current milestone accepts EOA signatures only).
 - Payment UI, authoritative colony integration and financial deployment adapter (the staging sign-in adapter is implemented).
-- Authoritative continuously running simulation/action replay integration.
+- Public authoritative trade ingestion, worker hosting and action replay operations (shared biology/care worker integration is now tested locally).
 - A bounded anti-abuse/reconciliation policy for abandoned reservations and paid review cases. Do not use automatic expiry to sell a rat twice.
 - Operator resolution of review cases, financial monitoring and independent review.
 - Scheduled retention of expired challenges/sessions/rate windows.
@@ -66,3 +66,5 @@ See [mainnet fork evidence](MAINNET-FORK-TEST.md) for the separate local EVM pay
 Migration 003 adds a single-use submission marker and optional recovery hash to intents. Authenticated overview returns at most 50 rats and 20 wallet-scoped intents. `beginSubmission` uses a conditional database update to allow one caller only; an expired or already-started attempt cannot open a second payment. `rememberSubmission` stores a hint and never authorizes an action; `finalize` independently checks the chain. Pending attempts remain held after cancellation/uncertainty until recovery or operator review. No automatic cancellation or resale is introduced.
 
 The PostgreSQL suite now includes 13 groups, including 12 competing begin-submission calls and the fractional-second timestamp regression. See the mainnet-fork report for the browser recovery test. Public `/api/session` continues to whitelist authentication operations only; these payment methods are exercised solely by the local lab.
+
+See [shared simulation](SHARED-SIMULATION.md) for atomic care/tick integration, persisted progress, multi-worker tests and remaining public deployment boundaries.

@@ -52,7 +52,8 @@
     "test:browsers": "node scripts/cross-browser-release.cjs",
     "test:api:esm": "node scripts/api-esm-test.mjs",
     "test:server:esm": "node scripts/server-esm-test.mjs",
-    "test:care:build": "node scripts/local-care-build-test.mjs"
+    "test:care:build": "node scripts/local-care-build-test.mjs",
+    "test:simulation:shared": "tsx scripts/shared-simulation-test.ts"
   },
   "dependencies": {
     "ethers": "6.17.0",

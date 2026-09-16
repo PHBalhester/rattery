@@ -1,6 +1,6 @@
 import {CatmullRomCurve3,Vector3,MathUtils} from 'three';
-import {NEST_POS as N} from './colony';
-import {CONFIG} from '../config';
+import {NEST_POS as N} from './colony.js';
+import {CONFIG} from '../config.js';
 const W=CONFIG.colony.burrowWidth,H=CONFIG.colony.burrowHeight;
 export const habitatRoutes=[[.12,.18],[.84,.16],[.12,.78],[.89,.79],[.48,.12]].map(([x,y])=>{
   const end=new Vector3(x*1600,0,y*900),nest=new Vector3(N.x,0,N.y);

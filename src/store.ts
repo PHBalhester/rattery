@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import {localCareLab} from "./localCareGate";
 import { CONFIG } from "./config";
 import { fetchSnapshot } from "./market/snapshot";
 import type { ColonySnapshot } from "./sim/snapshot";
@@ -244,9 +245,32 @@ function onChain(s: ChainState) {
  * Boot the simulation once. Guarded so React StrictMode's double-mount in dev
  * does not start two loops or two feeds.
  */
+function startSharedObserver(){
+ let stopped=false,lastRevision=-1,timer:ReturnType<typeof setTimeout>|undefined,controller:AbortController|undefined;
+ useStore.setState({feedStatus:'connecting'});
+ const poll=async()=>{
+  controller=new AbortController();
+  try{
+   const response=await fetch('/api/colony',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(4000)])});
+   if(!response.ok)throw Error('Snapshot unavailable');
+   const snapshot=await response.json();
+   if(!Number.isSafeInteger(snapshot.revision)||!snapshot.world?.rats||!Number.isFinite(snapshot.world.simDay)||typeof snapshot.version!=='string')throw Error('Invalid snapshot');
+   if(!stopped&&snapshot.revision>lastRevision){
+    world=snapshot.world;lastRevision=snapshot.revision;
+    // Observers never tick or apply trades locally. All biology comes from the worker.
+    useStore.setState(s=>({version:s.version+1,feedStatus:'live',catchupPct:100}));
+   }
+  }catch{if(!stopped)useStore.setState({feedStatus:'error'});}
+  finally{if(!stopped)timer=setTimeout(poll,500);}
+ };
+ stopFeed=()=>{stopped=true;if(timer)clearTimeout(timer);controller?.abort();};
+ void poll();
+}
+
 export function startEngine() {
   if (started) return;
   started = true;
+  if(localCareLab&&new URLSearchParams(location.search).get('view')==='shared-colony'){startSharedObserver();return;}
   hiddenAt=document.hidden?Date.now():null;
   document.addEventListener("visibilitychange",onVisibilityChange);
 

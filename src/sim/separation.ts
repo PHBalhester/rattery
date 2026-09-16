@@ -1,7 +1,7 @@
-import type {Rat,World} from '../types';
-import {clearPath} from './navigation';
-import {physique} from './physique';
-import {inNest} from './colony';
+import type {Rat,World} from '../types.js';
+import {clearPath} from './navigation.js';
+import {physique} from './physique.js';
+import {inNest} from './colony.js';
 
 const radius=(r:Rat)=>r.stage==='neonate'?3:r.stage==='juvenile'?6:r.stage==='weanling'?9:13;
 type Shape={scale:number;hx:number;hy:number};

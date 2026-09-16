@@ -6,20 +6,25 @@ import type {HDNodeWallet} from 'ethers';
 import {StagingAuth} from '../server/auth.js';
 import {Persistence} from '../server/persistence.js';
 import {stagingHandler} from '../server/http.js';
+import {startSimulationWorker} from '../server/simulation-worker.js';
 import type {BurnRPC} from '../api/_lib/burn.js';
 export async function runCareBrowserLab(db:Pool,rpc:BurnRPC,wallet:HDNodeWallet,other:HDNodeWallet,token:string,ratId:string){
  await db.query(readFileSync('server/migrations/002_auth_expiry.sql','utf8'));
  await db.query(readFileSync('server/migrations/003_submission_recovery.sql','utf8'));
+ await db.query(readFileSync('server/migrations/004_shared_simulation.sql','utf8'));
  process.env.VITE_LOCAL_CARE_LAB='true';process.env.VITE_STAGING='true';
  const origin='http://localhost:18756';
  const auth=new StagingAuth(db,origin),service=new Persistence(db,auth,token,18,rpc);
  const handle=stagingHandler(auth,service);
+ const workerErrors:string[]=[];
+ const stopWorker=startSimulationWorker(service,()=>workerErrors.push('worker failure'));
  const vite=await viteServer({server:{middlewareMode:true,hmr:false},appType:'spa',clearScreen:false});
  let sends=0,lastHash:string|null=null;
  let finish:(value:boolean)=>void=()=>{};
  const complete=new Promise<boolean>(resolve=>finish=resolve);
  const server=createServer(async(req,res)=>{
   const url=new URL(req.url??'/',origin);
+  if(url.pathname==='/api/colony'){req.url='/colony/snapshot';return handle(req,res);}
   if(url.pathname==='/api/session'||url.pathname==='/api/care'){
    req.url=(url.pathname==='/api/session'?'/auth/':'/care/')+url.searchParams.get('op');return handle(req,res);
   }
@@ -65,9 +70,10 @@ export async function runCareBrowserLab(db:Pool,rpc:BurnRPC,wallet:HDNodeWallet,
  try{
   if(!await complete)throw Error('Browser payment lab failed or timed out');
   const owner=(await db.query('SELECT wallet FROM rat_ownership WHERE rat_id=$1',[ratId])).rows[0]?.wallet;
+  if(workerErrors.length)throw Error('Worker reported an error');
   if(owner!==wallet.address.toLowerCase())throw Error('Browser mint missing');
   const actions=(await db.query('SELECT action FROM care_intents WHERE rat_id=$1 AND status=$2',[ratId,'applied'])).rows.map(r=>r.action);
   if(!['mint','feed','water'].every(a=>actions.includes(a))||sends!==3)throw Error('Browser action or burn count mismatch');
   return {sends,actions,passed:true};
- }finally{clearTimeout(timer);server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));await vite.close();}
+ }finally{await stopWorker();clearTimeout(timer);server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));await vite.close();}
 }

@@ -1,8 +1,8 @@
-import {separateRats} from "./separation";
-import {ecologyStep,individualStress} from './ecology';
-import {socialStep} from "./social";
-import { CONFIG } from "../config";
-import type { Rat, World, WorldEnv } from "../types";
+import {separateRats} from "./separation.js";
+import {ecologyStep,individualStress} from './ecology.js';
+import {socialStep} from "./social.js";
+import { CONFIG } from "../config.js";
+import type { Rat, World, WorldEnv } from "../types.js";
 import {
   NEST_POS,
   aliveRats,
@@ -16,10 +16,10 @@ import {
   stageOf,
   tryConceive,
   weanIfDue,
-} from "./colony";
-import { driveCycleHormones, phaseFromCycleT, pregnancyHormones, clamp01, lerp } from "./hormones";
-import { decayEnv } from "./marketMap";
-import { applyHabitatActivity } from "./habitatActivity";
+} from "./colony.js";
+import { driveCycleHormones, phaseFromCycleT, pregnancyHormones, clamp01, lerp } from "./hormones.js";
+import { decayEnv } from "./marketMap.js";
+import { applyHabitatActivity } from "./habitatActivity.js";
 
 const W = CONFIG.colony.burrowWidth;
 const H = CONFIG.colony.burrowHeight;

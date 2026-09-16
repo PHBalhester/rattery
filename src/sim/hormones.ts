@@ -1,4 +1,4 @@
-import type { Hormones, CyclePhase, Rat, WorldEnv } from "../types";
+import type { Hormones, CyclePhase, Rat, WorldEnv } from "../types.js";
 
 export const ZERO_H: Hormones = {
   gnrh: 0.1,

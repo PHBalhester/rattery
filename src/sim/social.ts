@@ -1,9 +1,9 @@
-import {movementSpeed} from './movementSpeed';
-import {CONFIG} from "../config";
-import {remember,ecologyState} from './ecology';
-import type {Rat,World} from '../types';
-import {findPath,clearPath,advance} from './navigation';
-import {inNest,tryConceive} from './colony';
+import {movementSpeed} from './movementSpeed.js';
+import {CONFIG} from "../config.js";
+import {remember,ecologyState} from './ecology.js';
+import type {Rat,World} from '../types.js';
+import {findPath,clearPath,advance} from './navigation.js';
+import {inNest,tryConceive} from './colony.js';
 
 export const pairKey=(a:Rat,b:Rat)=>[a.id,b.id].sort().join('|');
 export function affinity(w:World,a:Rat,b:Rat){

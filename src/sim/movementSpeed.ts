@@ -1,5 +1,5 @@
-import type {Rat,World} from '../types';
-import {physique} from './physique';
+import type {Rat,World} from '../types.js';
+import {physique} from './physique.js';
 /** Simulation units per 100ms tick. Cosmetic seed does not consume biological RNG. */
 export function movementSpeed(r:Rat,w:World){
  const energy=Math.max(.4,Math.min(1,r.energy/.55));

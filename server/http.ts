@@ -16,16 +16,18 @@ export function stagingHandler(auth:StagingAuth,service:Persistence|null,clientI
    const globalCount=(await auth.pool.query('INSERT INTO rate_windows(bucket,hits,expires_at) VALUES($1,1,$2) ON CONFLICT(bucket) DO UPDATE SET hits=rate_windows.hits+1 RETURNING hits',[globalBucket,Date.now()+120000])).rows[0].hits;
    if(globalCount>1000){res.setHeader('Retry-After','60');return send(429,{error:'Rate limit'});}
    if(globalCount%20===1)await auth.pool.query('WITH c AS (DELETE FROM auth_challenges WHERE id IN (SELECT id FROM auth_challenges WHERE expires_at<$1 LIMIT 100)), s AS (DELETE FROM auth_sessions WHERE digest IN (SELECT digest FROM auth_sessions WHERE expires_at<$1 LIMIT 100)) DELETE FROM rate_windows WHERE bucket IN (SELECT bucket FROM rate_windows WHERE expires_at<$1 LIMIT 100)',[Date.now()]);
-   const bucket=digest(clientIP(req)+':'+Math.floor(Date.now()/60000));
+   const observing=req.url==='/colony/snapshot'||req.url==='/care/overview';
+   const bucket=digest(clientIP(req)+':'+(observing?'observe:':'actions:')+Math.floor(Date.now()/60000));
    const count=(await auth.pool.query('INSERT INTO rate_windows(bucket,hits,expires_at) VALUES($1,1,$2) ON CONFLICT(bucket) DO UPDATE SET hits=rate_windows.hits+1 RETURNING hits',[bucket,Date.now()+120000])).rows[0].hits;
-   if(count>100){res.setHeader('Retry-After','60');return send(429,{error:'Rate limit'});}
+   if(count>(observing?600:100)){res.setHeader('Retry-After','60');return send(429,{error:'Rate limit'});}
    const data=await body(req),session=parseCookie(req.headers.cookie);
+   if(req.url==='/colony/snapshot')return service?send(200,await service.sharedSnapshot()):send(503,{error:'Colony unavailable'});
    if(req.url==='/auth/session'){
     let wallet:string|null=null;try{wallet=await auth.wallet(session);}catch{/* Anonymous or expired. */}
     return send(200,{wallet,chainId:46630,paymentsEnabled:service!==null});
    }
    if(req.url?.startsWith('/care/')&&!service)return send(503,{error:'Payments disabled'});
-   if(req.url?.startsWith('/care/')){
+   if(req.url?.startsWith('/care/')&&req.url!=='/care/overview'){
     const wallet=await auth.wallet(session),walletBucket=digest('wallet:'+wallet+':'+Math.floor(Date.now()/60000));
     const n=(await auth.pool.query('INSERT INTO rate_windows(bucket,hits,expires_at) VALUES($1,1,$2) ON CONFLICT(bucket) DO UPDATE SET hits=rate_windows.hits+1 RETURNING hits',[walletBucket,Date.now()+120000])).rows[0].hits;
     if(n>30){res.setHeader('Retry-After','60');return send(429,{error:'Rate limit'});}

@@ -71,6 +71,24 @@ const lab=async(op,data={})=>{const r=await fetch(origin+'/lab/'+op,{method:'POS
  assert.equal((await lab('info')).sends,3);
  assert.deepEqual(errors,[]);await page.screenshot({path:path.join(outputDir,'care-lab-recovered.png')});
  console.log('PASS missing wallet hash requires manual recovery; exactly three local burns for three actions');
+ // Two independent observers read one moving colony; no browser-side biology is allowed.
+ const observerA=await context.newPage(),observerB=await browser.newPage();
+ observerA.on('pageerror',e=>errors.push(e.message));observerB.on('pageerror',e=>errors.push(e.message));
+ await Promise.all([observerA.goto(origin+'/?view=shared-colony'),observerB.goto(origin+'/?view=shared-colony')]);
+ const observe=async p=>p.evaluate(async()=>{const m=await import('/src/store.ts');return {world:m.getWorld(),status:m.useStore.getState().feedStatus};});
+ for(const p of [observerA,observerB]){
+  await p.waitForFunction(async({ratId,wallet})=>{const m=await import('/src/store.ts');return m.useStore.getState().feedStatus==='live'&&m.getWorld().care?.owners[ratId]===wallet;},{ratId:info.ratId,wallet:info.wallet});
+ }
+ const first=await observe(observerA);
+ await observerA.reload();
+ await observerA.waitForFunction(async day=>{const m=await import('/src/store.ts');return m.useStore.getState().feedStatus==='live'&&m.getWorld().simDay>day;},first.world.simDay);
+ const later=await observe(observerA),other=await observe(observerB);
+ assert.equal(later.world.care.owners[info.ratId],info.wallet);assert.equal(other.world.care.owners[info.ratId],info.wallet);
+ assert.equal(later.world.rats[info.ratId].name,'Lab Rat');
+ assert.equal(other.world.care.lastSequence,later.world.care.lastSequence);
+ assert.equal((await lab('info')).sends,3);
+ assert.deepEqual(errors,[]);
+ console.log('PASS two 3D observers share persisted ownership/care; server advances across observer reload');
  passed=true;
  }finally{await lab('finish',{passed});await browser.close();}
 })().catch(e=>{console.error(String(e.message).slice(0,1500));process.exit(1);});

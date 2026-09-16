@@ -34,3 +34,5 @@ See [persistent service](PERSISTENCE-STAGING.md) and [release gates](RELEASE.md)
 Eight mainnet-fork payment groups passed; see [exact scope and pinned block](MAINNET-FORK-TEST.md). Staging browser sign-in also passed using a real ephemeral signature with no transaction RPC.
 
 Local browser payment recovery passed (mint/feed/water, exactly three burns); PostgreSQL coverage increased to 13 groups. Fractional-second reservation rejection fixed. See MAINNET-FORK-TEST.md for boundaries and remaining work.
+
+Shared simulation: nine additional PostgreSQL groups passed; the fork/browser lab runs the worker and checks two 3D observers. See SHARED-SIMULATION.md. Public staging is not switched to this worker.

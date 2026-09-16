@@ -1,10 +1,10 @@
-import {movementSpeed} from './movementSpeed';
-import {zones,zoneOf} from './ecology';
-import type {World} from '../types';
-import {NEST_POS,inNest} from './colony';
-import {habitatRoutes,toyApproaches,wheelToys,diggingToy} from './habitatLayout';
-import {findPath,advance,clearPath,safeGuide,recoverPosition} from './navigation';
-import {playActivity} from './playActivity';
+import {movementSpeed} from './movementSpeed.js';
+import {zones,zoneOf} from './ecology.js';
+import type {World} from '../types.js';
+import {NEST_POS,inNest} from './colony.js';
+import {habitatRoutes,toyApproaches,wheelToys,diggingToy} from './habitatLayout.js';
+import {findPath,advance,clearPath,safeGuide,recoverPosition} from './navigation.js';
+import {playActivity} from './playActivity.js';
 function hashId(id:string){let n=0;for(const c of id)n=(n*31+c.charCodeAt(0))>>>0;return n;}
 const trips=habitatRoutes.map((route,index)=>route.flatMap((p,i)=>{
  const points=[{...safeGuide({x:p.x,y:p.z}),toy:false}];const toy=toyApproaches.find(a=>a.toy===index&&a.waypoint===i);

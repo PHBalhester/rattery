@@ -4,7 +4,12 @@ import type {World,Rat,MemorialRecord} from '../src/types';
 import {careState,validateCare,applyCare,CARE_RULES,type CareAction,type CareEvent} from '../src/sim/care.js';
 import {tokenUnits} from '../src/market/burn.js';
 import {verifyBurn,type BurnRPC} from '../api/_lib/burn.js';
-import {StagingAuth} from './auth.js';
+import {StagingAuth,digest} from './auth.js';
+import {CONFIG} from '../src/config.js';
+import {tick} from '../src/sim/tick.js';
+import {worldRng} from '../src/sim/rng.js';
+export const ENGINE_VERSION='shared-colony-v1:'+digest(JSON.stringify(CONFIG)).slice(0,16);
+export const MAX_SIMULATION_BATCH=40;
 const uuid=(s:string)=>/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(s);
 export class Persistence{
  constructor(readonly pool:Pool,readonly auth:StagingAuth,readonly token:string,readonly decimals:number,readonly rpc:BurnRPC,readonly clock=Date.now){
@@ -47,8 +52,9 @@ export class Persistence{
   const wallet=await this.auth.wallet(session);
   if(!uuid(requestId)||typeof ratId!=='string'||ratId.length>80||!Object.hasOwn(CARE_RULES,action)||(name!==undefined&&(typeof name!=='string'||name.length>128)))throw Error('Invalid request');
   return this.transaction(async c=>{
-   const state=(await c.query('SELECT world FROM colony_state WHERE id=1 FOR UPDATE')).rows[0];
+   const state=(await c.query('SELECT * FROM colony_state WHERE id=1 FOR UPDATE')).rows[0];
    if(!state)throw Error('Colony unavailable');
+   this.requireCurrentSimulation(state);
    const prior=(await c.query('SELECT * FROM care_intents WHERE wallet=$1 AND request_id=$2',[wallet,requestId])).rows[0];
    if(prior){
     if(prior.rat_id!==ratId||prior.action!==action||prior.name!==(name??null))throw Error('Idempotency mismatch');
@@ -72,7 +78,8 @@ export class Persistence{
   const verified=intent.cost===0?null:await verifyBurn(this.rpc,hash??'',{chainId:intent.chain_id,token:intent.token,wallet,amount:BigInt(intent.units),createdAt:Number(intent.created_at),expiresAt:Number(intent.expires_at)});
   return this.transaction(async c=>{
    // Common lock order: world, then intent. No deadlock against reservations.
-   const row=(await c.query('SELECT world FROM colony_state WHERE id=1 FOR UPDATE')).rows[0];
+   const row=(await c.query('SELECT * FROM colony_state WHERE id=1 FOR UPDATE')).rows[0];
+   this.requireCurrentSimulation(row);
    const locked=(await c.query('SELECT * FROM care_intents WHERE id=$1 AND wallet=$2 FOR UPDATE',[id,wallet])).rows[0];
    if(locked.status!=='reserved')return {status:locked.status,id};
    if(verified)await c.query('INSERT INTO burn_receipts(receipt_key,intent_id,chain_id,token,tx_hash,evidence) VALUES($1,$2,$3,$4,$5,$6)',[verified.key,id,intent.chain_id,intent.token,verified.hash,verified]);
@@ -96,14 +103,46 @@ export class Persistence{
    return {status,id};
   });
  }
+ private requireCurrentSimulation(row:any){
+  if(row.engine_version&&(row.engine_version!==ENGINE_VERSION||this.clock()-Number(row.simulation_at)>1000))throw Error('Colony catching up');
+ }
+ // Operator-only clock advancement. Never exposed as an HTTP mutation.
+ async advanceSimulation(at=this.clock()){
+  if(!Number.isSafeInteger(at)||at<0)throw Error('Invalid simulation time');
+  return this.transaction(async c=>{
+   const row=(await c.query('SELECT * FROM colony_state WHERE id=1 FOR UPDATE')).rows[0];
+   if(!row)throw Error('Colony unavailable');
+   if(row.engine_version&&row.engine_version!==ENGINE_VERSION)throw Error('Simulation version mismatch');
+   const world=row.world as World;
+   const previous=row.simulation_at===null?Math.floor(world.realStartedAt+world.simDay*CONFIG.time.realMsPerSimDay):Number(row.simulation_at);
+   const due=Math.max(0,Math.floor((at-previous)/CONFIG.time.tickMs)),steps=Math.min(due,MAX_SIMULATION_BATCH);
+   const rng=worldRng(world);
+   for(let i=0;i<steps;i++){
+    // jsonb may reorder object keys. Pin rat traversal order before every tick.
+    world.rats=Object.fromEntries(Object.entries(world.rats).sort(([a],[b])=>a<b?-1:a>b?1:0));
+    tick(world,CONFIG.time.tickMs/CONFIG.time.realMsPerSimDay,rng);
+   }
+   const reached=previous+steps*CONFIG.time.tickMs;
+   if(steps||!row.engine_version){
+    if(steps)await this.records(c,world);
+    await c.query('UPDATE colony_state SET world=$1,revision=revision+1,simulation_tick=simulation_tick+$2,simulation_at=$3,engine_version=$4 WHERE id=1',[world,steps,reached,ENGINE_VERSION]);
+   }
+   return {steps,tick:Number(row.simulation_tick)+steps,lagMs:Math.max(0,at-reached),version:ENGINE_VERSION};
+  });
+ }
+ async sharedSnapshot(){
+  const row=(await this.pool.query('SELECT * FROM colony_state WHERE id=1')).rows[0];
+  if(!row)throw Error('Colony unavailable');
+  return {world:row.world as World,revision:Number(row.revision),tick:Number(row.simulation_tick),at:Number(row.simulation_at),version:row.engine_version as string|null};
+ }
  async overview(session:string){
   const wallet=await this.auth.wallet(session);
-  const state=(await this.pool.query('SELECT world,revision FROM colony_state WHERE id=1')).rows[0];
+  const state=(await this.pool.query(`SELECT world,revision,(SELECT coalesce(jsonb_agg(i ORDER BY i.created_at::bigint DESC,i.id),'[]'::jsonb) FROM (SELECT id,rat_id,request_id,action,name,cost,units::text,chain_id,token,created_at::text,expires_at::text,status,submission_started_at::text,submitted_hash FROM care_intents WHERE wallet=$1 ORDER BY created_at DESC,id LIMIT 20) i) AS intents FROM colony_state WHERE id=1`,[wallet])).rows[0];
   if(!state)throw Error('Colony unavailable');
   const world=state.world as World;
   return {wallet,chainId:46630,token:this.token,decimals:this.decimals,revision:Number(state.revision),
    rats:Object.values(world.rats).slice(0,50).map(r=>({id:r.id,name:r.name,dead:r.deadAt!==null,owner:world.care?.owners[r.id]??null,energy:r.energy,hydration:r.wellbeing?.hydration??null})),
-   intents:(await this.pool.query('SELECT id,rat_id,request_id,action,name,cost,units,chain_id,token,created_at,expires_at,status,submission_started_at,submitted_hash FROM care_intents WHERE wallet=$1 ORDER BY created_at DESC,id LIMIT 20',[wallet])).rows};
+   intents:state.intents};
  }
  async beginSubmission(session:string,id:string){
   const wallet=await this.auth.wallet(session);

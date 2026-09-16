@@ -1,5 +1,5 @@
-import type { Trade, WorldEnv } from "../types";
-import { clamp01 } from "./hormones";
+import type { Trade, WorldEnv } from "../types.js";
+import { clamp01 } from "./hormones.js";
 
 export const BIG_TRADE_USD = 500;
 export const GIANT_TRADE_USD = BIG_TRADE_USD * 2;

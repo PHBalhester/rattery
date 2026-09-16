@@ -17,8 +17,14 @@ export default function CareLab(){
  const {language,setLanguage}=useLanguage(),w=useWallet();
  const [view,setView]=useState<View|null>(null),[ratId,setRatId]=useState(''),[action,setAction]=useState<CareAction>('mint'),[name,setName]=useState('Lab Rat');
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[recovery,setRecovery]=useState('');
- const refresh=async()=>{const v=await api('overview') as View;if(v.wallet!==useWallet.getState().account)throw Error('Wallet mismatch');setView(v);setRatId(id=>id||v.rats.find(r=>!r.owner&&!r.dead)?.id||'');};
+ const refresh=async()=>{const v=await api('overview') as View;if(v.wallet!==useWallet.getState().account)throw Error('Wallet mismatch');setView(previous=>previous?.wallet===v.wallet&&previous.revision>v.revision?previous:v);setRatId(id=>id||v.rats.find(r=>!r.owner&&!r.dead)?.id||'');};
  useEffect(()=>{setView(null);if(w.authenticated)void refresh().catch(()=>setNotice('Session unavailable. Sign in again.'));},[w.authenticated,w.account]);
+ const recovering=!!view?.intents.some(i=>i.status==='reserved'&&i.submission_started_at);
+ useEffect(()=>{
+  if(!w.authenticated||!recovering||busy)return;
+  let active=false;const timer=setInterval(()=>{if(active)return;active=true;void refresh().catch(()=>{}).finally(()=>{active=false;});},1500);
+  return ()=>clearInterval(timer);
+ },[w.authenticated,w.account,recovering,busy]);
  if(!localCareLab)return null;
  const rat=view?.rats.find(r=>r.id===ratId),intent=view?.intents.find(i=>i.rat_id===ratId&&['reserved','review'].includes(i.status));
  const journalKey=(id:string)=>'rattery-local-payment:'+w.account+':'+id;

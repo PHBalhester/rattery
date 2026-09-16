@@ -1,4 +1,4 @@
-import { CONFIG } from "../config";
+import { CONFIG } from "../config.js";
 import type {
   DeathCause,
   Genome,
@@ -10,9 +10,9 @@ import type {
   World,
   WorldEnv,
   WorldEvent,
-} from "../types";
-import { chance, irange, pick, range, worldRng } from "./rng";
-import { ZERO_H, clamp01, lerp } from "./hormones";
+} from "../types.js";
+import { chance, irange, pick, range, worldRng } from "./rng.js";
+import { ZERO_H, clamp01, lerp } from "./hormones.js";
 
 const SYL = ["ka", "ni", "ro", "ve", "lu", "sa", "mo", "te", "ri", "qo", "ba", "ul", "se", "dra"];
 const FOUNDERS: { name: string; sex: Sex }[] = [

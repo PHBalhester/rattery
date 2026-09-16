@@ -64,3 +64,4 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run test:persistence
+      - run: npm run test:simulation:shared
