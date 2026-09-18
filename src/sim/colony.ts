@@ -212,7 +212,13 @@ export function tryConceive(
   env: WorldEnv
 ): boolean {
   if (dam.pregnant || dam.sex !== "F") return false;
-  if (!chance(rng, clamp01(p))) return false;
+  // Reserve the maximum litter size so concurrent pregnancies cannot fill every shelter.
+  const living = aliveRats(world);
+  const projected = living.length + living.filter(r => r.pregnant).length * 14;
+  const breedingTarget = Math.floor(CONFIG.colony.maxAlive * 0.82);
+  if (projected + 14 > breedingTarget) return false;
+  const densityFactor = projected >= 70 ? 0.25 : projected >= 50 ? 0.5 : 0.75;
+  if (!chance(rng, clamp01(p * densityFactor))) return false;
 
   const gest = range(rng, CONFIG.bio.gestationMin, CONFIG.bio.gestationMax);
   const planned = irange(rng, CONFIG.bio.litterMin, CONFIG.bio.litterMax);

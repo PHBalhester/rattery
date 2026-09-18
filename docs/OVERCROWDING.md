@@ -7,3 +7,6 @@ Gestating mothers, nursing mothers, rats retrieving pups and dependent young are
 Minted rats follow the same biology. Death preserves ownership, the name, genealogy and burn receipts; it does not refund a burn or transfer ownership. The visual body remains for about six seconds for observers present at death, then leaves the scene. The memorial persists. Historical deaths are not replayed on initial load.
 
 This protects continuity against the overcrowding cull; it does not guarantee survival against starvation, age or other simulation causes.
+
+## Preventing new overcrowding
+New conception probability is reduced by 25% below 50 projected residents, by 50% from 50, and by 75% from 70. Each existing pregnancy reserves 14 places (the maximum possible litter). A new pregnancy is allowed only when that reservation still fits within 82% of the 110-resident limit (90). Existing pregnancies and living rats remain untouched. Population relief is gradual; reproduction resumes automatically as space becomes available.
