@@ -16,7 +16,13 @@ import type { Trade, World } from "../src/types";
 const tickMs = CONFIG.time.tickMs;
 const dtDays = CONFIG.time.simDaysPerTick;
 const t0 = 1_700_000_000_000;
-const targetTick = 45_000; // ~75 sim-days
+// Bounded for CI, same pattern as RATTERY_DETERMINISM_DAYS. This test replays
+// five worlds, so its cost is 5x the horizon and it grows with colony size:
+// at 45_000 it now takes ~6min and blows the per-test timeout. The invariants
+// below (batched == one-shot, seam survives JSON, maxTicks clamps) do not need
+// a long horizon. Set RATTERY_REPLAY_TICKS=45000 for the long run.
+const targetTick = Number(process.env.RATTERY_REPLAY_TICKS ?? 15_000);
+assert(Number.isInteger(targetTick) && targetTick >= 15_000 && targetTick <= 45_000);
 const opts = { t0, targetTick, tickMs, dtDays, maxTicks: 300_000 };
 
 // Synthetic on-chain history: timestamped, block/logIndex increasing, buy-heavy.
@@ -66,12 +72,12 @@ console.log("2. seam replay->live sobrevive round-trip JSON:", canon(direct) ===
 
 // 4. maxTicks clamps an over-long target.
 const wd = createWorld(CONFIG.colony.seed);
-const rd = makeReplay(wd, worldRng(wd), history(7), { ...opts, targetTick: 10_000_000, maxTicks: 45_000 });
+const rd = makeReplay(wd, worldRng(wd), history(7), { ...opts, targetTick: 10_000_000, maxTicks: targetTick });
 while (!rd.done()) rd.step(1_000_000);
-console.log("3. maxTicks limita target longo -> reached =", rd.reached(), "(cap 45000)");
+console.log("3. maxTicks limita target longo -> reached =", rd.reached(), "(cap", targetTick + ")");
 
 assert.equal(canon(wa),canon(wb),"Replay batches must agree");
 assert.equal(canon(direct),canon(restored),"Snapshot to live must agree");
-assert.equal(rd.reached(),45000);
+assert.equal(rd.reached(),targetTick);
 assert.equal(canon(wd),canon(wa));
 assert.equal(wa.env.lastTradeAt,history(7).filter(t=>t.ts<t0+targetTick*tickMs).at(-1)!.ts,"Real trades must actually be applied");
