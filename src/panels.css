@@ -127,8 +127,8 @@
 @media(prefers-reduced-motion:reduce){.rat-name-label.is-petting{animation:none}}
 .colony-app.cinema .colony-scene .scene-controls{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));right:18px;left:18px;max-width:none;flex-wrap:wrap;gap:8px;z-index:10}
 
-.paid-care .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.paid-care .care-help-button{border-radius:50%;width:32px;min-height:32px;height:32px;padding:0;margin:0;font-size:16px}
+.colony-app .rat-care.paid-care .panel-head{display:flex;align-items:center;justify-content:flex-start;gap:8px}
+.colony-app .paid-care .care-help-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 18px;border:1px solid #ffffff45;border-radius:50%;width:18px;min-width:18px;min-height:18px;height:18px;padding:0;margin:0;background:transparent;color:var(--panel-muted);font-size:11px;font-weight:400;line-height:1}.colony-app .paid-care .care-help-button:hover{color:#fff;border-color:#ffffff80}.colony-app .paid-care .care-help-button:focus-visible{outline:2px solid #99c6aa;outline-offset:3px}
 .care-help-dialog{width:min(560px,calc(100vw - 24px))}.care-help-dialog header{display:flex;align-items:center;justify-content:space-between;gap:12px}.care-help-dialog h2{font-size:20px;margin:0}.care-help-dialog::backdrop{background:#0009}
 .care-help-item{padding:14px 0;border-bottom:1px solid #ffffff20}.care-help-item dt{font-weight:700;color:#f5f2e9}.care-help-item dd{margin:6px 0 0;color:#bdc6c0}.care-help-item p{margin:8px 0 0}
 
