@@ -32,3 +32,5 @@ Machine-specific handoffs, raw captures and audit artifacts are retained locally
 [Adaptive graphics and performance validation](ADAPTIVE-RENDERING.md)
 
 - [Holding recognition](HOLDING-RECOGNITION.md): US$100 current-price threshold, verified 7/30/90-day milestones, caregiver identity, resets and verification limits.
+
+- [Purchase support and survival](SURVIVAL-SUPPORT.md): resource replenishment, lactation calibration and seeded validation.

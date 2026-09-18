@@ -49,12 +49,12 @@ export function applyTrade(env: WorldEnv, t: Trade): WorldEnv {
   const elapsed=Math.max(0,t.ts-(env.tradeBudgetAt??t.ts));
   const available=Math.min(1,(env.tradeBudget??1)+elapsed/60000);
   const small=t.usd<50;
-  const intensity=small?Math.min(.01,t.usd/5000):t.usd<250?.08:t.usd<500?.16:t.usd<1000?.25:.35;
+  const intensity=t.side==='buy'?Math.min(.35,t.usd/1000):small?Math.min(.01,t.usd/5000):t.usd<250?.08:t.usd<500?.16:t.usd<1000?.25:.35;
   const effect=Math.min(available,intensity);
   next.tradeBudget=available-effect;next.tradeBudgetAt=Math.max(t.ts,env.tradeBudgetAt??t.ts);
   if(t.side==='buy'){
-    next.food=clamp01(next.food+effect*.1);next.water=clamp01(next.water+effect*.08);
-    next.warmth=clamp01(next.warmth+effect*.06);next.stress=clamp01(next.stress-effect*.05);
+    next.food=clamp01(next.food+effect*CONFIG.survival.buyFood);next.water=clamp01(next.water+effect*CONFIG.survival.buyWater);
+    next.warmth=Math.max(next.warmth,Math.min(.72,next.warmth+effect*CONFIG.survival.buyWarmth));next.stress=clamp01(next.stress-effect*.05);
   }else next.stress=clamp01(next.stress+effect*.1);
   // Common small trades never set movement/animation/social drives.
   if(small)return next;
@@ -88,9 +88,9 @@ export function decayEnv(env: WorldEnv, dtSec: number): WorldEnv {
   const days=Math.max(0,dtSec)/(CONFIG.time.realMsPerSimDay/1000);
   return {
     ...env,
-    food: env.food > SILENCE_FLOOR ? Math.max(SILENCE_FLOOR, env.food - days * .005) : env.food,
-    warmth: env.warmth > SILENCE_FLOOR ? Math.max(SILENCE_FLOOR, env.warmth - days * .003) : env.warmth,
-    water: (env.water ?? 0.55) > SILENCE_FLOOR ? Math.max(SILENCE_FLOOR, (env.water ?? 0.55) - days * .005) : (env.water ?? 0.55),
+    food: env.food > SILENCE_FLOOR ? Math.max(SILENCE_FLOOR, env.food - days * CONFIG.survival.foodPerDay) : env.food,
+    warmth: env.warmth > SILENCE_FLOOR ? Math.max(SILENCE_FLOOR, env.warmth - days * CONFIG.survival.warmthPerDay) : env.warmth,
+    water: (env.water ?? 0.55) > SILENCE_FLOOR ? Math.max(SILENCE_FLOOR, (env.water ?? 0.55) - days * CONFIG.survival.waterPerDay) : (env.water ?? 0.55),
     stress: clamp01(env.stress+(restingStress(env)-env.stress)*(-Math.expm1(-d*.4))),
     dopaminePulse: clamp01(env.dopaminePulse - d * 1.2),
     buyPressure: clamp01(env.buyPressure - d * 0.5),

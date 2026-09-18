@@ -45,6 +45,8 @@ export const CONFIG = {
     burrowHeight: 1080,
   },
 
+  survival: { foodPerDay: 0.0025, waterPerDay: 0.0025, warmthPerDay: 0.0015, buyFood: 0.4, buyWater: 0.4, buyWarmth: 0.2 },
+
   bio: {
     // Rattus norvegicus, lab-typical, compressed
     cycleDays: 4.5,
@@ -62,13 +64,9 @@ export const CONFIG = {
     femaleMatureDay: 50,
     maleMatureDay: 55,
     lifespanDays: 400,
-    // BALANCE KNOB (not a mechanic). At 0.08 a dam's drain is
-    // 0.08 * litterSize * (2 - maternalInvest); a litter of 9 costs ~0.72
-    // energy/day, far above any possible forage gain, so every dam starved
-    // within a day of birth and orphaned her whole litter (mass
-    // neonatal_abandon). 0.025 lets a well-fed dam support ~8 pups while big
-    // litters in a poor market still exhaust her (fewer, sharper survivors).
-    lactationCostPerPup: 0.025, // energy / sim-day
+    // Calibrated so adequate resources can support normal litters.
+    // See docs/SURVIVAL-SUPPORT.md for the prior value and seeded scenarios.
+    lactationCostPerPup: 0.012, // energy / sim-day
     basalCostAdult: 0.12,
     basalCostPup: 0.04,
     // BALANCE KNOB (not a mechanic). Was a hardcoded 0.22 inside tick.ts. At
