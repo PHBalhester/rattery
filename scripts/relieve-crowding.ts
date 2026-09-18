@@ -5,7 +5,10 @@ import type {World} from '../src/types';
 // Offline transform only; the operator must hold the database row lock and archive the input.
 const world=JSON.parse(readFileSync(0,'utf8')) as World;
 const care=JSON.stringify(world.care),before=aliveRats(world).length,selected:string[]=[];
-for(let i=0;i<6 && aliveRats(world).length>90;i++){
+const limit=Number(process.argv[2]??6),floor=Number(process.argv[3]??90);
+assert.ok(Number.isInteger(limit)&&limit>=1&&limit<=30);
+assert.ok(Number.isInteger(floor)&&floor>=70);
+for(let i=0;i<limit && aliveRats(world).length>floor;i++){
  const adults=aliveRats(world).filter(r=>r.stage==='adult');
  const eligible=adults.filter(r=>!r.pregnant&&!r.nursing.length&&!r.retrieving&&adults.filter(a=>a.sex===r.sex).length>2)
  .sort((a,b)=>a.bornAt-b.bornAt||a.id.localeCompare(b.id));
