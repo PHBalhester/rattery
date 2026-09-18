@@ -45,7 +45,25 @@ export const CONFIG = {
     burrowHeight: 1080,
   },
 
-  survival: { foodPerDay: 0.0025, waterPerDay: 0.0025, warmthPerDay: 0.0015, buyFood: 0.4, buyWater: 0.4, buyWarmth: 0.2 },
+  // Market -> resource contract. Printed on the site as PUBLIC_MAP, so the
+  // code here is the contract, not a knob to drift from it.
+  //
+  // Buys are deliberately stronger than sells (food 0.5 vs 0.15, a 3.3:1
+  // ratio). A tape with balanced buy/sell dollar volume must therefore trend
+  // toward survival: a colony should die because the market abandoned it, not
+  // because a two-sided order book is quietly net-negative. Sells still bite
+  // and can push resources BELOW the silence floor, down to sellFloor, which
+  // is what makes "big sell -> nest collapse risk" real. Never to zero.
+  //
+  // buyWarmthCap sits under BOTH heat thresholds (0.78 in colonyMetrics, 0.8 in
+  // restingStress) so that support can never itself overheat the habitat. It is
+  // above the old 0.72 so a big buy still reads as a real insulation spike.
+  survival: {
+    foodPerDay: 0.0025, waterPerDay: 0.0025, warmthPerDay: 0.0015,
+    buyFood: 0.5, buyWater: 0.5, buyWarmth: 0.25, buyWarmthCap: 0.76,
+    newHolderFood: 0.02,
+    sellFood: 0.15, sellWater: 0.15, sellWarmth: 0.1, sellFloor: 0.05,
+  },
 
   bio: {
     // Rattus norvegicus, lab-typical, compressed

@@ -10,9 +10,9 @@ export const GIANT_TRADE_USD = BIG_TRADE_USD * 2;
 // Resource depletion below uses simulation days independently.
 const DECAY_PER_S = 0.025;
 // Silence decays food and warmth toward a floor, never to zero, as the public
-// map promises. Sells can still push them lower. At this floor adults still
-// lose energy (break-even food is ~0.44), so a dead tape still starves the
-// nest; it just never reads as an empty world.
+// map promises. Sells push lower still, down to CONFIG.survival.sellFloor. At
+// this floor adults already lose energy (break-even food is ~0.44), so a dead
+// tape starves the nest on its own; it just never reads as an empty world.
 const SILENCE_FLOOR = 0.12;
 
 export function emptyEnv(): WorldEnv {
@@ -49,13 +49,26 @@ export function applyTrade(env: WorldEnv, t: Trade): WorldEnv {
   const elapsed=Math.max(0,t.ts-(env.tradeBudgetAt??t.ts));
   const available=Math.min(1,(env.tradeBudget??1)+elapsed/60000);
   const small=t.usd<50;
-  const intensity=t.side==='buy'?Math.min(.35,t.usd/1000):small?Math.min(.01,t.usd/5000):t.usd<250?.08:t.usd<500?.16:t.usd<1000?.25:.35;
+  // One continuous curve for both sides; the asymmetry lives in the per-side
+  // coefficients below, not in the intensity ladder, so a buy and a sell of
+  // the same size always draw the same amount from the shared budget.
+  const intensity=Math.min(.35,t.usd/1000);
   const effect=Math.min(available,intensity);
+  const S=CONFIG.survival;
+  // Sells push a resource toward sellFloor, which is below SILENCE_FLOOR: a
+  // crash can starve the nest harder than silence does, and still never zeroes
+  // the world. A value already at or under the floor is left alone.
+  const drain=(v:number,rate:number)=>v>S.sellFloor?Math.max(S.sellFloor,v-effect*rate):v;
   next.tradeBudget=available-effect;next.tradeBudgetAt=Math.max(t.ts,env.tradeBudgetAt??t.ts);
   if(t.side==='buy'){
-    next.food=clamp01(next.food+effect*CONFIG.survival.buyFood);next.water=clamp01(next.water+effect*CONFIG.survival.buyWater);
-    next.warmth=Math.max(next.warmth,Math.min(.72,next.warmth+effect*CONFIG.survival.buyWarmth));next.stress=clamp01(next.stress-effect*.05);
-  }else next.stress=clamp01(next.stress+effect*.1);
+    // A new holder is a new foraging niche, as the public map promises.
+    const niche=t.isNewHolder?S.newHolderFood:0;
+    next.food=clamp01(next.food+effect*S.buyFood+niche);next.water=clamp01((next.water??.55)+effect*S.buyWater);
+    next.warmth=Math.max(next.warmth,Math.min(S.buyWarmthCap,next.warmth+effect*S.buyWarmth));next.stress=clamp01(next.stress-effect*.05);
+  }else{
+    next.food=drain(next.food,S.sellFood);next.water=drain(next.water??.55,S.sellWater);
+    next.warmth=drain(next.warmth,S.sellWarmth);next.stress=clamp01(next.stress+effect*.1);
+  }
   // Common small trades never set movement/animation/social drives.
   if(small)return next;
   if(t.ts<(env.nextTradeReactionAt??0))return next;

@@ -33,4 +33,4 @@ Machine-specific handoffs, raw captures and audit artifacts are retained locally
 
 - [Holding recognition](HOLDING-RECOGNITION.md): US$100 current-price threshold, verified 7/30/90-day milestones, caregiver identity, resets and verification limits.
 
-- [Purchase support and survival](SURVIVAL-SUPPORT.md): resource replenishment, lactation calibration and seeded validation.
+- [Purchase support and sell calibration](SURVIVAL-SUPPORT.md): the buy/sell resource contract, the 3.3:1 asymmetry and why it exists, lactation calibration, and validation at both the coarse test step and the live 100ms step.
