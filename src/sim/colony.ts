@@ -330,40 +330,20 @@ export function resumeCycleIfClear(dam: Rat) {
   }
 }
 
-/**
- * Crowding cull, in tiers, until the colony is back under maxAlive:
- *   1. weanlings wandering outside the nest (oldest first)
- *   2. any weanling
- *   3. non-breeding adults (not pregnant, not nursing), oldest first, founders last
- *   4. anyone else old enough to leave the nest
- * Pups are never culled directly (their mothers carry that cost) and a dam is
- * only taken once nothing else is left.
+/** Gradual overcrowding mortality: oldest independent adults first.
+ * Never remove dependent pups, gestating/nursing mothers or the last two adults of either sex.
+ * Temporary excess is preferable to destroying the colony's breeding population.
  */
 export function enforceCap(world: World) {
-  const living = aliveRats(world);
-  let extra = living.length - CONFIG.colony.maxAlive;
-  if (extra <= 0) return;
-
-  const oldestFirst = (a: Rat, b: Rat) => a.bornAt - b.bornAt || (a.id < b.id ? -1 : 1);
-  const breeding = (r: Rat) => !!r.pregnant || r.nursing.length > 0;
-  const isPup = (r: Rat) => r.stage === "neonate" || r.stage === "juvenile";
-
-  const tiers: Rat[][] = [
-    living.filter((r) => r.stage === "weanling" && !inNest(r)).sort(oldestFirst),
-    living.filter((r) => r.stage === "weanling" && inNest(r)).sort(oldestFirst),
-    living
-      .filter((r) => r.stage === "adult" && !breeding(r))
-      .sort((a, b) => Number(a.gen === 0) - Number(b.gen === 0) || oldestFirst(a, b)),
-    living.filter((r) => r.stage === "adult" && breeding(r)).sort(oldestFirst),
-  ];
-  for (const tier of tiers) {
-    for (const r of tier) {
-      if (extra <= 0) return;
-      if (r.deadAt !== null || isPup(r)) continue;
-      kill(world, r, "crowding");
-      extra -= 1;
-    }
-  }
+ const living=aliveRats(world);
+ if(living.length<=CONFIG.colony.maxAlive||world.simDay<(world.nextCrowdingDeathAt??0))return;
+ const adults=living.filter(r=>r.stage==='adult');
+ const males=adults.filter(r=>r.sex==='M').length,females=adults.filter(r=>r.sex==='F').length;
+ const candidates=adults.filter(r=>!r.pregnant&&!r.nursing.length&&!r.retrieving&&(r.sex==='M'?males:females)>2)
+  .sort((a,b)=>a.bornAt-b.bornAt||(a.id<b.id?-1:a.id>b.id?1:0));
+ if(!candidates.length)return;
+ kill(world,candidates[0],'crowding');
+ world.nextCrowdingDeathAt=world.simDay+1/3; // 20 real seconds at the configured simulation clock.
 }
 
 export function createWorld(seed: number = CONFIG.colony.seed): World {

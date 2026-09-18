@@ -162,6 +162,7 @@ export interface WorldEvent {
 export type MemorialRecord=Pick<Rat,"id"|"name"|"sex"|"bornAt"|"deadAt"|"deathCause"|"gen"|"motherId"|"fatherId"|"offspring"|"caregiver"|"residenceDays">;
 
 export interface World {
+  nextCrowdingDeathAt?: number;
   memorial?: Record<string,MemorialRecord>;
   care?: import("./sim/care").CareState;
   demoToken?:{supply:number;balances:Record<string,number>};

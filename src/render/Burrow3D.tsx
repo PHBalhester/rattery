@@ -81,7 +81,7 @@ export default function Burrow3D(){
    gltf.scene.name='Blender habitat';gltf.scene.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true;o.receiveShadow=true;}});
    scene.add(gltf.scene);legacyScenery.visible=false;legacyEnrichment.visible=false;el.dataset.habitat='blender';
   },undefined,()=>{if(!disposed)el.dataset.habitat='fallback';});
-  const assets=new RatAssets(),rats=new Map<string,RatModel>();
+  const assets=new RatAssets(),rats=new Map<string,RatModel>(),deathPoses=new Map<string,{at:number;y:number}>();
   let blenderRats:BlenderRatAssets|undefined;
   BlenderRatAssets.load().then(loaded=>{
     if(disposed){loaded.dispose();return;}blenderRats=loaded;
@@ -116,7 +116,7 @@ export default function Burrow3D(){
    const world=getWorld(),replaying=useStore.getState().feedStatus==='catchup';
    const dt=Math.max(0,Math.min((time-previousTime)/1000,.1));previousTime=time;
    const discontinuity=replaying||wasCatchingUp||world.simDay<previousDay||world.simDay-previousDay>.25;
-   if(world.simDay<previousDay){for(const m of rats.values())m.dispose();rats.clear();}
+   if(world.simDay<previousDay){for(const m of rats.values())m.dispose();rats.clear();deathPoses.clear();}
    previousDay=world.simDay;wasCatchingUp=replaying;
    for(const r of Object.values(world.rats)){
     if(r.deadAt!==null)continue;
@@ -124,8 +124,17 @@ export default function Burrow3D(){
     m.setRenderQuality(quality.level);
     m.sync(displayedRat(r),displayedDay(),dt,time/1000,reduced.matches&&!motionOverride.current,discontinuity,camera);
    }
-   for(const [id,m] of rats)if(!world.rats[id]||world.rats[id].deadAt!==null){m.dispose();rats.delete(id);}
-   const focused=useStore.getState().focusedId,selected=focused?rats.get(focused)?.root:null;
+   for(const [id,m] of rats)if(!world.rats[id]||world.rats[id].deadAt!==null){
+    const deadAt=world.rats[id]?.deadAt??world.memorial?.[id]?.deadAt;
+    if(discontinuity||deadAt==null){m.dispose();rats.delete(id);deathPoses.delete(id);continue;}
+    let pose=deathPoses.get(id);
+    if(!pose){pose={at:time,y:m.root.position.y};deathPoses.set(id,pose);}
+    const age=(time-pose.at)/1000;
+    if(age>=6){m.dispose();rats.delete(id);deathPoses.delete(id);continue;}
+    const fall=reduced.matches?1:Math.min(1,age/.8),ease=fall*fall*(3-2*fall);
+    m.root.rotation.z=Math.PI*.48*ease;m.root.position.y=pose.y+m.root.scale.x*.2*ease;
+   }
+   const focused=useStore.getState().focusedId,selected=focused&&world.rats[focused]?.deadAt===null?rats.get(focused)?.root:null;
    ring.visible=!!selected&&!replaying;
    if(selected&&!replaying){
     overview=false;
