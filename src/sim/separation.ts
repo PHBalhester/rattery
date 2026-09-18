@@ -10,6 +10,7 @@ export function separationDistance(a:Rat,b:Rat,shapes?:Map<Rat,Shape>){
  const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),nx=d?dx/d:1,ny=d?dy/d:0;
  const extent=(r:Rat)=>{const s=shapes?.get(r)??shape(r);const dot=nx*s.hx+ny*s.hy;return Math.sqrt(484*dot*dot+100*Math.max(0,1-dot*dot))*s.scale;};
  const paired=a.socialAction?.partner===b.id&&b.socialAction?.partner===a.id;
+ if(paired&&a.socialAction?.encounter&&b.socialAction?.encounter)return 0;
  return paired?Math.min(18,radius(a)+radius(b)):extent(a)+extent(b);
 }
 // Deterministic positional separation, bounded per tick and constrained to
@@ -29,6 +30,7 @@ export function separateRats(world:World){
   if(d<1e-8){let hash=0;for(const c of a.id+'|'+b.id)hash=(Math.imul(hash,31)+c.charCodeAt(0))>>>0;const angle=(hash%360)*Math.PI/180;dx=Math.cos(angle);dy=Math.sin(angle);d=1;}else{dx/=d;dy/=d;}
   const step=Math.min(1,(minimum-Math.hypot(b.x-a.x,b.y-a.y))*.5);
   const move=(r:Rat,x:number,y:number)=>{
+   if(r.socialAction?.encounter)return false;
    const budget=Math.max(0,3-(spent.get(r.id)??0));if(!budget)return false;
    const vx=x-r.x,vy=y-r.y,len=Math.hypot(vx,vy),factor=Math.min(1,budget/(len||1));
    // Slide along a corridor boundary if the direct separating step is blocked.

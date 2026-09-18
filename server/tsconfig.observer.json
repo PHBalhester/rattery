@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","compilerOptions":{"noEmit":false,"outDir":"../dist-observer","rootDir":".."},"include":["./observer.ts","../scripts/observer.ts"]}

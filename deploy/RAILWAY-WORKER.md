@@ -1,16 +1,16 @@
 # Railway staging worker
 
-The user selected Railway Hobby. This document prepares deployment; it does not create a subscription or service.
+The user selected Railway alongside Cloudflare, Vercel, GoDaddy and the Robinhood public RPC. See STACK-STAGING.md for responsibilities and validation status. This document prepares deployment; it does not create a subscription or service.
 
 ## Service settings
 
 Create one service named rattery-market-staging from the reviewed repository branch. Keep automatic deploys disabled during validation.
 
-- Build: npm ci --ignore-scripts --include=dev && npm run build:worker
+- Builder: Dockerfile.worker (Node 24.16.0, locked npm dependencies, install scripts disabled, non-root runtime). Do not run a second npm ci inside a Railpack build: its mounted cache can cause EBUSY.
 - Start: node dist-worker/scripts/worker.js
 - Node: 24 (the repository engines field pins the major version)
 - Replicas: 1
-- Restart: on failure, maximum 10 retries
+- Restart: on failure, maximum 3 retries
 - Serverless/automatic sleeping: disabled
 - Public networking/domain: none; the worker has no incoming HTTP endpoints
 - Region: as close as possible to the dedicated PostgreSQL database
@@ -23,6 +23,7 @@ Set values through Railway Variables, never in source files or chat logs:
 
 - RATTERY_WORKER_MODE=staging-readonly
 - RATTERY_WORKER_DATABASE_URL: direct PostgreSQL URL for a dedicated database ending in _worker_staging. Use a restricted runtime role, verified TLS and no URL query parameters. Do not use a transaction-pooler hostname.
+- RATTERY_WORKER_DATABASE_CA: optional PEM root certificate from the provisioned PostgreSQL service, obtained over authenticated SSH. This trusts that private CA while retaining certificate/hostname verification. Never copy the CA private key.
 - RATTERY_MARKET_TOKEN: chosen test token, not a payment token
 - RATTERY_MARKET_BIRTH_BLOCK: exact verified factory launch block
 - RATTERY_MARKET_START_BLOCK: explicit first collected block. For a new live demonstration choose a recent confirmed block after measuring RPC head; do not accidentally backfill millions of blocks.

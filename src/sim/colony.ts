@@ -14,12 +14,17 @@ import type {
 import { chance, irange, pick, range, worldRng } from "./rng.js";
 import { ZERO_H, clamp01, lerp } from "./hormones.js";
 
-const SYL = ["ka", "ni", "ro", "ve", "lu", "sa", "mo", "te", "ri", "qo", "ba", "ul", "se", "dra"];
+// Two deterministic draws preserve the simulation RNG cadence. Names may repeat;
+// identity is the rat ID, never a numeric suffix attached to a display name.
+const NAME_POOLS = [
+  ["Emma", "Olivia", "Charlotte", "Amelia", "Sophia", "Grace", "Lily", "Chloe", "Avery", "Riley", "Noah", "Liam", "Oliver", "James", "Henry", "Jack", "Ethan", "Lucas", "Mason", "Logan"],
+  ["Mei", "Lan", "Jing", "Xia", "Ling", "Yan", "Yue", "Hui", "Jia", "Ning", "Wei", "Jun", "Hao", "Ming", "Tao", "Lei", "Chen", "Bo", "Kai", "Rui"],
+];
 const FOUNDERS: { name: string; sex: Sex }[] = [
-  { name: "Mora", sex: "F" },
-  { name: "Nila", sex: "F" },
-  { name: "Kest", sex: "M" },
-  { name: "Rook", sex: "M" },
+  { name: "Emma", sex: "F" },
+  { name: "Mei", sex: "F" },
+  { name: "Oliver", sex: "M" },
+  { name: "Wei", sex: "M" },
 ];
 
 const NEST = { x: 800, y: 520, r: 70 };
@@ -57,10 +62,8 @@ export function stageOf(r: Rat, simDay: number): LifeStage {
   return "adult";
 }
 
-function makeName(rng: () => number, gen: number) {
-  const a = pick(rng, SYL);
-  const b = pick(rng, SYL);
-  return `${a}${b}${gen}`;
+function makeName(rng: () => number) {
+  return pick(rng, pick(rng, NAME_POOLS));
 }
 
 export function pushEvent(world: World, ev: WorldEvent) {
@@ -115,7 +118,7 @@ export function spawnRat(
 ): Rat {
   const r: Rat = {
     id: allocId(world, args.sex),
-    name: args.name ?? makeName(rng, args.gen),
+    name: args.name ?? makeName(rng),
     sex: args.sex,
     bornAt: args.bornAt,
     deadAt: null,
@@ -366,9 +369,9 @@ export function createWorld(seed = CONFIG.colony.seed): World {
     realStartedAt: Date.now(),
     rats: {},
     env: {
-      food: 0.55,
-      warmth: 0.55,
-      water: 0.62,
+      food: 0.68,
+      warmth: 0.60,
+      water: 0.72,
       stress: 0.25,
       dopaminePulse: 0.1,
       lastTradeAt: Date.now(),

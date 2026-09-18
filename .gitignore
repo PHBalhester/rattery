@@ -43,3 +43,10 @@ scripts/render-active-benchmark.json
 !/LICENSE.md
 
 dist-worker/
+
+dist-observer/
+
+dist-payment/
+
+# Private operational handoffs are not public project documentation.
+docs/RETOMADA-*.md

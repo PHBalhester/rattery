@@ -1,5 +1,5 @@
 export type ReadRPC=(method:string,params:unknown[])=>Promise<any>;
-const READ_METHODS=new Set(['eth_chainId','eth_blockNumber','eth_getBlockByNumber','eth_getLogs','eth_getTransactionByHash']);
+const READ_METHODS=new Set(['eth_chainId','eth_blockNumber','eth_getBlockByNumber','eth_getLogs','eth_getTransactionByHash','eth_getTransactionReceipt','eth_call']);
 export async function boundedJSON(url:string,init:RequestInit={},limit=2_000_000,fetcher:typeof fetch=fetch){
  const response=await fetcher(url,{...init,redirect:'error',signal:AbortSignal.timeout(15000)});
  if(!response.ok){await response.body?.cancel();throw Error('Upstream HTTP '+response.status);}

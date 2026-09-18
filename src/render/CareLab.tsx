@@ -72,7 +72,7 @@ export default function CareLab(){
  <label>{tr('Transaction hash (if needed)','交易哈希（如需要）')}<input aria-label="Transaction hash" value={recovery} onChange={e=>setRecovery(e.target.value)} maxLength={66}/></label>
  <button className="chip" disabled={busy||intent.status!=='reserved'} onClick={()=>void recover()}>{tr('Recover payment','恢复支付')}</button></section>:<section>
  <label>{tr('Action','操作')} <select aria-label="Action" value={action} onChange={e=>setAction(e.target.value as CareAction)} disabled={busy}>{Object.entries(labels).map(([key,label])=><option key={key} value={key}>{tr(...label)}</option>)}</select></label>
- {['mint','name'].includes(action)&&<label>{tr('Name','名字')} <input aria-label="Rat name" value={name} maxLength={32} onChange={e=>setName(e.target.value)} disabled={busy}/></label>}
+ {['mint','name'].includes(action)&&<label>{tr('Name','名字')} <input aria-label="Rat name" value={name} maxLength={24} onChange={e=>setName(e.target.value)} disabled={busy}/></label>}
  <p>{CARE_RULES[action].cost.toLocaleString()} {tr('test tokens burned','测试代币销毁')}</p>
  <button className="chip" disabled={busy||rat?.dead||!!(rat?.owner&&rat.owner!==w.account)} onClick={()=>void reserve()}>{tr('Reserve action','预留操作')}</button></section>}
  <button className="chip" disabled={busy} onClick={()=>void run(refresh)}>{tr('Refresh database','刷新数据库')}</button>

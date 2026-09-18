@@ -1,0 +1,9 @@
+{
+  "chainId": 4663,
+  "token": "0xc322305e79337300b59ff48389f8c9a1d9e0de76",
+  "decimals": 18,
+  "birthBlock": 65848849,
+  "curve": "0x0f5d652f31b1221db5cd71f8b0fe4b9bf3b4736b",
+  "launchTransaction": "0x33364fdc7be1d4741ee0defa2e7cae5230be9aea0f7ace1741aed14940ebb7d0",
+  "paymentsEnabled": false
+}

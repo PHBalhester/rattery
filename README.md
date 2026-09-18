@@ -5,7 +5,7 @@
 
 RATTERY is an interactive rat-colony simulation built with React, TypeScript and Three.js. Explore a connected habitat, follow individual residents and observe how resources, social relationships and market events influence life in the colony.
 
-**Status: pre-production.** Browser-wallet connection is available. Production authentication, minting and paid care are **not enabled**. This is a working simulation, not a completed financial service or a scientifically validated animal model.
+**Status: live production.** The shared colony, signed wallet login, native RATTERY burns and paid care are deployed at [rattery.tech](https://rattery.tech). A real paid-care burn has been applied. A real mint remains untested and was deferred until launch. This is an experimental simulation, not a scientifically validated animal model. [Current release notes](docs/PRODUCTION-RELEASE-2026-09-18.md).
 
 [GitHub](https://github.com/PHBalhester/rattery) · [Website](https://rattery.tech) · [X / Twitter](https://x.com/ratterytech) · [Documentation](docs/README.md) · [Security](SECURITY.md)
 
@@ -17,8 +17,9 @@ RATTERY is an interactive rat-colony simulation built with React, TypeScript and
 - English and Chinese interfaces and a distraction-free viewing mode.
 - Deterministic simulation, canonical trade replay and validated snapshots.
 - Read-only Pons V2 market ingestion through server-side chain adapters.
-- Browser-wallet discovery without automatic signing or spending permissions.
-- Demonstration mint/care with fictional accounts and fictional tokens.
+- One-click connection flow: request account access, Robinhood Chain switch and a wallet-confirmed SIWE signature.
+- Persistent mint/care reservations, native burns and receipt reconciliation.
+- Cosmetic holding recognition at US$100: 7/30/90 verified days and caregiver identity. [Rules and limits](docs/HOLDING-RECOGNITION.md).
 
 ## Quick start
 Use Node.js 24 LTS and npm. Python 3 is needed for the publication checker and Blender scripts.
@@ -48,7 +49,7 @@ npm run test:wallet
 The soundtrack is **not distributed** in this repository. See [Assets](docs/ASSETS.md) for optional audio setup and rights. The colony works without audio.
 
 ## Market reactions
-Amounts use a **fixed ETH/USD simulation reference**, not a live price oracle. Reactions depend on individual condition, eligibility, affinity and cooldowns.
+Production trades use recorded historical ETH/USD quotations. Local demonstration replay retains a fixed simulation reference. Reactions depend on individual condition, eligibility, affinity and cooldowns.
 
 | Simulation USD | Buy | Sell |
 | --- | --- | --- |
@@ -61,9 +62,9 @@ Amounts use a **fixed ETH/USD simulation reference**, not a live price oracle. R
 These are simulation rules, not guaranteed visible events. [Full rules and care costs](docs/SIMULATION.md).
 
 ## Wallet and payment boundaries
-Connection uses EIP-6963/EIP-1193 and requests a public address. It does **not** authenticate ownership on a server, approve spending, sign a message or submit a transaction. Disconnecting clears the app connection; wallet-managed permissions are revoked within the wallet.
+Connection uses EIP-6963/EIP-1193. Production requests account access, the Robinhood Chain network (4663), and a SIWE login signature with domain, expiry and a one-use nonce. Login does not approve or transfer tokens. Each paid action separately requests a direct native burn after a server-side reservation; the server verifies the canonical receipt with at least 20 confirmations and applies it at most once. Mint records ownership in the project database, not an NFT.
 
-Demo care spends fictional tokens. The final RATTERY address, server authentication, persistent payment intents and atomic receipt consumption remain release requirements. Never enable production payments by simply changing a UI flag.
+The verified RATTERY contract is `0xc322305e79337300b59ff48389f8c9a1d9e0de76`. Production uses Vercel same-origin proxies and separate Railway services with private PostgreSQL access. Credentials stay in service configuration, never in browser code. Local demonstrations use fictional balances. [Mint/care rules](docs/MINT-CARE-DECISIONS.md).
 
 [Wallet design](docs/WALLET.md) · [Security boundaries](docs/SECURITY-ARCHITECTURE.md)
 
@@ -86,7 +87,8 @@ Configured RPC, explorer and trusted snapshot publisher
 | src/render/ | 3D rendering, motion systems and interface |
 | src/market/ | Feed clients, replay and burn primitives |
 | src/wallet.ts | Browser extension discovery and connection |
-| api/ | Read-only serverless endpoints and chain utilities |
+| api/ | Serverless observation/auth/payment proxies and chain utilities |
+| server/ | Persistence, SIWE, receipts, market collection and residence monitoring |
 | public/models/ | Runtime GLB habitat and rat models |
 | public/fonts/ | Self-hosted fonts and license notices |
 | scripts/ | Tests, replay tools and asset generators |
@@ -98,7 +100,7 @@ Configured RPC, explorer and trusted snapshot publisher
 ## Validation and limitations
 CI covers type checks, production build, controlled simulation/security suites and publication checks. Browser tests and long stress runs are separate. Some historical mainnet tests require local captures intentionally excluded from Git.
 
-There is no claim of an independent security audit, universal frame-rate guarantees or zero bugs. Release work includes persistent payment/authentication services, deployed infrastructure verification, physical mobile/Safari tests, long-term genealogy storage and asset rights review. Tail collision uses approximate colliders rather than full mesh physics.
+There is no claim of an independent security audit, universal frame-rate guarantees or zero bugs. Remaining validation includes the first real mint, an automated offsite backup policy, wider physical-device coverage and a post-graduation holding-price adapter. Tail collision uses approximate colliders rather than full mesh physics.
 
 [Testing](docs/TESTING.md) · [Release checklist](docs/RELEASE.md) · [Roadmap](docs/ROADMAP.md)
 

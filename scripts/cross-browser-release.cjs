@@ -7,6 +7,7 @@ for(const [name,type] of [['chromium',chromium],['firefox',firefox],['webkit',we
  try{
  b=await type.launch({headless:true,timeout:30000});
  const context=await b.newContext({viewport:{width:1280,height:720}}),p=await context.newPage(),errors=[],origins=new Set();
+ await context.addInitScript(()=>localStorage.setItem('rattery:welcome-tour:v1','done'));
  p.setDefaultTimeout(15000);p.setDefaultNavigationTimeout(20000);
  p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>origins.add(new URL(r.url()).origin));
  await p.goto(process.env.RATTERY_TEST_URL||'http://localhost:5173/',{waitUntil:'domcontentloaded'});

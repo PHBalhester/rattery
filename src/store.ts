@@ -1,3 +1,8 @@
+import {mainnetPayments} from './paymentMode';
+import {playActivity} from './sim/playActivity';
+import {wheelToys,diggingToy} from './sim/habitatLayout';
+import type {Rat} from './types';
+import {prepareDemoActivity} from './sim/demoActivity';
 import { create } from "zustand";
 import {localCareLab} from "./localCareGate";
 import { CONFIG } from "./config";
@@ -67,6 +72,7 @@ interface StoreState {
   trades: Trade[]; // newest first, capped at TAPE_CAP for the tape
   feedStatus: FeedStatus;
   chain: ChainState | null;
+  shared: {revision:number;at:number;marketAt:number;marketHalted:boolean}|null;
   catchupPct: number; // 0..100 while phase === "catchup"
   toggleCinema: () => void;
   focus: (id: string | null) => void;
@@ -80,6 +86,7 @@ export const useStore = create<StoreState>((set) => ({
   feedStatus: "idle",
   chain: null,
   catchupPct: 0,
+  shared:null,
   toggleCinema: () => set((s) => ({ cinema: !s.cinema })),
   focus: (id) => set({ focusedId: id }),
 }));
@@ -119,6 +126,7 @@ function pushTape(t: Trade) {
 
 function startDemo() {
   resetWorld();
+  prepareDemoActivity(world);
   phase = "live";
   useStore.setState({ trades: [], focusedId: null, feedStatus: "demo", catchupPct: 100 });
   const holders = new Set<string>();
@@ -245,23 +253,44 @@ function onChain(s: ChainState) {
  * Boot the simulation once. Guarded so React StrictMode's double-mount in dev
  * does not start two loops or two feeds.
  */
-function startSharedObserver(){
- let stopped=false,lastRevision=-1,timer:ReturnType<typeof setTimeout>|undefined,controller:AbortController|undefined;
- useStore.setState({feedStatus:'connecting'});
+let observedPrevious:World|null=null,observedReceived=0,observedDuration=1000;
+/** Presentation interpolation only; it never advances biology or overwrites the snapshot. */
+export function displayedRat(r:Rat):Rat{
+ if(!observedPrevious)return r;const before=observedPrevious.rats[r.id];if(!before)return r;
+ const alpha=Math.min(1,Math.max(0,(performance.now()-observedReceived)/observedDuration));
+ return {...r,x:before.x+(r.x-before.x)*alpha,y:before.y+(r.y-before.y)*alpha};
+}
+export function displayedDay(){if(!observedPrevious)return world.simDay;const alpha=Math.min(1,Math.max(0,(performance.now()-observedReceived)/observedDuration));return observedPrevious.simDay+(world.simDay-observedPrevious.simDay)*alpha;}
+function startSharedObserver(publicObserver=false){
+ let stopped=false,lastRevision=-1,timer:ReturnType<typeof setTimeout>|undefined,controller:AbortController|undefined,lastAt=0,lastRun="";const retiredRuns=new Set<string>();
+ if(publicObserver){world={...createWorld(CONFIG.colony.seed),rats:{}};stopChain=pollChain(chain=>useStore.setState({chain}));}
+ useStore.setState({feedStatus:'connecting',...(publicObserver?{shared:{revision:-1,at:0,marketAt:0,marketHalted:false}}:{})});
  const poll=async()=>{
   controller=new AbortController();
   try{
-   const response=await fetch('/api/colony',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(4000)])});
+   const response=await fetch(publicObserver?'/api/observer':'/api/colony',{...(publicObserver?{method:'GET',credentials:'omit' as const}:{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}),signal:AbortSignal.any([controller.signal,AbortSignal.timeout(8000)])});
    if(!response.ok)throw Error('Snapshot unavailable');
    const snapshot=await response.json();
-   if(!Number.isSafeInteger(snapshot.revision)||!snapshot.world?.rats||!Number.isFinite(snapshot.world.simDay)||typeof snapshot.version!=='string')throw Error('Invalid snapshot');
-   if(!stopped&&snapshot.revision>lastRevision){
-    world=snapshot.world;lastRevision=snapshot.revision;
-    // Observers never tick or apply trades locally. All biology comes from the worker.
-    useStore.setState(s=>({version:s.version+1,feedStatus:'live',catchupPct:100}));
+   if(!Number.isSafeInteger(snapshot.revision)||snapshot.revision<0||!snapshot.world?.rats||!Number.isFinite(snapshot.world.simDay)||typeof snapshot.version!=='string'||!Number.isFinite(snapshot.at))throw Error('Invalid snapshot');
+   if(publicObserver&&(snapshot.protocol!==1||snapshot.colonyId!==(mainnetPayments?'rattery-production-v1':'rattery-staging-market-v1')||snapshot.paymentsEnabled!==mainnetPayments))throw Error('Wrong observation source');
+   const run=typeof snapshot.runId==='string'?snapshot.runId:'legacy';
+   if(retiredRuns.has(run))throw Error('Retired observation');
+   const changedRun=lastRun!==''&&run!==lastRun;
+   if(!changedRun&&snapshot.revision<lastRevision)throw Error('Older observation');
+   if(!stopped){
+    const stale=Date.now()-snapshot.at>15000;
+    if(changedRun||snapshot.revision>lastRevision){
+     observedPrevious=!changedRun&&lastRevision>=0?world:null;observedDuration=Math.min(2000,Math.max(100,snapshot.at-lastAt));observedReceived=performance.now();
+     if(changedRun)retiredRuns.add(lastRun);
+     world=snapshot.world;lastRevision=snapshot.revision;lastAt=snapshot.at;lastRun=run;
+     playActivity.clear();
+     for(const r of Object.values(world.rats)){const e=r.exploration;if(r.deadAt===null&&!r.socialAction&&e&&e.playingUntil&&e.playingUntil>world.simDay)playActivity.set(r.id,{toy:e.route,kind:e.route===diggingToy?'digging':wheelToys.has(e.route)?'wheel':e.route%2===0?'ball':'chewing',since:e.playingUntil-.12,until:e.playingUntil});}
+     useStore.setState(s=>({version:s.version+1,catchupPct:100,...(publicObserver?{trades:snapshot.trades??[],shared:{revision:snapshot.revision,at:snapshot.at,marketAt:snapshot.market?.at??0,marketHalted:!!snapshot.market?.halted}}:{})}));
+    }
+    useStore.setState({feedStatus:stale?'error':'live'});
    }
   }catch{if(!stopped)useStore.setState({feedStatus:'error'});}
-  finally{if(!stopped)timer=setTimeout(poll,500);}
+  finally{if(!stopped)timer=setTimeout(poll,publicObserver&&document.hidden?5000:500);}
  };
  stopFeed=()=>{stopped=true;if(timer)clearTimeout(timer);controller?.abort();};
  void poll();
@@ -270,6 +299,8 @@ function startSharedObserver(){
 export function startEngine() {
   if (started) return;
   started = true;
+  if(mainnetPayments){startSharedObserver(true);return;}
+  if(import.meta.env.VITE_STAGING==='true'&&import.meta.env.VITE_SHARED_OBSERVER==='true'&&new URLSearchParams(location.search).get('view')==='shared-colony'){startSharedObserver(true);return;}
   if(localCareLab&&new URLSearchParams(location.search).get('view')==='shared-colony'){startSharedObserver();return;}
   hiddenAt=document.hidden?Date.now():null;
   document.addEventListener("visibilitychange",onVisibilityChange);

@@ -1,3 +1,4 @@
+import {encounterPose} from '../sim/pairEncounter';
 import {ratGround} from './ratGround';
 import {physique} from '../sim/physique';
 import {type BlenderRatAssets,type BlenderRatVisual} from './BlenderRat';
@@ -107,7 +108,10 @@ function segment(mesh:T.Mesh,a:T.Vector3,b:T.Vector3,radius=1){const delta=b.clo
 export class RatModel {
   root=new T.Group();
   private blender?:BlenderRatVisual;
+  setRenderQuality(level:number){if(this.blender)this.blender.qualityLevel=Math.max(0,Math.min(3,Math.floor(level)));}
   private bodySize=1;
+  private encounterStart=NaN;
+  private encounterSeconds=0;
   attachBlender(assets:BlenderRatAssets){
     if(this.blender)return;
     this.blender=assets.create(this.root.userData.id);for(const child of [...this.root.children])if(child!==this.birthMarker)this.root.remove(child);this.root.add(this.blender.root);
@@ -181,6 +185,7 @@ export class RatModel {
     // Follow displayed travel, including social movement that does not update vx/vy.
     const traveling=!snap&&distance>0.00001;
     if(traveling||velocity>(this.moving?.15:.3)){this.moving=true;this.desiredHeading=velocity>.2?-Math.atan2(r.vy,r.vx):-Math.atan2(dz,dx);}else this.moving=false;
+    if(r.socialAction?.encounter)this.desiredHeading=-r.socialAction.encounter.heading;
     // Finish the last gentle turn even when translation has already stopped.
     const headingDelta=Math.atan2(Math.sin(this.desiredHeading-this.root.rotation.y),Math.cos(this.desiredHeading-this.root.rotation.y));
     this.root.rotation.y+=snap?headingDelta:T.MathUtils.clamp(headingDelta*(1-Math.exp(-8*dt)),-2.4*dt,2.4*dt);
@@ -225,9 +230,19 @@ export class RatModel {
     this.tail.rotation.y=reduced?0:Math.sin(this.phase*.55)*.08*activity;
     for(const leg of this.legs){leg.joint.visible=leg.lower.visible=true;}
     if(this.blender){
+      const encounter=social?.encounter;
+      if(encounter){
+        const seconds=(day-encounter.started)*CONFIG.time.realMsPerSimDay/1000;
+        if(this.encounterStart!==encounter.started||discontinuity||reduced||Math.abs(seconds-this.encounterSeconds)>.3)this.encounterSeconds=seconds;
+        else this.encounterSeconds=Math.min(seconds+CONFIG.time.tickMs/1000,Math.max(seconds,this.encounterSeconds+dt));
+        this.encounterStart=encounter.started;
+      }else this.encounterStart=NaN;
+      const pose=encounter?encounterPose(this.encounterSeconds):undefined;
+
       for(const child of this.root.children)if(child!==this.birthMarker&&child!==this.blender.root)child.visible=false;
       this.blender.root.position.set(0,0,0);this.blender.root.rotation.set(0,0,0);
-      this.blender.update(dt,camera.position.distanceTo(this.root.position)/Math.max(.25,size),activity>.08,Math.max(this.speed,running||digging?.7:0),reduced,discontinuity,age>=CONFIG.bio.eyesOpenDay,!!r.pregnant,!!social,wheel?wheelGround:ratGround,running||digging,running,true);
+      if(pose&&r.sex==='M'){this.blender.root.position.y=pose.y+pose.lift*.7*Math.max(0,encounter!.scale/(size*this.bodySize)-1);this.blender.root.rotation.z=pose.pitch;}
+      this.blender.update(dt,camera.position.distanceTo(this.root.position)/Math.max(.25,size),activity>.08,Math.max(this.speed,running||digging?.7:0),reduced,discontinuity,age>=CONFIG.bio.eyesOpenDay,!!r.pregnant,!!social,wheel?wheelGround:ratGround,running||digging,running,true,pose?{blend:r.sex==='M'?pose.lift:1,frontHeight:r.sex==='M'?pose.frontHeight*encounter!.scale:0,rhythm:reduced?0:r.sex==='M'?pose.rhythm:0}:undefined,r.wellbeing?.isolationDistress??0);
     }
   }
   dispose(){this.blender?.dispose();this.root.removeFromParent();this.root.clear();}

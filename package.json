@@ -59,7 +59,9 @@
     "build:worker": "tsc -p server/tsconfig.worker.json",
     "worker:staging": "node dist-worker/scripts/worker.js",
     "test:market:live": "tsx scripts/market-live-test.ts",
-    "test:worker:runtime": "tsx scripts/worker-runtime-test.ts"
+    "test:worker:runtime": "tsx scripts/worker-runtime-test.ts",
+    "test:encounter": "tsx scripts/encounter-test.ts",
+    "test:render:adaptive": "tsx scripts/adaptive-quality-test.ts && tsx scripts/adaptive-anatomy-test.ts && tsx scripts/foot-matrix-equivalence-test.ts"
   },
   "dependencies": {
     "ethers": "6.17.0",

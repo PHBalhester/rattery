@@ -23,5 +23,5 @@ export function colonyMetrics(world:World){
  const critical=rats.filter(r=>individualStress(r,world.env.stress)>.75).length;
  const thirsty=rats.filter(r=>(r.wellbeing?.hydration??1)<.4).length;
  const conflicts=(world.ecology?.events??[]).filter(e=>e.kind==='conflicts'&&world.simDay-e.day<=1).length;
- return {populationPhase,localZones,mainCause,critical,thirsty,conflicts,history,n,occupancy:load.occupancy,capacity,density,crowdPressure,cohesion,isolation:n?isolated/n:0,nest:n?nest/n:0,hunger,thirst,cold,hot,stress:n?rats.reduce((sum,r)=>sum+individualStress(r,world.env.stress),0)/n:0,playing,closePairs,nursing,pregnant,bonds:bonds.slice(0,5),socialTone};
+ return {populationPhase,localZones,mainCause,critical,thirsty,conflicts,history,n,occupancy:load.occupancy,capacity,density,crowdPressure,cohesion,isolation:n?rats.reduce((sum,r)=>sum+(r.wellbeing?.isolationDistress??0),0)/n:0,nest:n?nest/n:0,hunger,thirst,cold,hot,stress:n?rats.reduce((sum,r)=>sum+individualStress(r,world.env.stress),0)/n:0,playing,closePairs,nursing,pregnant,bonds:bonds.slice(0,5),socialTone};
 }

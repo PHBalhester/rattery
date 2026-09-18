@@ -76,13 +76,9 @@ export class MarketCollector{
   if(anchor.number>safe)throw Error('RPC head behind persisted cursor');
   const end=Math.min(safe,anchor.number+maxBlocks);
   if(end===anchor.number)return {accepted:0,trades:0,through:end,lagBlocks:0};
-  // Fetch bounded headers concurrently and fetch logs only twice per range.
+  // Scan logs first. Persist only event blocks and the end checkpoint.
   const headers=new Map<number,ReturnType<typeof header>>();
-  for(let first=anchor.number+1;first<=end;first+=8){
-   await Promise.all(Array.from({length:Math.min(8,end-first+1)},async(_,i)=>{
-    const n=first+i;headers.set(n,header(await this.rpc('eth_getBlockByNumber',[blockTag(n),false]),n));
-   }));
-  }
+  headers.set(end,header(await this.rpc('eth_getBlockByNumber',[blockTag(end),false]),end));
   const filters=[{address:this.config.curve,topics:[[TOPIC.curveBuy,TOPIC.curveSell]]},{address:this.config.manager,topics:[TOPIC.swapV4,this.config.poolId]}];
   const byBlock=new Map<number,any[]>();
   let count=0;
@@ -90,17 +86,23 @@ export class MarketCollector{
    const logs=await this.rpc('eth_getLogs',[{...filter,fromBlock:blockTag(anchor.number+1),toBlock:blockTag(end)}]);
    if(!Array.isArray(logs)||logs.length>2000)throw Error('Invalid logs response');
    for(const l of logs){
-    const n=quantity(l.blockNumber),b=headers.get(n);if(!b)throw Error('Log outside requested range');
-    logBase(l,b);if(l.address!==filter.address)throw Error('Wrong log emitter');
+    const n=quantity(l.blockNumber);if(n<=anchor.number||n>end)throw Error('Log outside requested range');
+    if(l.address!==filter.address)throw Error('Wrong log emitter');
     const list=byBlock.get(n)??[];list.push(l);byBlock.set(n,list);if(++count>2000)throw Error('Market batch event limit');
    }
+  }
+  const dense=byBlock.size>(end-anchor.number)/2;
+  const needed=dense?Array.from({length:end-anchor.number},(_,i)=>anchor.number+1+i):[...byBlock.keys()];
+  for(const n of needed.sort((a,b)=>a-b)){
+   if(!headers.has(n))headers.set(n,header(await this.rpc('eth_getBlockByNumber',[blockTag(n),false]),n));
+   for(const l of byBlock.get(n)??[])logBase(l,headers.get(n)!);
   }
   const batch:{block:import('./trade-ledger.js').MarketBlock;quote:HistoricalQuote|null}[]=[];
   const quotes=new Map<number,HistoricalQuote|null>();let previous=anchor;
   let trades=0;
-  for(let number=anchor.number+1;number<=end;number++){
+  for(const number of [...headers.keys()].sort((a,b)=>a-b)){
    const b=headers.get(number)!;
-   if(b.parentHash!==previous.hash||b.timestamp<previous.timestamp)throw Error('Noncontiguous RPC headers');
+   if((number===previous.number+1&&b.parentHash!==previous.hash)||b.timestamp<previous.timestamp)throw Error('Noncontiguous RPC headers');
    previous=b;
    const all=byBlock.get(number)??[];
    if(all.length>1000||new Set(all.map(l=>l.logIndex)).size!==all.length)throw Error('Duplicate or excessive logs');
@@ -132,12 +134,15 @@ export class MarketCollector{
    }
    batch.push({block:{...b,events},quote});trades+=events.length;
   }
-  const checked=header(await this.rpc('eth_getBlockByNumber',[blockTag(end),false]),end);
-  if(checked.hash!==headers.get(end)!.hash)throw Error('Block changed during collection');
-  // Recheck the persisted anchor immediately before committing the range.
+  // Check each used event header again; mixed-branch RPC responses cannot commit.
+  // This relies on a consistent canonical RPC, just as log completeness does.
+  for(const [number,b] of dense?[[end,headers.get(end)!] as const]:headers){
+   const checked=header(await this.rpc('eth_getBlockByNumber',[blockTag(number),false]),number);
+   if(checked.hash!==b.hash)throw Error('Block changed during collection');
+  }
   await this.anchor();
-  const result=await this.ledger.ingestRange(batch);
-  return {accepted:result.duplicate?0:batch.length,trades:result.duplicate?0:trades,through:end,lagBlocks:Math.max(0,safe-end)};
+  const result=await this.ledger.ingestScannedRange(anchor,end,batch);
+  return {accepted:result.duplicate?0:end-anchor.number,trades:result.duplicate?0:trades,through:end,lagBlocks:Math.max(0,safe-end)};
  }
 
  async retryPrices(limit=10){

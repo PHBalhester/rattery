@@ -69,3 +69,65 @@
 .colony-app.cinema .topbar .audio-toggle{display:none}
 
 .staging-label{font-size:9px;letter-spacing:.02em;color:#e4c77e}@media(max-width:480px){.staging-label{display:block;font-size:8px}}
+
+/* Keep the experiment disclosure readable without competing with the colony. */
+.colony-app .trade-panel{height:auto;min-height:86px}
+.colony-app .colony-footer{height:auto;min-height:36px;padding:7px 12px;box-sizing:border-box}
+.footer-disclaimer{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-width:0}
+.experiment-label{color:#c4c9cc}.footer-staging{color:#c7b68f}
+.colony-footer nav{flex-shrink:0}
+@media(max-width:780px){.colony-app .colony-footer{align-items:flex-start}.footer-disclaimer{display:grid;gap:3px}.colony-app .panel-deck{bottom:140px}.colony-app .colony-scene .scene-controls{bottom:calc(35vh + 150px)}}
+@media(max-width:480px){.colony-app .colony-footer{padding:7px 8px;font-size:10px}.colony-footer nav{gap:8px}}
+
+/* First-visit guide: restrained, keyboard accessible, and independent of the world. */
+.tour-help{font:inherit;color:#bfc6cc;background:none;border:0;padding:0;cursor:pointer}
+.tour-help:hover{color:#fff}.tour-help:focus-visible{outline:2px solid #88d2a0;outline-offset:4px}
+.welcome-tour{box-sizing:border-box;width:min(390px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;margin:auto;padding:25px;border:1px solid #ffffff30;border-radius:6px;background:#090c0ef2;backdrop-filter:blur(18px);box-shadow:0 20px 80px #0008;color:#edf0ef;font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif;white-space:normal;text-align:left}
+.welcome-tour::backdrop{background:#0005}
+.tour-heading{display:flex;justify-content:space-between;gap:16px;color:#94aca2;font:11px/1.4 monospace;letter-spacing:.12em}
+.welcome-tour h2{font-size:23px;line-height:1.25;font-weight:550;margin:21px 0 12px;color:#f0f4f1;letter-spacing:-.02em}
+.welcome-tour p{margin:0 0 14px;color:#c9d0cc}
+.welcome-tour .tour-detail{color:#95a29b;font-size:12px;padding-left:12px;border-left:2px solid #86cfa04d}
+.tour-dots{display:flex;gap:6px;margin:22px 0}.tour-dots span{width:18px;height:3px;background:#ffffff24;border-radius:2px}.tour-dots .current{background:#9cddb4}
+.tour-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.welcome-tour button{font:inherit;min-height:44px;border-radius:3px;padding:8px 15px;cursor:pointer}
+.tour-skip{background:transparent;border:1px solid transparent;color:#b9c0bb}.tour-next{background:#b7dec4;border:1px solid #b7dec4;color:#0c2115;font-weight:600}
+.tour-skip:hover{background:#ffffff0b}.tour-next:hover{background:#ccebd5}
+.welcome-tour button:focus-visible{outline:2px solid #f4fff8;outline-offset:3px}
+@media(max-width:480px){.welcome-tour{padding:20px}.colony-footer nav{gap:10px}}
+
+.shared-status{position:absolute;left:50%;transform:translateX(-50%);bottom:144px;z-index:8;max-width:calc(100% - 32px);padding:7px 12px;background:#0b1012dc;border:1px solid #ffffff28;color:#d1dbd5;font-size:11px;text-align:center;pointer-events:none}.shared-status strong{color:#e8b776}@media(max-width:780px){.shared-status{bottom:calc(35vh + 155px);width:80%}}
+
+/* Keep alarm text readable: only the signal and border glow breathe slowly. */
+.colony-app .alert-signal{display:inline-block;width:7px;height:7px;margin-right:8px;border-radius:50%;background:#ff737d;vertical-align:middle}
+.colony-app .colony-readout[data-severity=warning] .panel-head{border-bottom:2px solid #cf6464}
+.colony-app .colony-readout[data-severity=critical] .panel-head{border-bottom:2px solid #ff5969;background:#961e2b22}
+.colony-app .alert-banner.critical{animation:colony-alarm-glow 3s ease-in-out infinite}
+.colony-app .alert-banner.critical .alert-signal{animation:colony-alarm-signal 3s ease-in-out infinite}
+.colony-app .colony-readout[data-severity=critical] .colony-state{border-left:3px solid #ff5969;background:linear-gradient(90deg,#8e1e2b22,transparent)}
+.colony-app .alert-list article[data-critical=true] b{color:#ffc2c8}
+.colony-app .token-burn{display:flex;align-items:center;flex-wrap:wrap;gap:5px 8px;color:#d8d2bd;font-size:11px;line-height:1.5;font-variant-numeric:tabular-nums;margin-bottom:4px}
+.colony-app .token-burn strong{color:#f0d99b;font-size:12px}
+.colony-app .token-burn small{color:var(--panel-muted);font-size:10px}
+@keyframes colony-alarm-glow{0%,100%{box-shadow:inset 0 0 0 1px #ff596922}50%{box-shadow:inset 0 0 0 1px #ff596988}}
+@keyframes colony-alarm-signal{0%,100%{opacity:1}50%{opacity:.45}}
+@media(prefers-reduced-motion:reduce){.colony-app .alert-banner.critical,.colony-app .alert-banner.critical .alert-signal{animation:none}}
+
+/* Care actions: readable targets and a clear primary confirmation. */
+.paid-care .chip{min-height:40px;padding:10px 14px;white-space:normal;line-height:1.4;margin:5px 8px 5px 0}
+.paid-care .care-button-row{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 10px}
+.paid-care .care-button-row .chip{margin:0}
+.paid-care label{gap:12px;flex-wrap:wrap}.paid-care select,.paid-care input{min-width:0;max-width:100%;min-height:42px}
+.paid-care .payment-confirmation{padding:14px 0}.paid-care p{line-height:1.6}
+.paid-care .care-refresh{display:block;background:transparent}
+.care-explanation{padding:12px;border-left:2px solid #a4cfb5;background:#a4cfb50a}
+.care-success{padding:10px 12px;border:1px solid #8dcda94a;color:#b6e3c7;background:#18342855}
+.rat-name-label.is-petting{color:#c6ffda!important;border-color:#a9eac1!important;background:#173d2be6!important;animation:pet-feedback 1.8s ease-in-out infinite}
+@keyframes pet-feedback{50%{box-shadow:0 0 14px #a9eac166}}
+@media(prefers-reduced-motion:reduce){.rat-name-label.is-petting{animation:none}}
+.colony-app.cinema .colony-scene .scene-controls{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));right:18px;left:18px;max-width:none;flex-wrap:wrap;gap:8px;z-index:10}
+
+.paid-care .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.paid-care .care-help-button{border-radius:50%;width:32px;min-height:32px;height:32px;padding:0;margin:0;font-size:16px}
+.care-help-dialog{width:min(560px,calc(100vw - 24px))}.care-help-dialog header{display:flex;align-items:center;justify-content:space-between;gap:12px}.care-help-dialog h2{font-size:20px;margin:0}.care-help-dialog::backdrop{background:#0009}
+.care-help-item{padding:14px 0;border-bottom:1px solid #ffffff20}.care-help-item dt{font-weight:700;color:#f5f2e9}.care-help-item dd{margin:6px 0 0;color:#bdc6c0}.care-help-item p{margin:8px 0 0}

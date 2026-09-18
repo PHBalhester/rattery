@@ -13,6 +13,8 @@ export async function runCareBrowserLab(db:Pool,rpc:BurnRPC,wallet:HDNodeWallet,
  await db.query(readFileSync('server/migrations/003_submission_recovery.sql','utf8'));
  await db.query(readFileSync('server/migrations/004_shared_simulation.sql','utf8'));
  await db.query(readFileSync('server/migrations/005_trade_ledger.sql','utf8'));
+ await db.query(readFileSync('server/migrations/009_reconciliation.sql','utf8'));
+ await db.query(readFileSync('server/migrations/010_cancel_unsigned.sql','utf8'));
  process.env.VITE_LOCAL_CARE_LAB='true';process.env.VITE_STAGING='true';
  const origin='http://localhost:18756';
  const auth=new StagingAuth(db,origin),service=new Persistence(db,auth,token,18,rpc);

@@ -18,7 +18,7 @@ export function validateCare(w:World,state:CareState,event:CareEvent){
  if(event.action==='mint'&&owner)throw new Error('Already minted');
  if(event.action==='name'&&!owner)throw new Error('Mint required to name');
  if((state.cooldowns[key(rat.id,event.action)]??0)>event.timestamp)throw new Error('Cooldown active');
- if(['mint','name'].includes(event.action)&&(!event.name||event.name.trim().length<1||[...event.name.trim()].length>32||/[\u0000-\u001f<>]/.test(event.name)))throw new Error('Invalid name');
+ if(['mint','name'].includes(event.action)&&(!event.name||event.name.trim().length<1||[...event.name.trim()].length>24||/[\u0000-\u001f<>]/.test(event.name)))throw new Error('Invalid name');
  if(!['mint','name','feed','water'].includes(event.action)&&(rat.socialAction||rat.retrieving||rat.energy<.2))throw new Error('Rat busy or needs rest');
  if(['play','explore'].includes(event.action)&&!rat.exploration)throw new Error('Exploration unavailable');
  if(event.action==='treat'&&rat.energy>=1)throw new Error('Already satiated');

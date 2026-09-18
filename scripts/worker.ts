@@ -1,3 +1,4 @@
+import {ResidenceWorker} from '../server/residence.js';
 import {Pool} from 'pg';
 import {StagingAuth} from '../server/auth.js';
 import {Persistence} from '../server/persistence.js';
@@ -9,11 +10,12 @@ import {startWorkerRuntime} from '../server/worker-runtime.js';
 import {createWorld} from '../src/sim/colony.js';
 
 async function main(){
- if(process.env.RATTERY_WORKER_MODE!=='staging-readonly')throw Error('Explicit staging worker mode required');
+ const production=process.env.RATTERY_WORKER_MODE==='production';
+ if(!production&&process.env.RATTERY_WORKER_MODE!=='staging-readonly')throw Error('Explicit worker mode required');
  const raw=process.env.RATTERY_WORKER_DATABASE_URL;if(!raw)throw Error('Dedicated staging worker database required');
  const database=new URL(raw);
- if(!['postgres:','postgresql:'].includes(database.protocol)||!database.pathname.endsWith('_worker_staging')||database.search)throw Error('Dedicated worker staging database required, without URL options');
- const pool=new Pool({connectionString:raw,ssl:{rejectUnauthorized:true},max:4,connectionTimeoutMillis:10000,statement_timeout:20000,idle_in_transaction_session_timeout:30000});
+ if(!['postgres:','postgresql:'].includes(database.protocol)||!(production?database.pathname==='/rattery_production':database.pathname.endsWith('_worker_staging'))||database.search)throw Error('Dedicated worker staging database required, without URL options');
+ const pool=new Pool({connectionString:raw,ssl:{rejectUnauthorized:true,...(process.env.RATTERY_WORKER_DATABASE_CA?{ca:process.env.RATTERY_WORKER_DATABASE_CA}:{})},max:4,connectionTimeoutMillis:10000,statement_timeout:20000,idle_in_transaction_session_timeout:30000});
  let stop:(()=>Promise<void>)|undefined;
  const lease=await pool.connect().catch(async()=>{await pool.end();throw Error('Worker database connection failed');});
  try{
@@ -24,10 +26,11 @@ async function main(){
   if(!Number.isSafeInteger(start)||start<1)throw Error('Explicit market start block required');
   const rpc=readOnlyRPC(process.env.RATTERY_MARKET_RPC??'https://rpc.mainnet.chain.robinhood.com/rpc');
   const config=await discoverMarket(rpc,token,birth);
-  const service=new Persistence(pool,new StagingAuth(pool,'https://rattery-staging.vercel.app'),token,18,async()=>{throw Error('Financial execution disabled in market worker');});
+  if(production&&token!=='0xc322305e79337300b59ff48389f8c9a1d9e0de76')throw Error('Wrong production token');
+  const service=new Persistence(pool,new StagingAuth(pool,production?'https://rattery.tech':'https://rattery-staging.vercel.app',Date.now,production?4663:46630),token,18,production?rpc:async()=>{throw Error('Financial execution disabled in market worker');});
   // Migrations are performed separately by an operator, never by runtime credentials.
   const exists=(await pool.query('SELECT id FROM colony_state WHERE id=1')).rowCount;
-  if(!exists){if(process.env.RATTERY_WORKER_BOOTSTRAP!=='new-staging-colony')throw Error('Explicit new-colony bootstrap required');await service.initialize(createWorld());}
+  if(!exists){if(production)throw Error('Production world must be migrated by operator');if(process.env.RATTERY_WORKER_BOOTSTRAP!=='new-staging-colony')throw Error('Explicit new-colony bootstrap required');await service.initialize(createWorld());}
   if(!exists)await service.advanceSimulation();
   const collector=new MarketCollector(new TradeLedger(service,new Set([PRICE_SOURCE])),rpc,config,new HistoricalPrices(pool));
   await collector.start(start-1);
@@ -37,8 +40,9 @@ async function main(){
   process.once('SIGTERM',stopSignal);process.once('SIGINT',stopSignal);
   const databaseFailure=()=>{process.exitCode=1;finish();};
   lease.on('error',databaseFailure);pool.on('error',databaseFailure);
-  stop=startWorkerRuntime(service,collector,event=>console.log(JSON.stringify(event)));
-  console.log(JSON.stringify({event:'worker_started',chainId:4663,financialExecution:false}));
+  const residence=production?new ResidenceWorker(pool,rpc):null;
+  stop=startWorkerRuntime(service,collector,event=>console.log(JSON.stringify(event)),production,residence?()=>residence.poll():undefined);
+  console.log(JSON.stringify({event:'worker_started',chainId:4663,financialExecution:production}));
   await finished;
   const deadline=setTimeout(()=>process.exit(1),25000);deadline.unref();
   await stop();stop=undefined;clearTimeout(deadline);

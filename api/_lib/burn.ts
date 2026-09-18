@@ -14,7 +14,7 @@ export async function verifyBurn(rpc:BurnRPC,hash:string,intent:BurnIntent){
  if(tx.hash?.toLowerCase()!==hash||receipt.transactionHash?.toLowerCase()!==hash||address(tx.from)!==wallet||address(tx.to)!==expected.to||address(receipt.from)!==wallet||address(receipt.to)!==expected.to||tx.input?.toLowerCase()!==expected.data||BigInt(tx.value??'1')!==0n)throw new Error('Burn transaction mismatch');
  if(Number(receipt.status)!==1)throw new Error('Burn reverted');
  const block=Number(receipt.blockNumber),head=Number(await rpc('eth_blockNumber',[]));
- if(!Number.isSafeInteger(block)||block<0||!Number.isSafeInteger(head)||head-block<4)throw new Error('Burn not confirmed');
+ if(!Number.isSafeInteger(block)||block<0||!Number.isSafeInteger(head)||head-block<(intent.chainId===4663?20:4))throw new Error('Burn not confirmed');
  const canonical=await rpc('eth_getBlockByNumber',[receipt.blockNumber,false]);
  const timestamp=Number(canonical?.timestamp)*1000;
  if(!/^0x[0-9a-fA-F]{64}$/.test(canonical?.hash)||canonical.hash.toLowerCase()!==receipt.blockHash?.toLowerCase()||Number(canonical.number)!==block||!Number.isSafeInteger(timestamp)||timestamp<intent.createdAt||timestamp>intent.expiresAt)throw new Error('Burn anchor/time mismatch');

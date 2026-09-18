@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {tokenBurn} from '../src/market/tokenBurn';
+const chain=(supply:number)=>({ok:true,chainId:4663,token:{address:'0xC322305e79337300b59fF48389f8C9A1D9E0de76',supply}});
+assert.deepEqual(tokenBurn(chain(1e9)),{amount:0,percent:0});
+assert.deepEqual(tokenBurn(chain(999_500_000)),{amount:500_000,percent:.05});
+assert.deepEqual(tokenBurn(chain(0)),{amount:1e9,percent:100});
+for(const n of [NaN,Infinity,-1,1e9+1])assert.equal(tokenBurn(chain(n)),null);
+assert.equal(tokenBurn(null),null);
+assert.equal(tokenBurn({...chain(1e9),ok:false}),null);
+assert.equal(tokenBurn({...chain(1e9),chainId:46630}),null);
+assert.equal(tokenBurn({...chain(1e9),token:{address:'0x'+'0'.repeat(40),supply:1e9}}),null);
+console.log('Token burn: supply, partial/full burn, invalid data, wrong token/network passed');

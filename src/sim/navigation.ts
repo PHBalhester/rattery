@@ -1,3 +1,4 @@
+import {courtyardAreas,inCourtyard} from './courtyard.js';
 import {habitatRoutes,lateralRoutes,toyApproaches,obstacles,refugeBlocked,refugePathBlocked} from './habitatLayout.js';
 import {NEST_POS} from './colony.js';
 export type Point={x:number;y:number};
@@ -13,16 +14,18 @@ const segments=edges.flatMap((es,i)=>es.filter(j=>j>i).map(j=>[nodes[i],nodes[j]
 const segmentGrid=new Map<string,typeof segments>();
 for(const pair of segments){const [a,b]=pair;for(let x=Math.floor((Math.min(a.x,b.x)-12)/64);x<=Math.floor((Math.max(a.x,b.x)+12)/64);x++)for(let y=Math.floor((Math.min(a.y,b.y)-12)/64);y<=Math.floor((Math.max(a.y,b.y)+12)/64);y++){const key=`${x}:${y}`;const bucket=segmentGrid.get(key)??[];bucket.push(pair);segmentGrid.set(key,bucket);}}
 /** Conservative walkable corridors, with body clearance from solid toys. */
-export function walkable(p:Point){return Number.isFinite(p.x)&&Number.isFinite(p.y)&&!refugeBlocked(p)&&obstacles.every(o=>Math.hypot(p.x-o.p.x,p.y-o.p.z)>=35)&&(dist(p,NEST_POS)<=NEST_POS.r-10||habitatRoutes.some(r=>Math.hypot(p.x-r[81].x,p.y-r[81].z)<=62)||(segmentGrid.get(`${Math.floor(p.x/64)}:${Math.floor(p.y/64)}`)??[]).some(([a,b])=>segment(p,a,b)<=12));}
+export function walkable(p:Point){return Number.isFinite(p.x)&&Number.isFinite(p.y)&&!refugeBlocked(p)&&obstacles.every(o=>Math.hypot(p.x-o.p.x,p.y-o.p.z)>=35)&&(inCourtyard(p)||dist(p,NEST_POS)<=NEST_POS.r-10||habitatRoutes.some(r=>Math.hypot(p.x-r[81].x,p.y-r[81].z)<=62)||(segmentGrid.get(`${Math.floor(p.x/64)}:${Math.floor(p.y/64)}`)??[]).some(([a,b])=>segment(p,a,b)<=12));}
 export function clearPath(a:Point,b:Point){
  if(!walkable(a)||!walkable(b)||refugePathBlocked(a,b)||obstacles.some(o=>segment({x:o.p.x,y:o.p.z},a,b)<35))return false;
  // The nest/chambers are convex: after solid checks, two interior endpoints
  // imply the whole segment is inside. Preserve exact corridor checks elsewhere.
  if(dist(a,NEST_POS)<=NEST_POS.r-10&&dist(b,NEST_POS)<=NEST_POS.r-10)return true;
+ for(const c of courtyardAreas)if(Math.hypot(a.x-c.x,a.y-c.y)<=c.r&&Math.hypot(b.x-c.x,b.y-c.y)<=c.r)return true;
  for(const route of habitatRoutes){const c=route[81];if(Math.hypot(a.x-c.x,a.y-c.z)<=62&&Math.hypot(b.x-c.x,b.y-c.z)<=62)return true;}
  const dx=b.x-a.x,dy=b.y-a.y,length=dx*dx+dy*dy;if(length<1e-16)return true;
  const intervals:[number,number][]=[];
  const circle=(c:Point,r:number)=>{const x=a.x-c.x,y=a.y-c.y,B=x*dx+y*dy,C=x*x+y*y-r*r,D=B*B-length*C;if(D<0)return;const root=Math.sqrt(D);intervals.push([Math.max(0,(-B-root)/length),Math.min(1,(-B+root)/length)]);};
+ for(const c of courtyardAreas)circle(c,c.r);
  circle(NEST_POS,NEST_POS.r-10);for(const r of habitatRoutes)circle({x:r[81].x,y:r[81].z},62);
  const candidates=new Set<(typeof segments)[number]>();
  for(let x=Math.floor(Math.min(a.x,b.x)/64);x<=Math.floor(Math.max(a.x,b.x)/64);x++)for(let y=Math.floor(Math.min(a.y,b.y)/64);y<=Math.floor(Math.max(a.y,b.y)/64);y++)for(const pair of segmentGrid.get(`${x}:${y}`)??[])candidates.add(pair);
@@ -43,6 +46,10 @@ for(const route of habitatRoutes){const c=route[81];const local:number[]=[];
  const nearby=nodes.map((p,i)=>({p,i})).filter(({p})=>Math.hypot(p.x-c.x,p.y-c.z)<=70&&walkable(p));
  for(const i of local)for(const {p,j} of nearby.map(v=>({p:v.p,j:v.i})))if(i!==j&&dist(nodes[i],p)<=32&&clearPath(nodes[i],p))link(i,j);
 }
+// A sparse courtyard grid joins the existing graph; all links pass the same swept-wall test.
+const courtyardNodes:number[]=[];
+for(let x=500;x<=1100;x+=25)for(let y=525;y<=975;y+=25){const p={x,y};if(inCourtyard(p)&&walkable(p))courtyardNodes.push(add(p));}
+for(const i of courtyardNodes)for(let j=0;j<nodes.length;j++)if(i!==j&&dist(nodes[i],nodes[j])<=38&&clearPath(nodes[i],nodes[j]))link(i,j);
 for(let i=0;i<edges.length;i++)edges[i]=[...new Set(edges[i])].filter(j=>clearPath(nodes[i],nodes[j]));
 /** Map an old guide point inside new scenery to the nearest reachable chamber point. */
 export function safeGuide(p:Point):Point{if(walkable(p))return p;const q=nodes.filter(walkable).reduce<Point|undefined>((best,q)=>!best||dist(p,q)<dist(p,best)?q:best,undefined);return q&&dist(q,p)<60?{...q}:p;}
@@ -52,8 +59,12 @@ export function findPath(a:Point,b:Point):Point[]|null{
  if(clearPath(a,b))return [{x:b.x,y:b.y}];
  const attach=(p:Point)=>nodes.map((q,i)=>({i,d:dist(p,q)})).sort((a,b)=>a.d-b.d).find(v=>edges[v.i].length>0&&clearPath(p,nodes[v.i]))?.i;
  const start=attach(a),end=attach(b);if(start===undefined||end===undefined)return null;
- const costs=nodes.map(()=>Infinity),prev=nodes.map(()=>-1),done=new Set<number>();costs[start]=0;
- while(done.size<nodes.length){let u=-1;for(let i=0;i<nodes.length;i++)if(!done.has(i)&&(u<0||costs[i]<costs[u]))u=i;if(u<0||!Number.isFinite(costs[u]))return null;if(u===end)break;done.add(u);for(const v of edges[u]){const c=costs[u]+dist(nodes[u],nodes[v]);if(c<costs[v]){costs[v]=c;prev[v]=u;}}}
+ const costs=nodes.map(()=>Infinity),prev=nodes.map(()=>-1),heap:{id:number;cost:number}[]=[];
+ const less=(a:{id:number;cost:number},b:{id:number;cost:number})=>a.cost<b.cost||(a.cost===b.cost&&a.id<b.id);
+ const push=(v:{id:number;cost:number})=>{heap.push(v);let i=heap.length-1;while(i){const p=(i-1)>>1;if(!less(heap[i],heap[p]))break;[heap[i],heap[p]]=[heap[p],heap[i]];i=p;}};
+ const pop=()=>{const first=heap[0],last=heap.pop()!;if(heap.length){heap[0]=last;let i=0;for(;;){let child=i*2+1;if(child>=heap.length)break;if(child+1<heap.length&&less(heap[child+1],heap[child]))child++;if(!less(heap[child],heap[i]))break;[heap[i],heap[child]]=[heap[child],heap[i]];i=child;}}return first;};
+ costs[start]=0;push({id:start,cost:0});while(heap.length){const {id:u,cost}=pop();if(cost!==costs[u])continue;if(u===end)break;for(const v of edges[u]){const c=cost+dist(nodes[u],nodes[v]);if(c<costs[v]){costs[v]=c;prev[v]=u;push({id:v,cost:c});}}}
+ if(!Number.isFinite(costs[end]))return null;
  const path:Point[]=[{x:b.x,y:b.y}];for(let i=end;i!==-1;i=prev[i])path.unshift({...nodes[i]});return path;
 }
 export function advance(p:Point,path:Point[],budget=1.2){let remaining=budget;const result={x:p.x,y:p.y};while(path.length&&remaining>0){const target=path[0],d=dist(result,target),step=Math.min(remaining,d);if(d>0){result.x+=(target.x-result.x)/d*step;result.y+=(target.y-result.y)/d*step;}remaining-=step;if(d<=step){path.shift();if(d>0)break;}else break;}return result;}

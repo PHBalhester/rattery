@@ -1,0 +1,18 @@
+{
+  "description": "Approved pre-optimization IK poses; six-decimal quantization, 8 seconds per case; flat/slope/wheel/mating at 30/60/120 FPS",
+  "referenceSourceSha256": "036dfb9777762b5298228eabd9b2a8d811c6eab8e76de48b6efd923ac740c2a1",
+  "cases": {
+    "30-flat": "b6df42e088a5b8754c2f0052862399dd5a678a9a3bf03aa57476a25ea0d31f76",
+    "30-slope": "d1c6ad199b2a64b0e8773b9a2e8fb4de3918afe8682210ab1161c665aa025f24",
+    "30-wheel": "e4c2450a218c8a0cd299bccb221ef9b49cc2333ebd41503a89adc6e71191ff42",
+    "30-mating": "034a9279dc97c06f0599ee3d68c77c3189026a78bde1be0d9154f440cfb2f645",
+    "60-flat": "00d277893ac457f418b2dfce963f9edf56d38ed3157ff3b62680d8e63fe7d4aa",
+    "60-slope": "64351deffc0c14a7f1f86f3b7380e7236ae04cbd6a86411ee8e7120fec5948c0",
+    "60-wheel": "25e1df8e9bbde2e540c56fcf62ea9c5d354915d97c69f28489a574f6a52ba9b8",
+    "60-mating": "0b8834baa21ae18b584b3bf917130da5f0164ee37a482028a89be7de8abad919",
+    "120-flat": "74463a9f25f95e495aba0ad465ce60d0df212207de5ee1a9a8130209945674f4",
+    "120-slope": "bd9842bd43205b8a78f8f886949762c3ccd7fa0cda682891572923172ae77720",
+    "120-wheel": "0207cda8a9b34989264ec9c0bf3563b943ddda8128a58f40958be4b55ec98343",
+    "120-mating": "c09cf1009f62dda9a464deb4d44379a92c9410e38eebfa1ce01a6aa43d6fad1f"
+  }
+}

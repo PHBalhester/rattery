@@ -1,3 +1,4 @@
+import {denWalls} from './courtyard.js';
 import {CatmullRomCurve3,Vector3,MathUtils} from 'three';
 import {NEST_POS as N} from './colony.js';
 import {CONFIG} from '../config.js';
@@ -60,7 +61,7 @@ export function platformHeight(x:number,y:number){
 export const diggingToy=4;
 
 // Blender refuge side sills/posts: x ±.94, width .13, depth1.24, converted at30 units/metre.
-export const refugeWalls=habitatRoutes.flatMap(route=>[-1,1].map(sign=>({x:route[81].x+sign*.94*30,y:route[81].z,halfX:.065*30,halfY:.62*30})));
+export const refugeWalls=[...denWalls,...habitatRoutes.flatMap(route=>[-1,1].map(sign=>({x:route[81].x+sign*.94*30,y:route[81].z,halfX:.065*30,halfY:.62*30})))];
 export const refugeClearance=20; // adult body envelope; the thin flexible tail is excluded.
 export function refugeBlocked(p:{x:number;y:number}){return refugeWalls.some(w=>Math.hypot(Math.max(0,Math.abs(p.x-w.x)-w.halfX),Math.max(0,Math.abs(p.y-w.y)-w.halfY))<refugeClearance);}
 

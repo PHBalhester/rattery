@@ -37,12 +37,17 @@ export class TradeLedger {
  async ingest(block:MarketBlock,quote:HistoricalQuote|null){
   return this.ingestRange([{block,quote}]);
  }
- async ingestRange(batch:{block:MarketBlock;quote:HistoricalQuote|null}[]){
+ async ingestScannedRange(anchor:{number:number;hash:string},end:number,batch:{block:MarketBlock;quote:HistoricalQuote|null}[]){
+  if(!natural(anchor.number)||!hash(anchor.hash)||!natural(end)||end<=anchor.number||end-anchor.number>100||batch.at(-1)?.block.number!==end)throw Error('Invalid scanned range');
+  return this.ingestRange(batch,{anchor,end});
+ }
+ async ingestRange(batch:{block:MarketBlock;quote:HistoricalQuote|null}[],scan?:{anchor:{number:number;hash:string};end:number}){
   if(!Array.isArray(batch)||!batch.length||batch.length>100)throw Error('Invalid market batch');
   let total=0;
   const prepared=batch.map(({block,quote},index)=>{
    if(!natural(block.number)||!natural(block.timestamp)||!hash(block.hash)||!hash(block.parentHash)||!Array.isArray(block.events)||block.events.length>1000)throw Error('Invalid market block');
-   if(index){const previous=batch[index-1].block;if(block.number!==previous.number+1||block.parentHash!==previous.hash||block.timestamp<previous.timestamp)throw Error('Noncontiguous market batch');}
+   if(scan&&(block.number<=scan.anchor.number||block.number>scan.end))throw Error('Block outside scanned range');
+   if(index){const previous=batch[index-1].block;if((scan?block.number<=previous.number:block.number!==previous.number+1)||(block.number===previous.number+1&&block.parentHash!==previous.hash)||block.timestamp<previous.timestamp)throw Error('Noncontiguous market batch');}
    total+=block.events.length;if(total>2000)throw Error('Market batch event limit');
    const events=[...block.events].sort((a,b)=>a.logIndex-b.logIndex);
    const entries=events.map(e=>{
@@ -70,8 +75,9 @@ export class TradeLedger {
    }
    const fresh=prepared.filter(p=>!known.has(p.block.number));
    if(!fresh.length)return {duplicate:true};
-   if(fresh[0].block.number!==Number(stream.last_block)+1)throw Error('Noncontiguous market block');
-   if(fresh[0].block.parentHash!==stream.last_hash||fresh[0].block.timestamp<Number(stream.last_timestamp)){
+   if(scan){if(Number(stream.last_block)!==scan.anchor.number||stream.last_hash!==scan.anchor.hash||fresh.length!==prepared.length)throw Error('Stale scanned range');}
+   else if(fresh[0].block.number!==Number(stream.last_block)+1)throw Error('Noncontiguous market block');
+   if((fresh[0].block.number===Number(stream.last_block)+1&&fresh[0].block.parentHash!==stream.last_hash)||fresh[0].block.timestamp<Number(stream.last_timestamp)){
     await c.query('UPDATE trade_stream SET halted=true WHERE id=1');return {halted:true};
    }
    if(fresh.some(p=>p.block.timestamp>this.service.clock()))throw Error('Future market block');

@@ -1,3 +1,5 @@
+import {encounterPose,ENCOUNTER_SECONDS} from './pairEncounter.js';
+import {physique} from './physique.js';
 import {movementSpeed} from './movementSpeed.js';
 import {CONFIG} from "../config.js";
 import {remember,ecologyState} from './ecology.js';
@@ -54,8 +56,47 @@ export function socialStep(w:World,dt:number,rng:()=>number){
  }
  for(const a of living){
   const action=a.socialAction;if(!action)continue;const b=w.rats[action.partner];if(!b||b.deadAt!==null||b.socialAction?.partner!==a.id){delete a.socialAction;continue;}if(a.id>b.id)continue;
+  if(action.kind==='mating'&&action.encounter){
+   const e=action.encounter,female=a.sex==='F'?a:b,male=a.sex==='M'?a:b;
+   if(w.env.panic>.45||a.energy<.28||b.energy<.28||(a.injury??0)>.5||(b.injury??0)>.5){delete a.socialAction;delete b.socialAction;continue;}
+   const seconds=(w.simDay-e.started)*CONFIG.time.realMsPerSimDay/1000,p=encounterPose(seconds);
+   female.x=e.x;female.y=e.y;
+   male.x=e.x+(p.x*Math.cos(e.heading)-p.z*Math.sin(e.heading))*30*e.scale;
+   male.y=e.y+(p.x*Math.sin(e.heading)+p.z*Math.cos(e.heading))*30*e.scale;
+   a.vx=a.vy=b.vx=b.vy=0;
+   if(seconds>=6&&!e.attempted){
+    e.attempted=true;if(b.socialAction?.encounter)b.socialAction.encounter.attempted=true;
+    tryConceive(w,rng,female,male,.25*w.env.food*female.genome.fertility,w.env);
+   }
+   a.inNest=inNest(a);b.inNest=inNest(b);continue;
+  }
   if(action.kind==='mating')continue;
   if(!eligible(a)||!eligible(b)||(action.kind==='courtship'&&w.env.panic>.45)){delete a.socialAction;delete b.socialAction;continue;}
+  if(action.kind==='courtship'){
+   const female=a.sex==='F'?a:b,male=a.sex==='M'?a:b;
+   if(a.sex===b.sex||relatives(a,b)){delete a.socialAction;delete b.socialAction;continue;}
+   const heading=action.alignment??Math.atan2(female.y-male.y,female.x-male.x),scale=Math.max(physique(a.id),physique(b.id));
+   const initial=encounterPose(0),target={x:female.x+(initial.x*Math.cos(heading)-initial.z*Math.sin(heading))*30*scale,y:female.y+(initial.x*Math.sin(heading)+initial.z*Math.cos(heading))*30*scale};
+   // Only reserve a wide, walkable patch. Narrow passages never disable obstacle rules.
+   const room=[[-48,-18],[-48,18],[20,-18],[20,18]].every(([x,y])=>clearPath(female,{x:female.x+(x*Math.cos(heading)-y*Math.sin(heading))*scale,y:female.y+(x*Math.sin(heading)+y*Math.cos(heading))*scale}));
+   if(distance(a,b)>65||!room){
+    if(distance(a,b)<=65){delete a.socialAction;delete b.socialAction;continue;}
+    const path=action.path??findPath(male,female);if(!path){delete a.socialAction;delete b.socialAction;continue;}
+    action.path=path;
+    const next=advance(male,path,movementSpeed(male,w));male.vx=next.x-male.x;male.vy=next.y-male.y;male.x=next.x;male.y=next.y;male.inNest=inNest(male);female.vx=female.vy=0;continue;
+   }
+   if(!clearPath(male,target)){delete a.socialAction;delete b.socialAction;continue;}
+   action.alignment=heading;
+   const gap=Math.hypot(male.x-target.x,male.y-target.y);
+   if(gap>1){const next=advance(male,[target],movementSpeed(male,w));male.vx=next.x-male.x;male.vy=next.y-male.y;male.x=next.x;male.y=next.y;male.inNest=inNest(male);female.vx=female.vy=0;continue;}
+   // Two reserved pairs must never lock themselves into the same patch.
+   const occupied=living.some(r=>r!==a&&r!==b&&r.socialAction?.encounter&&Math.hypot(r.socialAction.encounter.x-female.x,r.socialAction.encounter.y-female.y)<100*Math.max(scale,r.socialAction.encounter.scale));
+   if(occupied){delete a.socialAction;delete b.socialAction;continue;}
+   const encounter={started:w.simDay,heading,x:female.x,y:female.y,scale};
+   const until=w.simDay+ENCOUNTER_SECONDS*1000/CONFIG.time.realMsPerSimDay;
+   a.socialAction={kind:'mating',partner:b.id,until,encounter};b.socialAction={kind:'mating',partner:a.id,until,encounter:{...encounter}};
+   state.affinities[pairKey(a,b)]=Math.min(1,affinity(w,a,b)+.04);continue;
+  }
   const d=distance(a,b);
   if(d>20||!clearPath(a,b)){
    const path=action.path??findPath(a,b);
@@ -68,14 +109,7 @@ export function socialStep(w:World,dt:number,rng:()=>number){
 
   a.vx=a.vy=b.vx=b.vy=0;
   const key=pairKey(a,b),score=affinity(w,a,b);
-  if(action.kind==='courtship'){
-   if(w.env.panic>.45){delete a.socialAction;delete b.socialAction;continue;}
-   const female=a.sex==='F'?a:b,male=a.sex==='M'?a:b;
-   a.socialAction={kind:'mating',partner:b.id,until:w.simDay+.12};b.socialAction={kind:'mating',partner:a.id,until:w.simDay+.12};
-   state.affinities[key]=Math.min(1,score+.04);
-   // Conception is a single probabilistic attempt, never guaranteed by a trade.
-   tryConceive(w,rng,female,male,.25*w.env.food*female.genome.fertility,w.env);
-  }else if(action.kind==='fight'){
+  if(action.kind==='fight'){
    a.injury=Math.min(.6,(a.injury??0)+dt*.4);b.injury=Math.min(.6,(b.injury??0)+dt*.4);
    state.affinities[key]=Math.max(-1,score-dt*.03);
   }else if(action.kind==='groom'){

@@ -1,15 +1,13 @@
 import type { Trade, WorldEnv } from "../types.js";
+import {CONFIG} from "../config.js";
 import { clamp01 } from "./hormones.js";
 
 export const BIG_TRADE_USD = 500;
 export const GIANT_TRADE_USD = BIG_TRADE_USD * 2;
 
 
-// BALANCE KNOB (not a mechanic). At 0.04 an untraded nest lost ~0.36 food/day,
-// i.e. starved in ~1 day, which is not the "silence slowly starves" the footer
-// promises and makes any sparse tape (like the demo, ~tens of trades/day)
-// collapse before a 21-23d pregnancy can complete. 0.025 keeps silence lethal
-// but on the intended slow timescale. Retune against real Pons volume.
+// Fast mood/market signals retain their original real-time decay.
+// Resource depletion below uses simulation days independently.
 const DECAY_PER_S = 0.025;
 // Silence decays food and warmth toward a floor, never to zero, as the public
 // map promises. Sells can still push them lower. At this floor adults still
@@ -19,9 +17,9 @@ const SILENCE_FLOOR = 0.12;
 
 export function emptyEnv(): WorldEnv {
   return {
-    food: 0.55,
-    warmth: 0.55,
-    water: 0.62,
+    food: 0.68,
+    warmth: 0.60,
+    water: 0.72,
     stress: 0.25,
     dopaminePulse: 0.1,
     lastTradeAt: Date.now(),
@@ -77,14 +75,23 @@ export function applyTrade(env: WorldEnv, t: Trade): WorldEnv {
   return next;
 }
 
+/** Simulation baseline: quiet + adequate resources is calm, deprivation remains stressful. */
+export function restingStress(env:WorldEnv){
+ const hunger=clamp01((.45-env.food)/.45),thirst=clamp01((.45-(env.water??.55))/.45);
+ const temperature=Math.max(clamp01((.38-env.warmth)/.38),clamp01((env.warmth-.8)/.2));
+ return .12+.20*hunger+.22*thirst+.16*temperature;
+}
 export function decayEnv(env: WorldEnv, dtSec: number): WorldEnv {
+  if(!Number.isFinite(dtSec)||dtSec<=0)return env;
   const d = DECAY_PER_S * dtSec;
+  // Resources decline over simulated weeks; reaction/panic decay keeps its existing timing.
+  const days=Math.max(0,dtSec)/(CONFIG.time.realMsPerSimDay/1000);
   return {
     ...env,
-    food: env.food > SILENCE_FLOOR ? Math.max(SILENCE_FLOOR, env.food - d * 0.15) : env.food,
-    warmth: env.warmth > SILENCE_FLOOR ? Math.max(SILENCE_FLOOR, env.warmth - d * 0.12) : env.warmth,
-    water: (env.water ?? 0.55) > SILENCE_FLOOR ? Math.max(SILENCE_FLOOR, (env.water ?? 0.55) - d * 0.13) : (env.water ?? 0.55),
-    stress: clamp01(env.stress * (1 - d * 0.4) + 0.12 * d * 2),
+    food: env.food > SILENCE_FLOOR ? Math.max(SILENCE_FLOOR, env.food - days * .005) : env.food,
+    warmth: env.warmth > SILENCE_FLOOR ? Math.max(SILENCE_FLOOR, env.warmth - days * .003) : env.warmth,
+    water: (env.water ?? 0.55) > SILENCE_FLOOR ? Math.max(SILENCE_FLOOR, (env.water ?? 0.55) - days * .005) : (env.water ?? 0.55),
+    stress: clamp01(env.stress+(restingStress(env)-env.stress)*(-Math.expm1(-d*.4))),
     dopaminePulse: clamp01(env.dopaminePulse - d * 1.2),
     buyPressure: clamp01(env.buyPressure - d * 0.5),
     sellPressure: clamp01(env.sellPressure - d * 0.5),

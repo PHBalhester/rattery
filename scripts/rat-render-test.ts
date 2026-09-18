@@ -11,6 +11,10 @@ rat.vx=rat.vy=0;rat.y+=5;
 let lastHeading=model.root.rotation.y;
 for(let i=0;i<120;i++){model.sync(rat,1,1/60,i/60,false,false,camera);const turn=Math.atan2(Math.sin(model.root.rotation.y-lastHeading),Math.cos(model.root.rotation.y-lastHeading));assert(Math.abs(turn)<=2.4/60+1e-6,"Turn exceeded anatomical limit");lastHeading=model.root.rotation.y;}
 assert(Math.abs(model.root.rotation.y+Math.PI/2)<.1,'Heading should follow visible displacement');
+rat.socialAction={kind:'mating',partner:'test',until:2,encounter:{started:1,heading:Math.PI,x:rat.x,y:rat.y,scale:1}};
+lastHeading=model.root.rotation.y;let accumulatedTurn=0;
+for(let i=0;i<120;i++){model.sync(rat,1+i/3600,1/60,i/60,false,false,camera);const turn=Math.atan2(Math.sin(model.root.rotation.y-lastHeading),Math.cos(model.root.rotation.y-lastHeading));assert(Math.abs(turn)<=2.4/60+1e-6,'Encounter orientation snapped');accumulatedTurn+=Math.abs(turn);lastHeading=model.root.rotation.y;}
+assert(accumulatedTurn>1,'Encounter must smoothly align');
 model.sync(rat,1,1/60,1,true,true,camera);
 model.root.traverse(o=>{for(const n of [...o.position.toArray(),...o.scale.toArray(),...o.quaternion.toArray()])assert(Number.isFinite(n));});
 model.dispose();assets.dispose();console.log('PASS: anatomy at nine zoom distances, social movement heading, reduced motion and finite transforms');

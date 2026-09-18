@@ -1,0 +1,17 @@
+FROM node:24.16.0-bookworm-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts --include=dev
+COPY server ./server
+COPY api ./api
+COPY src ./src
+COPY scripts/observer.ts ./scripts/observer.ts
+RUN npx tsc -p server/tsconfig.observer.json && npm prune --omit=dev --ignore-scripts
+FROM node:24.16.0-bookworm-slim
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=build --chown=node:node /app/package.json ./package.json
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/dist-observer ./dist-observer
+USER node
+CMD ["node","dist-observer/scripts/observer.js"]

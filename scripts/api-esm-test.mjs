@@ -18,3 +18,24 @@ const response={statusCode:0,setHeader(){},end(value){body=JSON.parse(value);}};
 await session({method:'POST',url:'/api/session?op=challenge'},response);
 assert.equal(response.statusCode,404);
 console.log('PASS: compiled authentication adapter imports and fails closed when disabled');
+
+// A custom staging hostname is explicitly enabled, never inferred from an attacker header.
+process.env.VITE_STAGING='true';process.env.RATTERY_AUTH_ENABLED='true';
+for(const configured of ['https://attacker.invalid','https://staging.rattery.tech/']){
+ process.env.RATTERY_AUTH_ORIGIN=configured;
+ await session({method:'POST',url:'/api/session?op=challenge',headers:{host:'staging.rattery.tech'}},response);
+ assert.equal(response.statusCode,503);
+}
+process.env.RATTERY_AUTH_ORIGIN='https://staging.rattery.tech';
+for(const host of ['attacker.invalid','staging.rattery.tech.attacker.invalid','staging.rattery.tech:443',undefined]){
+ await session({method:'POST',url:'/api/session?op=challenge',headers:{host,'x-forwarded-host':'staging.rattery.tech',origin:'https://staging.rattery.tech'}},response);
+ assert.equal(response.statusCode,403);
+}
+for(const host of ['staging.rattery.tech','rattery-staging.vercel.app']){
+ await session({method:'POST',url:'/api/session?op=invalid',headers:{host}},response);
+ assert.equal(response.statusCode,404);
+}
+process.env.RATTERY_AUTH_ORIGIN='https://rattery-staging.vercel.app';
+await session({method:'POST',url:'/api/session?op=invalid',headers:{host:'staging.rattery.tech'}},response);
+assert.equal(response.statusCode,403);
+console.log('PASS: staging domain allowlist, explicit activation and spoofed-host rejection');

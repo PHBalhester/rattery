@@ -58,6 +58,11 @@ export interface Pregnancy {
 }
 
 export interface Rat {
+  /** Public display metadata only; never authorizes care or payments. */
+  minted?: boolean;
+  caregiver?:boolean;
+  residenceDays?:number;
+  petAt?:number;
   careStimulus?:{kind:"prosocial"|"aggression";until:number};
   id: string;
   name: string;
@@ -70,10 +75,10 @@ export interface Rat {
   fatherId: string | null;
   genome: Genome;
   hormones: Hormones;
-  wellbeing?: {acute:number;chronic:number;hydration:number;lastWater:number;cause:string;support:number;crowding:number;zone:number};
+  wellbeing?: {isolationDays?:number;isolationDistress?:number;acute:number;chronic:number;hydration:number;lastWater:number;cause:string;support:number;crowding:number;zone:number};
   injury?: number; // 0..1 injury burden, health = 1 - injury
-  exploration?: {route:number;waypoint:number;restUntil:number;playingUntil?:number;target?:string;path?:{x:number;y:number}[]};
-  socialAction?: { path?: {x:number;y:number}[]; arrived?: boolean;kind: "courtship" | "mating" | "fight" | "groom"; partner: string; until: number};
+  exploration?: {den?:number;denSlot?:number;denUntil?:number;denCooldown?:number;route:number;waypoint:number;restUntil:number;playingUntil?:number;target?:string;path?:{x:number;y:number}[]};
+  socialAction?: { alignment?:number; encounter?: {started:number;heading:number;x:number;y:number;scale:number;attempted?:boolean}; path?: {x:number;y:number}[]; arrived?: boolean;kind: "courtship" | "mating" | "fight" | "groom"; partner: string; until: number};
   energy: number; // 0..1
   heat: number; // 0..1 felt warmth
   x: number;
@@ -153,7 +158,7 @@ export interface WorldEvent {
   extra?: string;
 }
 
-export type MemorialRecord=Pick<Rat,"id"|"name"|"sex"|"bornAt"|"deadAt"|"deathCause"|"gen"|"motherId"|"fatherId"|"offspring">;
+export type MemorialRecord=Pick<Rat,"id"|"name"|"sex"|"bornAt"|"deadAt"|"deathCause"|"gen"|"motherId"|"fatherId"|"offspring"|"caregiver"|"residenceDays">;
 
 export interface World {
   memorial?: Record<string,MemorialRecord>;

@@ -87,6 +87,49 @@ try{
   }
  }finally{await restricted.end();}
  ok('Restricted worker role advances biology and reads prices but cannot access payments/auth or alter tables');
+ // Independent sparse fixtures use the same RPC contract, without public calls.
+ const checkpoint=await db.query('SELECT * FROM trade_stream');
+ let sparseCalls=0,headerCalls=0,endReads=0,eventReads=0,scenario='empty';
+ const sparseRPC=async(method:string,args:any[])=>{
+  sparseCalls++;
+  if(method==='eth_chainId')return '0x1237';
+  if(method==='eth_blockNumber')return blockTag(132);
+  if(method==='eth_getBlockByNumber'){
+   headerCalls++;const n=Number(args[0]);if(n===112)endReads++;if(n===50)eventReads++;
+   return {...block(n),hash:((scenario==='reorg'&&n===112&&endReads>1)||(scenario==='event-reorg'&&n===50&&eventReads>1))?h(999):h(n)};
+  }
+  if(method==='eth_getLogs'){
+   if(scenario==='outage')throw Error('RPC unavailable');
+   if(scenario==='outside')return [log(113,curve,[TOPIC.curveBuy,topic(wallet),topic(wallet)],'0x'+word(1n).repeat(4))];
+   if(scenario==='dense'&&args[0].address===curve)return Array.from({length:100},(_,i)=>log(13+i,curve,[TOPIC.curveBuy,topic(wallet),topic(wallet)],'0x'+word(1n).repeat(4)));
+   if(['mixed','event-reorg'].includes(scenario)&&args[0].address===curve)return [log(50,curve,[TOPIC.curveBuy,topic(wallet),topic(wallet)],'0x'+word(1n).repeat(4))];
+   return [];
+  }
+  throw Error('Unexpected sparse RPC');
+ };
+ const sparse=new MarketCollector(ledger,sparseRPC,config,prices);
+ for(const failure of ['outage','outside','reorg','event-reorg']){
+  scenario=failure;endReads=0;await assert.rejects(sparse.poll(100));
+  assert.equal(Number((await db.query('SELECT last_block FROM trade_stream')).rows[0].last_block),12);
+ }
+ scenario='empty';sparseCalls=0;headerCalls=0;endReads=0;
+ const range=await sparse.poll(100);assert.equal(range.accepted,100);assert.equal(range.trades,0);
+ assert.equal(sparseCalls,8);assert.equal(headerCalls,4);
+ assert.equal(Number((await db.query('SELECT count(*) FROM trade_blocks WHERE block_number>12')).rows[0].count),1);
+ const restart=new MarketCollector(ledger,sparseRPC,config,prices);assert.equal((await restart.poll(100)).accepted,0);
+ // Stale competing ranges cannot advance over a cursor they did not inspect.
+ await assert.rejects(ledger.ingestScannedRange({number:13,hash:h(13)},113,[{block:{number:113,hash:h(113),parentHash:h(112),timestamp:time,events:[]},quote:null}]),/Stale/);
+ await db.query('DELETE FROM trade_blocks WHERE block_number>12');
+ await db.query('UPDATE trade_stream SET last_block=$1,last_hash=$2,last_timestamp=$3',[checkpoint.rows[0].last_block,checkpoint.rows[0].last_hash,checkpoint.rows[0].last_timestamp]);
+ scenario='mixed';endReads=0;sparseCalls=0;
+ assert.equal((await sparse.poll(100)).trades,1);assert.equal(sparseCalls,10);
+ assert.equal(Number((await db.query('SELECT count(*) FROM trade_blocks WHERE block_number>12')).rows[0].count),2);
+ await db.query('DELETE FROM colony_trades WHERE block_number>12');await db.query('DELETE FROM trade_blocks WHERE block_number>12');
+ await db.query('UPDATE trade_stream SET last_block=$1,last_hash=$2,last_timestamp=$3',[checkpoint.rows[0].last_block,checkpoint.rows[0].last_hash,checkpoint.rows[0].last_timestamp]);
+ scenario='dense';sparseCalls=0;endReads=0;assert.equal((await sparse.poll(100)).trades,100);assert.equal(sparseCalls,107);
+ await db.query('DELETE FROM colony_trades WHERE block_number>12');await db.query('DELETE FROM trade_blocks WHERE block_number>12');
+ await db.query('UPDATE trade_stream SET last_block=$1,last_hash=$2,last_timestamp=$3',[checkpoint.rows[0].last_block,checkpoint.rows[0].last_hash,checkpoint.rows[0].last_timestamp]);
+ ok('Sparse scan: 100 empty blocks use 8 RPC calls and one checkpoint; mixed events, restart, stale commits, outage and mid-scan reorg checked');
  mode='anchor';await assert.rejects(collector.poll(1),/anchor/);assert.equal((await db.query('SELECT halted FROM trade_stream')).rows[0].halted,true);
  mode='';await assert.rejects(new MarketCollector(ledger,rpc,config,prices).start(10),/unavailable/);
  await assert.rejects(new MarketCollector(ledger,rpc,config,prices).poll(1),/unavailable/);

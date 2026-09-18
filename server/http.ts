@@ -24,7 +24,7 @@ export function stagingHandler(auth:StagingAuth,service:Persistence|null,clientI
    if(req.url==='/colony/snapshot')return service?send(200,await service.sharedSnapshot()):send(503,{error:'Colony unavailable'});
    if(req.url==='/auth/session'){
     let wallet:string|null=null;try{wallet=await auth.wallet(session);}catch{/* Anonymous or expired. */}
-    return send(200,{wallet,chainId:46630,paymentsEnabled:service!==null});
+    return send(200,{wallet,chainId:auth.chainId,paymentsEnabled:service!==null});
    }
    if(req.url?.startsWith('/care/')&&!service)return send(503,{error:'Payments disabled'});
    if(req.url?.startsWith('/care/')&&req.url!=='/care/overview'){
@@ -53,6 +53,7 @@ export function stagingHandler(auth:StagingAuth,service:Persistence|null,clientI
    }
    if(req.url==='/auth/logout'){await auth.logout(session);res.setHeader('Set-Cookie',cookie('',auth.origin,0));return send(200,{ok:true});}
    if(req.url==='/care/overview')return send(200,await service!.overview(session));
+   if(req.url==='/care/cancel')return send(200,await service!.cancel(session,data.id));
    if(req.url==='/care/begin')return send(200,await service!.beginSubmission(session,data.id));
    if(req.url==='/care/submitted')return send(200,await service!.rememberSubmission(session,data.id,data.hash));
    if(req.url==='/care/reserve')return send(200,await service!.reserve(session,data.requestId,data.ratId,data.action,data.name));
@@ -69,7 +70,7 @@ export function stagingServer(auth:StagingAuth,service:Persistence|null){
 function cookie(token:string,origin:string,age=3600){return 'rattery_session='+token+'; Path=/; HttpOnly; SameSite=Strict; Max-Age='+age+(origin.startsWith('https:')?'; Secure':'');}
 function challengeCookie(value:string,origin:string,age=300){return cookie(value,origin,age).replace('rattery_session=','rattery_challenge=');}
 function parseCookie(value='',name='rattery_session'){return value.split(';').map(x=>x.trim()).find(x=>x.startsWith(name+'='))?.slice(name.length+1)??'';}
-async function body(req:IncomingMessage){
+export async function body(req:IncomingMessage){
  const parsed=(req as IncomingMessage&{body?:unknown}).body;
  if(parsed!==undefined){
   if(Buffer.byteLength(typeof parsed==='string'?parsed:JSON.stringify(parsed))>8192)throw Error('Body too large');

@@ -38,7 +38,7 @@ export const CONFIG = {
 
   colony: {
     seed: 20260911,
-    maxAlive: 80,
+    maxAlive: 110,
     startFemales: 2,
     startMales: 2,
     burrowWidth: 1920,

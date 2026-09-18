@@ -13,7 +13,8 @@ import {ecologyStep} from '../src/sim/ecology.js';
 import {burnCall} from '../src/market/burn.js';
 
 const source='https://rpc.mainnet.chain.robinhood.com/rpc';
-const contractAddress='0x7dbf38976f6d3b9c529e7d9484a71898b409ee6a';
+const contractAddress=(process.env.RATTERY_FORK_TOKEN || '0x7dbf38976f6d3b9c529e7d9484a71898b409ee6a').toLowerCase();
+assert.match(contractAddress,/^0x[0-9a-fA-F]{40}$/,'Invalid fork token');
 const nodeURL='http://127.0.0.1:18755',proxyPort=18754;
 const allowed=new Set(['eth_chainId','eth_blockNumber','eth_getBlockByNumber','eth_getBlockByHash','eth_getBalance','eth_getTransactionCount','eth_getCode','eth_getStorageAt','eth_getProof','eth_gasPrice','net_version','web3_clientVersion','eth_getTransactionByHash','eth_getTransactionReceipt']);
 let readCount=0,blockedUpstreamRequests=0;

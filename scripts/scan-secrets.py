@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Fetch a checksum-pinned official scanner; scan only indexed publication files.
-import hashlib,io,os,subprocess,tarfile,tempfile,urllib.request
+import hashlib,io,os,subprocess,tarfile,tempfile,urllib.request,json
 from pathlib import Path
 VERSION='8.30.1'
 SHA256='551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
@@ -18,5 +18,10 @@ with tempfile.TemporaryDirectory(prefix='rattery-secrets-') as directory:
  source=root/'source';source.mkdir()
  subprocess.run(['git','checkout-index','--all','--prefix='+str(source)+'/'],check=True)
  # Redaction keeps secret contents out of CI logs. No report is uploaded.
- result=subprocess.run([str(executable),'dir',str(source),'--redact','--no-banner'],check=False)
- raise SystemExit(result.returncode)
+ result=subprocess.run([str(executable),'dir',str(source),'--redact','--no-banner','--report-path',str(root/'findings.json')],check=False)
+ if result.returncode:
+  for finding in json.loads((root/'findings.json').read_text()):print(finding.get('File'),finding.get('StartLine'),finding.get('RuleID'))
+  raise SystemExit(result.returncode)
+ # Public repositories expose all reachable commit history, not just the release tree.
+ history=subprocess.run([str(executable),'git','.','--log-opts=--all','--redact','--no-banner'],check=False)
+ raise SystemExit(history.returncode)

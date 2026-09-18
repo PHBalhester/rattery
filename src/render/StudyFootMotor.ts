@@ -11,10 +11,14 @@ export function kneeTarget(hip:T.Vector3,target:T.Vector3,pole:T.Vector3,a:numbe
  bend.normalize();const along=(a*a-b*b+distance*distance)/(2*distance),height=Math.sqrt(Math.max(0,a*a-along*along));
  return {knee:hip.clone().addScaledVector(direction,along).addScaledVector(bend,height),ankle:hip.clone().addScaledVector(direction,distance)};
 }
+// These helpers are used only after the explicit subtree updates below.
+const matrixPosition=new T.Vector3(),matrixScale=new T.Vector3();
+function worldRotation(object:T.Object3D,target:T.Quaternion){object.matrixWorld.decompose(matrixPosition,target,matrixScale);return target;}
+function worldPosition(object:T.Object3D){return new T.Vector3().setFromMatrixPosition(object.matrixWorld);}
 function aim(bone:T.Bone,child:T.Bone,target:T.Vector3){
- const origin=bone.getWorldPosition(V()),current=child.getWorldPosition(V()).sub(origin).normalize(),desired=target.clone().sub(origin).normalize();
- const world=bone.getWorldQuaternion(new T.Quaternion()).premultiply(new T.Quaternion().setFromUnitVectors(current,desired));
- bone.quaternion.copy(bone.parent!.getWorldQuaternion(new T.Quaternion()).invert().multiply(world));bone.updateWorldMatrix(false,true);
+ const origin=worldPosition(bone),current=worldPosition(child).sub(origin).normalize(),desired=target.clone().sub(origin).normalize();
+ const world=worldRotation(bone,new T.Quaternion()).premultiply(new T.Quaternion().setFromUnitVectors(current,desired));
+ bone.quaternion.copy(worldRotation(bone.parent!,new T.Quaternion()).invert().multiply(world));bone.updateWorldMatrix(false,true);
 }
 export class StudyFootMotor{
  private previousOrientation=new T.Quaternion();private previousForward=new T.Vector3(1,0,0);private fast=false;private batch=new Set<string>();private phase=0;private legs:Leg[]=[];private ready=false;private last=V();private velocity=V();
@@ -28,7 +32,7 @@ export class StudyFootMotor{
    this.legs.push({contact:0,support:0,name,upper,lower,foot,rest:[upper.quaternion.clone(),lower.quaternion.clone(),foot.quaternion.clone()],home,pole,footRotation:inverse.clone().multiply(foot.getWorldQuaternion(new T.Quaternion())),anchor:V(),from:V(),to:V(),rotation:new T.Quaternion(),startRotation:new T.Quaternion(),endRotation:new T.Quaternion(),cycle:-1,progress:0,duration:.18,swing:false});
   }
  }
- update(dt:number,ground:Ground,reduced:boolean,reset:boolean,treadmill=0){
+ update(dt:number,ground:Ground,reduced:boolean,reset:boolean,treadmill=0,pose?:{blend:number;frontHeight:number}){
   dt=Math.min(.1,Math.max(0,dt));
   for(const l of this.legs){l.support=0;l.upper.quaternion.copy(l.rest[0]);l.lower.quaternion.copy(l.rest[1]);l.foot.quaternion.copy(l.rest[2]);}
   this.model.updateWorldMatrix(true,true);
@@ -91,12 +95,19 @@ export class StudyFootMotor{
   }
   }
   for(const l of this.legs){
-   const hip=l.upper.getWorldPosition(V()),knee=l.lower.getWorldPosition(V()),ankle=l.foot.getWorldPosition(V());
-   const solved=kneeTarget(hip,l.anchor,l.pole.clone().transformDirection(this.model.matrixWorld),hip.distanceTo(knee),knee.distanceTo(ankle));
+   const hip=worldPosition(l.upper),knee=worldPosition(l.lower),ankle=worldPosition(l.foot);
+   const target=l.anchor.clone();
+   if(pose){
+    const contact=this.model.localToWorld(l.home.clone());
+    contact.y=ground(contact.x,contact.z)+l.home.y*scale+(l.name.startsWith('front')?pose.frontHeight:0);
+    target.lerp(contact,pose.blend);
+   }
+   const solved=kneeTarget(hip,target,l.pole.clone().transformDirection(this.model.matrixWorld),hip.distanceTo(knee),knee.distanceTo(ankle));
    aim(l.upper,l.lower,solved.knee);aim(l.lower,l.foot,solved.ankle);
-   l.foot.quaternion.copy(l.foot.parent!.getWorldQuaternion(new T.Quaternion()).invert().multiply(l.rotation));l.foot.updateWorldMatrix(false,true);
+   l.foot.quaternion.copy(worldRotation(l.foot.parent!,new T.Quaternion()).invert().multiply(l.rotation));l.foot.updateWorldMatrix(false,true);
   }
   this.previousOrientation.copy(orientation);
  }
+ supportState(){return this.legs;}
  diagnostics(){return this.legs.map(l=>({name:l.name,contact:l.contact,support:l.support,swing:l.swing,progress:l.progress,target:l.anchor.toArray(),actual:l.foot.getWorldPosition(V()).toArray()}));}
 }

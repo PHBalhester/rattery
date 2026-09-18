@@ -25,7 +25,7 @@ const path=require('node:path');
   },on:(event,fn)=>(window.walletHandlers[event]??=new Set()).add(fn),removeListener:(event,fn)=>window.walletHandlers[event]?.delete(fn)};
  },{address:wallet.address});
  const url=process.env.RATTERY_TEST_URL||'https://rattery-staging.vercel.app/';
- await page.goto(url);await page.locator('.wallet-trigger').click();
+ await page.goto(url);await page.locator('.wallet-trigger').waitFor();if(await page.locator('.welcome-tour').isVisible())await page.getByRole('button',{name:'Skip',exact:true}).click();await page.locator('.wallet-trigger').click();
  const connect=async()=>{await page.getByRole('button',{name:'Browser wallet',exact:true}).click();await page.getByRole('button',{name:'Sign in with wallet',exact:true}).waitFor();};
  await connect();
  assert(!(await page.evaluate(()=>window.walletCalls)).includes('personal_sign'));

@@ -1,7 +1,7 @@
 import type {Persistence} from './persistence.js';
 import type {MarketCollector} from './market-collector.js';
 /** Non-overlapping loops with bounded exponential backoff and awaited shutdown. */
-export function startWorkerRuntime(service:Persistence,collector:MarketCollector,report:(event:Record<string,unknown>)=>void){
+export function startWorkerRuntime(service:Persistence,collector:MarketCollector,report:(event:Record<string,unknown>)=>void,reconcile=false,residence?:()=>Promise<Record<string,unknown>>){
  let stopping=false;
  const timers=new Set<ReturnType<typeof setTimeout>>(),wakeups=new Set<()=>void>();
  const wait=(ms:number)=>new Promise<void>(resolve=>{
@@ -21,5 +21,7 @@ export function startWorkerRuntime(service:Persistence,collector:MarketCollector
   loop('biology',100,()=>service.advanceSimulation()),
   loop('market',5000,async()=>{const result=await collector.poll(100);const quotes=await collector.retryPrices(10);return {...result,quotesResolved:quotes.resolved};}),
  ];
+ if(residence)tasks.push(loop('residence',60000,residence));
+ if(reconcile)tasks.push(loop('payments',15000,()=>service.reconcileSubmitted(5)));
  return async()=>{stopping=true;for(const done of [...wakeups])done();await Promise.all(tasks);};
 }

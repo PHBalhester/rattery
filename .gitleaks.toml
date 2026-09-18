@@ -1,0 +1,9 @@
+title = "RATTERY publication checks"
+[extend]
+useDefault = true
+
+# Public on-chain contract addresses, not API credentials.
+[[allowlists]]
+description = "Verified public token contract addresses"
+regexTarget = "secret"
+regexes = ["(?i)^0xc322305e79337300b59ff48389f8c9a1d9e0de76$", "(?i)^0x7dbf38976f6d3b9c529e7d9484a71898b409ee6a$", "(?i)^0x30c8562dbb63b3ffd3a4230dc5b370de7e257f50$"]
