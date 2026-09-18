@@ -77,6 +77,7 @@ export interface Rat {
   hormones: Hormones;
   wellbeing?: {isolationDays?:number;isolationDistress?:number;acute:number;chronic:number;hydration:number;lastWater:number;cause:string;support:number;crowding:number;zone:number};
   injury?: number; // 0..1 injury burden, health = 1 - injury
+  maternalNest?: {x:number;y:number;r:number;zone:number};
   exploration?: {waterZone?:number;den?:number;denSlot?:number;denUntil?:number;denCooldown?:number;route:number;waypoint:number;restUntil:number;playingUntil?:number;target?:string;path?:{x:number;y:number}[]};
   socialAction?: { alignment?:number; encounter?: {started:number;heading:number;x:number;y:number;scale:number;attempted?:boolean}; path?: {x:number;y:number}[]; arrived?: boolean;kind: "courtship" | "mating" | "fight" | "groom"; partner: string; until: number};
   energy: number; // 0..1

@@ -1,3 +1,4 @@
+import {familyNest} from './familyNest.js';
 import {courtyardLoop,denSeat} from './courtyard.js';
 import {chooseDen} from './socialDens.js';
 import {movementSpeed} from './movementSpeed.js';
@@ -17,6 +18,14 @@ trips.push(courtyardLoop.map(p=>({...p,toy:false})));
 export function applyHabitatActivity(world:World){
  playActivity.clear();
  const population=Object.values(world.rats).filter(q=>q.deadAt===null).length;
+ // Reserve a whole planned litter before birth; existing nursing families stay together.
+ const familyLoad=zones.slice(0,6).map(()=>0);
+ for(const q of Object.values(world.rats))if(q.deadAt===null){familyLoad[zoneOf(q)<6?zoneOf(q):0]++;if(q.pregnant)familyLoad[q.maternalNest?.zone??0]+=q.pregnant.plannedLitter;}
+ for(const dam of Object.values(world.rats))if(dam.deadAt===null&&dam.pregnant&&!dam.nursing.length&&!dam.maternalNest&&dam.pregnant.dueAt-world.simDay>1&&world.habitatMode!=='basic'){
+  const size=1+dam.pregnant.plannedLitter;
+  const options=zones.slice(1,6).map((z,j)=>({z,i:j+1})).filter(v=>familyLoad[v.i]+size<=v.z.capacity&&findPath(dam,v.z)).sort((a,b)=>familyLoad[a.i]-familyLoad[b.i]||Math.hypot(dam.x-a.z.x,dam.y-a.z.y)-Math.hypot(dam.x-b.z.x,dam.y-b.z.y)||a.i-b.i);
+  if(options.length){const {z,i}=options[0];dam.maternalNest={x:z.x,y:z.y,r:35,zone:i};familyLoad[0]=Math.max(0,familyLoad[0]-size);familyLoad[i]+=size;if(dam.exploration){delete dam.exploration.path;delete dam.exploration.waterZone;}}
+ }
  const occupied=new Set<number>();
  const departures=trips.map(()=>0);for(const r of Object.values(world.rats))if(r.deadAt===null&&r.exploration&&r.exploration.waypoint>0)departures[r.exploration.route]++;
  const counts=zones.map(()=>0);for(const r of Object.values(world.rats))if(r.deadAt===null)counts[zoneOf(r)]++;
@@ -40,7 +49,7 @@ export function applyHabitatActivity(world:World){
     for(const point of path??[]){distance+=Math.hypot(point.x-previous.x,point.y-previous.y);previous=point;}
     return {i,distance:path?distance:Infinity};
    }).filter(v=>Number.isFinite(v.distance)).sort((a,b)=>a.distance-b.distance||a.i-b.i);
-   if(candidates.length)state.waterZone=candidates[0].i;
+   if(r.maternalNest&&(r.nursing.length||r.pregnant))state.waterZone=r.maternalNest.zone;else if(candidates.length)state.waterZone=candidates[0].i;
   }
   const thirsty=state.waterZone!==undefined||hydration<.6;
   const seekingQuiet=(r.wellbeing?.chronic??0)>.5&&!shelter;
@@ -70,7 +79,8 @@ export function applyHabitatActivity(world:World){
    state.waypoint++;
   }
   const angle=hashId(r.id)*2.399963,radius=25+hashId(r.id)%25;
-  const nestPlace={x:NEST_POS.x+Math.cos(angle)*radius,y:NEST_POS.y+Math.sin(angle)*radius,toy:false};
+  const home=familyNest(r),homeRadius=Math.min(radius,home.r*.5);
+  const nestPlace={x:home.x+Math.cos(angle)*homeRadius,y:home.y+Math.sin(angle)*homeRadius,toy:false};
   const target=restingInDen?{...denSeat(state.den!,state.denSlot!),toy:false}:thirsty||seekingQuiet?{...refuge.z,toy:false}:shelter?nestPlace:trips[state.route][state.waypoint];
   const key=restingInDen?`den:${state.den}:${state.denSlot}`:thirsty||seekingQuiet?`resource:${refuge.i}`:shelter?'nest':`${state.route}:${state.waypoint}`;
   r.vx=r.vy=0;

@@ -1,3 +1,4 @@
+import {familyNest} from './familyNest.js';
 import {separateRats} from "./separation.js";
 import {ecologyStep,individualStress} from './ecology.js';
 import {socialStep} from "./social.js";
@@ -42,8 +43,9 @@ function nearestAdultMale(living: Rat[], r: Rat, maxD: number): Rat | null {
 function wander(r: Rat, rng: () => number, attractNest: number, speed: number, jitter = 18) {
   r.vx += (rng() - 0.5) * jitter;
   r.vy += (rng() - 0.5) * jitter;
-  r.vx += (NEST.x - r.x) * attractNest;
-  r.vy += (NEST.y - r.y) * attractNest;
+  const home=familyNest(r);
+  r.vx += (home.x - r.x) * attractNest;
+  r.vy += (home.y - r.y) * attractNest;
   const sp = Math.hypot(r.vx, r.vy) || 1;
   if (sp > speed) {
     r.vx = (r.vx / sp) * speed;
@@ -140,6 +142,7 @@ function neonatalRisk(
 
 /** Pups cannot walk home before their eyes open; mothers fetch them. */
 function pupMovement(r: Rat, rng: () => number) {
+  const NEST=familyNest(r);
   if (r.stage === "neonate") {
     // In the nest they huddle toward the centre; outside it they stay put
     // (cold, and waiting for a retrieval that a rejecting dam will not make).
@@ -155,6 +158,7 @@ function pupMovement(r: Rat, rng: () => number) {
 }
 
 function retrieveStep(world: World, dam: Rat) {
+  const NEST=familyNest(dam);
   dam.retrieving = null;
   if (dam.sex !== "F" || dam.stage !== "adult" || dam.energy < 0.25) return;
   if (dam.hormones.cort >= 0.7) return;

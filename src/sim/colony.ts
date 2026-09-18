@@ -1,3 +1,4 @@
+import {CENTRAL_NEST,familyNest} from './familyNest.js';
 import { CONFIG } from "../config.js";
 import type {
   DeathCause,
@@ -27,7 +28,7 @@ const FOUNDERS: { name: string; sex: Sex }[] = [
   { name: "Wei", sex: "M" },
 ];
 
-const NEST = { x: 800, y: 520, r: 70 };
+const NEST = CENTRAL_NEST;
 export const EVENT_CAP = 300;
 
 function genomeBase(): Genome {
@@ -193,13 +194,13 @@ export function dist(a: { x: number; y: number }, b: { x: number; y: number }) {
 }
 
 export function inNest(r: Rat) {
-  return dist(r, NEST) <= NEST.r + 8;
+  const home=familyNest(r);return dist(r, home) <= home.r + 8;
 }
 
-export function nestJitter(rng: () => number) {
+export function nestJitter(rng: () => number, home=NEST) {
   const ang = rng() * Math.PI * 2;
-  const rad = rng() * (NEST.r * 0.55);
-  return { x: NEST.x + Math.cos(ang) * rad, y: NEST.y + Math.sin(ang) * rad };
+  const rad = rng() * (home.r * (home.zone===0?.55:.35));
+  return { x: home.x + Math.cos(ang) * rad, y: home.y + Math.sin(ang) * rad };
 }
 
 export function tryConceive(
@@ -262,9 +263,10 @@ export function deliverLitter(world: World, rng: () => number, dam: Rat, env: Wo
   dam.postpartumWindow = false;
   dam.hormones.ot = 1;
   dam.hormones.prl = clamp01(dam.hormones.prl + 0.35);
+  const home=familyNest(dam);
   dam.inNest = true;
-  dam.x = lerp(dam.x, NEST.x, 0.6);
-  dam.y = lerp(dam.y, NEST.y, 0.6);
+  dam.x = lerp(dam.x, home.x, 0.6);
+  dam.y = lerp(dam.y, home.y, 0.6);
 
   let live = 0;
   for (let i = 0; i < litterN; i++) {
@@ -272,7 +274,7 @@ export function deliverLitter(world: World, rng: () => number, dam: Rat, env: Wo
       pushEvent(world, { t: world.simDay, kind: "stillbirth", ratId: dam.id });
       continue;
     }
-    const pos = nestJitter(rng);
+    const pos = nestJitter(rng,home);
     const sex: Sex = chance(rng, 0.5) ? "F" : "M";
     const energy = clamp01((flushNow ? 0.75 : 0.58) - (stressedNow ? 0.1 : 0) + (rng() - 0.5) * 0.08);
     const pup = spawnRat(world, rng, {
@@ -289,6 +291,7 @@ export function deliverLitter(world: World, rng: () => number, dam: Rat, env: Wo
       energy,
       stage: "neonate",
     });
+    if(dam.maternalNest)pup.maternalNest={...dam.maternalNest};
     dam.nursing.push(pup.id);
     live += 1;
   }
