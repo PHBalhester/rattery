@@ -13,7 +13,7 @@ export function affinity(w:World,a:Rat,b:Rat){
  let hash=w.seed>>>0;for(const c of key)hash=Math.imul(hash^c.charCodeAt(0),16777619)>>>0;
  return ((hash%201)-100)/100;
 }
-const eligible=(r:Rat)=>r.deadAt===null&&r.stage==='adult'&&!r.pregnant&&!r.nursing.length&&!r.retrieving&&r.energy>.35&&(r.injury??0)<.5;
+const eligible=(r:Rat)=>r.deadAt===null&&r.stage==='adult'&&!r.pregnant&&!r.nursing.length&&!r.retrieving&&r.energy>.35&&(r.injury??0)<.5&&(r.wellbeing?.hydration??1)>=.6&&r.exploration?.waterZone===undefined;
 const distance=(a:Rat,b:Rat)=>Math.hypot(a.x-b.x,a.y-b.y);
 function relatives(a:Rat,b:Rat){return a.motherId===b.id||a.fatherId===b.id||b.motherId===a.id||b.fatherId===a.id||!!(a.motherId&&a.motherId===b.motherId)||!!(a.fatherId&&a.fatherId===b.fatherId);}
 function start(w:World,a:Rat,b:Rat,kind:'courtship'|'fight'|'groom'){

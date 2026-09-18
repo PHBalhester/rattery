@@ -13,3 +13,10 @@ r.wellbeing!.hydration=.35;assert.equal(colonyAlerts(w).find(a=>a.key==='dehydra
 r.wellbeing!.hydration=.15;assert.equal(colonyAlerts(w).find(a=>a.key==='dehydrated')?.critical,true);
 r.nursing=['pup'];r.wellbeing!.hydration=.3;applyHabitatActivity(w);assert.equal(r.exploration!.waterZone,0);
 console.log('PASS early water seeking, stable destination, drink to 85%, JSON resume, maternal nest and severity thresholds');
+
+// A social/separation displacement must invalidate a completed water path.
+r.nursing=[];r.x=NEST_POS.x;r.y=NEST_POS.y+82;r.wellbeing!.hydration=.1;
+r.exploration!.waterZone=0;r.exploration!.target='resource:0';r.exploration!.path=[];
+const before=Math.hypot(r.x-NEST_POS.x,r.y-NEST_POS.y);applyHabitatActivity(w);
+assert((r.exploration!.path?.length??0)>0||Math.hypot(r.x-NEST_POS.x,r.y-NEST_POS.y)<before);
+console.log('PASS displaced rat rebuilds completed water route');

@@ -76,13 +76,15 @@ export function applyHabitatActivity(world:World){
   r.vx=r.vy=0;
   if(!restingInDen&&!shelter&&!thirsty&&!seekingQuiet&&world.simDay<(state.playingUntil??0)){if(wheelToys.has(state.route)){if(occupied.has(state.route)){state.playingUntil=world.simDay;continue;}occupied.add(state.route);}playActivity.set(r.id,{toy:state.route,kind:state.route===diggingToy?'digging':wheelToys.has(state.route)?'wheel':state.route%2===0?'ball':'chewing',since:state.playingUntil!-.12,until:state.playingUntil!});continue;}
   if(!restingInDen&&!shelter&&!thirsty&&!seekingQuiet&&world.simDay<state.restUntil)continue;
-  if(state.target!==key||!state.path){state.path=findPath(r,target)??undefined;state.target=key;}
+  if(state.target!==key||!state.path||(thirsty&&state.path.length===0&&Math.hypot(r.x-target.x,r.y-target.y)>45)){state.path=findPath(r,target)??undefined;state.target=key;}
   if(!state.path)continue; // Legacy positions outside navigable terrain stay put, never snap.
   // The graph's shared nest node is a routing aid, not a required footfall.
   if(state.path.length>1&&Math.hypot(state.path[0].x-NEST_POS.x,state.path[0].y-NEST_POS.y)<1){
    const first=state.path[0],second=state.path[1],exit={x:first.x+(second.x-first.x)*.45,y:first.y+(second.y-first.y)*.45};
    if(clearPath(r,exit)&&clearPath(exit,second))state.path[0]=exit;
   }
+  // Shared waypoints are guides: separation must not prevent two rats from passing them.
+  if(thirsty)while(state.path.length>1&&Math.hypot(r.x-state.path[0].x,r.y-state.path[0].y)<35&&clearPath(r,state.path[1]))state.path.shift();
   const next=advance(r,state.path,movementSpeed(r,world));
   if(!clearPath(r,next)){delete state.path;continue;}
   r.vx=next.x-r.x;r.vy=next.y-r.y;r.x=next.x;r.y=next.y;r.inNest=inNest(r);
