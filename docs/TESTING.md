@@ -36,3 +36,7 @@ Historical mainnet/browser/snapshot-builder suites may require local captured fi
 npm run test:stress, test:robustness and test:robustness:parallel cover longer scenarios. Rendering probes cover contact phases, low FPS and obstacle/wheel clearance. Some historical probes reflect earlier visuals and need review when rendering changes.
 
 Actual wallets, physical Android/iOS, Safari, mobile networks, WebGL loss and long sessions remain release checks. Record versions, hardware, fixtures and limitations. Mock payment tests are not real-payment validation.
+
+## Determinism runtime
+
+The controlled CI determinism check covers 30 simulated days, comparing identical seeds/tapes and a halfway snapshot restore. For the longer 120-day run use `RATTERY_DETERMINISM_DAYS=120 npm run test:determinism` outside the per-suite CI timeout. The previous 120-day default exceeded the local 180-second CI limit; it was not reported as a passing run.

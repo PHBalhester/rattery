@@ -34,7 +34,9 @@ function run(world: World, from: number, to: number, t: ReturnType<typeof tape>)
 // lastTradeAt / realStartedAt come from Date.now() and are display-only.
 const canon = (w: World) => JSON.stringify({ ...w, realStartedAt: 0, env: { ...w.env, lastTradeAt: 0 } });
 
-const N = 120 * 600; // 120 sim-days
+const days=Number(process.env.RATTERY_DETERMINISM_DAYS??30);
+assert(Number.isInteger(days)&&days>=30&&days<=120);
+const N = days * 600; // Bounded CI; set RATTERY_DETERMINISM_DAYS=120 for the long run.
 const t = tape(7, N);
 const a = canon(run(createWorld(CONFIG.colony.seed), 0, N, t));
 const b = canon(run(createWorld(CONFIG.colony.seed), 0, N, t));
