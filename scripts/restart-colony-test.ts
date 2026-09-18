@@ -1,0 +1,52 @@
+import assert from 'node:assert/strict';
+import {Pool} from 'pg';
+import {readFileSync} from 'node:fs';
+import {randomUUID} from 'node:crypto';
+import {restartColony} from '../server/restart-colony.js';
+import {createWorld} from '../src/sim/colony.js';
+import {careState} from '../src/sim/care.js';
+if(!process.env.PGDATABASE?.endsWith('_test'))throw Error('Isolated test database required');
+const schema='restart_'+randomUUID().replaceAll('-',''),admin=new Pool();
+await admin.query('CREATE SCHEMA '+schema);
+const db=new Pool({options:'-c search_path='+schema+',public'});
+try{
+ for(const file of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation','005_trade_ledger','007_engine_history','009_reconciliation','010_cancel_unsigned'])await db.query(readFileSync('server/migrations/'+file+'.sql','utf8'));
+ const world=createWorld();world.care=careState();
+ await db.query('INSERT INTO colony_state(id,world,engine_version,simulation_at,simulation_tick) VALUES(1,$1,$2,1000,55)',[world,'old']);
+ const plan={transitionId:'test-restart-round',expectedRevision:'0',expectedVersion:'old'};
+ await assert.rejects(restartColony(db,plan),/extinct/);
+ world.extinct=true;for(const rat of Object.values(world.rats)){rat.deadAt=1;await db.query('INSERT INTO rat_records(id,name,born_at,dead_at,record) VALUES($1,$2,$3,$4,$5)',[rat.id,rat.name,rat.bornAt,1,rat]);}
+ world.care.burned=5000;world.care.lastSequence=1;
+ const intent=randomUUID(),ratId=Object.keys(world.rats)[0],wallet='0x'+'a'.repeat(40);
+ await db.query("INSERT INTO care_intents(id,wallet,rat_id,request_id,action,cost,units,chain_id,token,created_at,expires_at,status) VALUES($1,$2,$3,$4,'pet',5000,5000,46630,$2,1,2,'applied')",[intent,wallet,ratId,randomUUID()]);
+ await db.query("INSERT INTO care_events(intent_id,event,created_at) VALUES($1,$2,1)",[intent,{sequence:1}]);
+ await db.query("INSERT INTO burn_receipts(receipt_key,intent_id,chain_id,token,tx_hash,evidence) VALUES('receipt',$1,46630,$2,'hash','{}')",[intent,wallet]);
+ world.care.owners[ratId]=wallet;
+ await db.query('INSERT INTO rat_ownership(rat_id,wallet,mint_intent) VALUES($1,$2,$3)',[ratId,wallet,intent]);
+ await db.query('UPDATE colony_state SET world=$1',[world]);
+ const before=(await db.query('SELECT * FROM colony_state')).rows;
+ const lease=await db.connect();await lease.query('SELECT pg_advisory_lock(4663,20260916)');
+ await assert.rejects(restartColony(db,plan),/Stop worker/);await lease.query('SELECT pg_advisory_unlock(4663,20260916)');lease.release();
+ await assert.rejects(restartColony(db,{...plan,expectedRevision:'1'}),/Stale/);
+ await db.query("UPDATE care_intents SET status='review'");await assert.rejects(restartColony(db,plan),/pending/);await db.query("UPDATE care_intents SET status='applied'");
+ const preview=await restartColony(db,plan,()=>5000);assert.equal(preview.committed,false);
+ assert.deepEqual((await db.query('SELECT * FROM colony_state')).rows,before);
+ assert.equal((await db.query('SELECT count(*) FROM colony_engine_history')).rows[0].count,'0');
+ // Force a failure after archive insertion; every earlier write must roll back.
+ await db.query("ALTER TABLE rat_records ADD CONSTRAINT test_reject_fresh CHECK(dead_at IS NOT NULL)");
+ await assert.rejects(restartColony(db,{...plan,commit:true},()=>5000));
+ assert.deepEqual((await db.query('SELECT * FROM colony_state')).rows,before);
+ assert.equal((await db.query('SELECT count(*) FROM colony_engine_history')).rows[0].count,'0');
+ await db.query('ALTER TABLE rat_records DROP CONSTRAINT test_reject_fresh');
+ const result=await restartColony(db,{...plan,commit:true},()=>5000);assert.equal(result.founders,4);
+ const row=(await db.query('SELECT * FROM colony_state')).rows[0];
+ assert.equal(row.simulation_tick,'55');assert.equal(row.simulation_at,'5000');assert.equal(row.world.simDay,0);
+ assert.deepEqual(row.world.care,world.care);assert.equal(Object.values(row.world.rats).length,4);
+ for(const id of Object.keys(row.world.rats))assert.ok(!world.rats[id]);
+ assert.equal((await db.query('SELECT count(*) FROM rat_records')).rows[0].count,'8');
+ assert.equal((await db.query('SELECT count(*) FROM burn_receipts')).rows[0].count,'1');
+ assert.equal((await db.query('SELECT rat_id FROM rat_ownership')).rows[0].rat_id,ratId);
+ assert.deepEqual((await db.query('SELECT world FROM colony_engine_history')).rows[0].world,world);
+ await assert.rejects(restartColony(db,{...plan,commit:true}),/Stale/);
+ console.log('PASS: living colony, lease, stale plan, pending payment, dry run, mid-transaction rollback, unique IDs, care/receipt/archive preservation, repeated commit');
+}finally{await db.end();await admin.query('DROP SCHEMA '+schema+' CASCADE');await admin.end();}

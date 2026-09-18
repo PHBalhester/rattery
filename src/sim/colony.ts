@@ -363,7 +363,7 @@ export function enforceCap(world: World) {
   }
 }
 
-export function createWorld(seed = CONFIG.colony.seed): World {
+export function createWorld(seed: number = CONFIG.colony.seed): World {
   const world: World = {
     simDay: 0,
     realStartedAt: Date.now(),
