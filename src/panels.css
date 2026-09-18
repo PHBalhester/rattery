@@ -140,3 +140,6 @@
  .colony-app:not(.cinema) .panel-deck .colony-panel{bottom:auto}
  .colony-app:not(.cinema) .colony-scene .scene-controls{bottom:calc(35vh + var(--bottom-chrome,150px) + 10px)}
 }
+
+.colony-app .condition-metric[data-level=warning] i{background:var(--attention)}
+.colony-app .condition-metric[data-level=warning] small{color:var(--attention)}

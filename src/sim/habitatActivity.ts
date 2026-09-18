@@ -20,6 +20,8 @@ export function applyHabitatActivity(world:World){
  const occupied=new Set<number>();
  const departures=trips.map(()=>0);for(const r of Object.values(world.rats))if(r.deadAt===null&&r.exploration&&r.exploration.waypoint>0)departures[r.exploration.route]++;
  const counts=zones.map(()=>0);for(const r of Object.values(world.rats))if(r.deadAt===null)counts[zoneOf(r)]++;
+ // Count committed departures once, so successive ticks do not send the whole nest away.
+ for(const r of Object.values(world.rats))if(r.deadAt===null&&r.exploration?.den!==undefined&&(r.exploration.denUntil??0)>world.simDay&&zoneOf(r)<7)counts[zoneOf(r)]--;
  for(const r of Object.values(world.rats)){
   if(r.deadAt!==null||r.stage==='neonate'||r.stage==='juvenile')continue;
   const recovery=recoverPosition(r,movementSpeed(r,world));
@@ -34,9 +36,9 @@ export function applyHabitatActivity(world:World){
 
   const enriched=world.habitatMode!=='basic';
   if(state.den!==undefined&&(shelter||thirsty||!enriched)){delete state.den;delete state.denSlot;delete state.path;state.denCooldown=world.simDay+.5;}
-  if(enriched&&!shelter&&!thirsty&&state.den===undefined&&world.simDay>=(state.denCooldown??0)&&(population>=40||r.energy<.55||(r.wellbeing?.isolationDistress??0)>.2)){
+  if(enriched&&!shelter&&!thirsty&&state.den===undefined&&world.simDay>=(state.denCooldown??0)&&(counts[zoneOf(r)]/zones[zoneOf(r)].capacity>=.7||population>=40||r.energy<.55||(r.wellbeing?.isolationDistress??0)>.2)){
    const den=chooseDen(world,r);state.denCooldown=world.simDay+.25;
-   if(den){state.den=den.index;state.denSlot=den.slot!;state.denUntil=world.simDay+1.5;delete state.path;state.playingUntil=world.simDay;}
+   if(den){counts[zoneOf(r)]=Math.max(0,counts[zoneOf(r)]-1);state.den=den.index;state.denSlot=den.slot!;state.denUntil=world.simDay+1.5;delete state.path;state.playingUntil=world.simDay;}
   }
   const restingInDen=state.den!==undefined;
 
