@@ -50,3 +50,9 @@ dist-payment/
 
 # Private operational handoffs are not public project documentation.
 docs/RETOMADA-*.md
+
+# Kept out of the public repo on purpose: the first describes the defensive
+# design and the second carries deployment identifiers and incident detail.
+# Neither is a credential, and both remain in git history before this commit.
+docs/SECURITY-ARCHITECTURE.md
+docs/SPARSE-COLLECTOR.md

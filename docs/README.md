@@ -6,7 +6,6 @@
 | [Configuration](CONFIGURATION.md) | Setup, server environment and API |
 | [Simulation](SIMULATION.md) | Trade tiers, care and ownership |
 | [Wallet](WALLET.md) | Connection, SIWE proposal and payment prerequisites |
-| [Security](SECURITY-ARCHITECTURE.md) | Threat model and publication controls |
 | [Testing](TESTING.md) | Checks and fixture requirements |
 | [Operations](OPERATIONS.md) | Deployment, snapshots and recovery |
 | [Assets](ASSETS.md) | Blender, models, fonts and audio |

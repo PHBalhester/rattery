@@ -66,7 +66,7 @@ Connection uses EIP-6963/EIP-1193. Production requests account access, the Robin
 
 The verified RATTERY contract is `0xc322305e79337300b59ff48389f8c9a1d9e0de76`. Production uses Vercel same-origin proxies and separate Railway services with private PostgreSQL access. Credentials stay in service configuration, never in browser code. Local demonstrations use fictional balances. [Mint/care rules](docs/MINT-CARE-DECISIONS.md).
 
-[Wallet design](docs/WALLET.md) · [Security boundaries](docs/SECURITY-ARCHITECTURE.md)
+[Wallet design](docs/WALLET.md)
 
 ## Architecture
 ```text
