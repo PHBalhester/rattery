@@ -65,7 +65,7 @@
   },
   "dependencies": {
     "ethers": "6.17.0",
-    "framer-motion": "^11.11.17",
+    "framer-motion": "^13.3.0",
     "pg": "8.23.0",
     "pixi.js": "^8.6.6",
     "react": "^19.0.0",
