@@ -131,3 +131,12 @@
 .paid-care .care-help-button{border-radius:50%;width:32px;min-height:32px;height:32px;padding:0;margin:0;font-size:16px}
 .care-help-dialog{width:min(560px,calc(100vw - 24px))}.care-help-dialog header{display:flex;align-items:center;justify-content:space-between;gap:12px}.care-help-dialog h2{font-size:20px;margin:0}.care-help-dialog::backdrop{background:#0009}
 .care-help-item{padding:14px 0;border-bottom:1px solid #ffffff20}.care-help-item dt{font-weight:700;color:#f5f2e9}.care-help-item dd{margin:6px 0 0;color:#bdc6c0}.care-help-item p{margin:8px 0 0}
+
+/* Reserve the measured tape + disclosure height, including translated wrapping. */
+.colony-app:not(.cinema) .colony-scene .scene-controls{bottom:var(--bottom-chrome,150px);gap:8px}
+.colony-app:not(.cinema) .condition-panel,.colony-app:not(.cinema) .lineage-panel{bottom:var(--bottom-chrome,150px)}
+@media(max-width:780px){
+ .colony-app:not(.cinema) .panel-deck{bottom:var(--bottom-chrome,150px)}
+ .colony-app:not(.cinema) .panel-deck .colony-panel{bottom:auto}
+ .colony-app:not(.cinema) .colony-scene .scene-controls{bottom:calc(35vh + var(--bottom-chrome,150px) + 10px)}
+}

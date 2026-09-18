@@ -1,7 +1,7 @@
 import TokenBurn from './render/TokenBurn';
 import WelcomeTour from './render/WelcomeTour';
 import {tr,useLanguage} from './i18n';
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getWorld, startEngine, useCA, useStore } from "./store";
 import Burrow from "./render/Burrow3D";
 import ColonyPanel from "./render/ColonyPanel";
@@ -15,6 +15,21 @@ import { truncateCA } from "./copy/pons";
 
 
 export default function App() {
+  const appRef = useRef<HTMLDivElement>(null);
+  const tapeRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const app = appRef.current, tape = tapeRef.current;
+    if (!app || !tape) return;
+    const measure = () => {
+      const bottom = parseFloat(getComputedStyle(tape).bottom) || 0;
+      app.style.setProperty('--bottom-chrome', `${Math.ceil(tape.getBoundingClientRect().height + bottom + 12)}px`);
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(tape);
+    window.addEventListener('resize', measure);
+    measure();
+    return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
+  }, []);
   const {language,setLanguage}=useLanguage();
   useEffect(()=>{document.documentElement.lang=language==='zh'?'zh-Hans':'en';},[language]);
   const staging = import.meta.env.VITE_STAGING === "true";
@@ -44,7 +59,7 @@ export default function App() {
   };
 
   return (
-    <div className={`app colony-app${cinema ? " cinema" : ""}`}>
+    <div ref={appRef} className={`app colony-app${cinema ? " cinema" : ""}`}>
       <main className="colony-viewport" id="observatory">
         <section className="colony-scene" aria-label="Colony observatory">
           <Burrow />
@@ -90,7 +105,7 @@ export default function App() {
           <span>{tr('Drag to orbit · select a rat','拖动旋转视角 · 选择大鼠')}</span>
         </div>
 
-        <div className="tape-wrap floating-panel trade-panel"><TradeTape /><footer className="colony-footer"><div className="footer-disclaimer"><TokenBurn /><span className="experiment-label">{tr("RATTERY · A digital colony experiment.","RATTERY · 数字群落实验。")}</span><span>{tr("Simulated behavior, not scientific measurements.","行为为模拟，并非科学测量结果。")}</span>{staging&&<span className="footer-staging">{shared?tr("STAGING · Shared observation · No real payments","测试环境 · 共享观察 · 无真实支付"):tr("STAGING · Demo only · No real payments","测试环境 · 仅演示 · 无真实支付")}</span>}</div><nav aria-label={tr("Project links","项目链接")}><WelcomeTour /><a href={SITE.x} target="_blank" rel="noopener noreferrer">X / Twitter</a><a href={SITE.github} target="_blank" rel="noopener noreferrer">GitHub</a></nav></footer></div>
+        <div ref={tapeRef} className="tape-wrap floating-panel trade-panel"><TradeTape /><footer className="colony-footer"><div className="footer-disclaimer"><TokenBurn /><span className="experiment-label">{tr("RATTERY · A digital colony experiment.","RATTERY · 数字群落实验。")}</span><span>{tr("Simulated behavior, not scientific measurements.","行为为模拟，并非科学测量结果。")}</span>{staging&&<span className="footer-staging">{shared?tr("STAGING · Shared observation · No real payments","测试环境 · 共享观察 · 无真实支付"):tr("STAGING · Demo only · No real payments","测试环境 · 仅演示 · 无真实支付")}</span>}</div><nav aria-label={tr("Project links","项目链接")}><WelcomeTour /><a href={SITE.x} target="_blank" rel="noopener noreferrer">X / Twitter</a><a href={SITE.github} target="_blank" rel="noopener noreferrer">GitHub</a></nav></footer></div>
       </main>
     </div>
   );
