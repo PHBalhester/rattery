@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {createWorld,NEST_POS} from '../src/sim/colony';
+import {applyHabitatActivity} from '../src/sim/habitatActivity';
+import {ecologyStep} from '../src/sim/ecology';
+import {colonyAlerts} from '../src/render/colonyAlerts';
+const w=createWorld(),r=Object.values(w.rats)[0];w.rats={[r.id]:r};r.x=NEST_POS.x;r.y=NEST_POS.y;r.energy=1;w.env.water=1;
+ecologyStep(w,0);r.wellbeing!.hydration=.55;
+applyHabitatActivity(w);assert.equal(r.exploration!.waterZone,0);
+r.wellbeing!.hydration=.65;applyHabitatActivity(w);assert.equal(r.exploration!.waterZone,0,'must not abandon water above trigger');
+const restored=JSON.parse(JSON.stringify(w));applyHabitatActivity(w);applyHabitatActivity(restored);assert.deepEqual(w,restored);
+r.wellbeing!.hydration=.85;applyHabitatActivity(w);assert.equal(r.exploration!.waterZone,undefined);
+r.wellbeing!.hydration=.35;assert.equal(colonyAlerts(w).find(a=>a.key==='dehydrated')?.critical,false);
+r.wellbeing!.hydration=.15;assert.equal(colonyAlerts(w).find(a=>a.key==='dehydrated')?.critical,true);
+r.nursing=['pup'];r.wellbeing!.hydration=.3;applyHabitatActivity(w);assert.equal(r.exploration!.waterZone,0);
+console.log('PASS early water seeking, stable destination, drink to 85%, JSON resume, maternal nest and severity thresholds');

@@ -31,7 +31,18 @@ export function applyHabitatActivity(world:World){
   if(r.retrieving){if(r.exploration)r.exploration.playingUntil=world.simDay;continue;}
   const state=r.exploration??(r.exploration={route:hashId(r.id)%trips.length,waypoint:0,restUntil:0});
   const shelter=!!r.pregnant||r.nursing.length>0||world.env.panic>.45||r.energy<.28;
-  const thirsty=(r.wellbeing?.hydration??1)<.4;
+  const hydration=r.wellbeing?.hydration??1;
+  if(hydration>=.85)delete state.waterZone;
+  if(state.waterZone===undefined&&hydration<.6){
+   // Commit to the shortest reachable water route, not a shifting crowd score.
+   const candidates=zones.slice(0,world.habitatMode==='basic'||r.nursing.length>0||r.pregnant?1:6).map((z,i)=>{
+    const path=findPath(r,z);let distance=0,previous={x:r.x,y:r.y};
+    for(const point of path??[]){distance+=Math.hypot(point.x-previous.x,point.y-previous.y);previous=point;}
+    return {i,distance:path?distance:Infinity};
+   }).filter(v=>Number.isFinite(v.distance)).sort((a,b)=>a.distance-b.distance||a.i-b.i);
+   if(candidates.length)state.waterZone=candidates[0].i;
+  }
+  const thirsty=state.waterZone!==undefined||hydration<.6;
   const seekingQuiet=(r.wellbeing?.chronic??0)>.5&&!shelter;
 
   const enriched=world.habitatMode!=='basic';
@@ -44,7 +55,7 @@ export function applyHabitatActivity(world:World){
 
   const playPoint=toyApproaches.find(a=>a.toy===state.route)?.contact;
   if(!enriched||shelter||thirsty||seekingQuiet||!playPoint||Math.hypot(r.x-playPoint.x,r.y-playPoint.z)>2)state.playingUntil=world.simDay;
-  const refuge=zones.map((z,i)=>({z,i,score:counts[i]/z.capacity+Math.hypot(z.x-r.x,z.y-r.y)/3000})).filter(v=>(v.i<6||(!thirsty&&v.i===6))&&(enriched||!thirsty||v.i===0)).sort((a,b)=>a.score-b.score)[0];
+  const refuge=state.waterZone!==undefined?{z:zones[state.waterZone],i:state.waterZone}:zones.map((z,i)=>({z,i,score:counts[i]/z.capacity+Math.hypot(z.x-r.x,z.y-r.y)/3000})).filter(v=>(v.i<6||(!thirsty&&v.i===6))&&(enriched||!thirsty||v.i===0)).sort((a,b)=>a.score-b.score)[0];
   // A rat already in the nest need not reach its exact center before leaving.
   if(state.waypoint===0&&inNest(r)&&!shelter){
    const preferred=state.route;
