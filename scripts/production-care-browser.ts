@@ -15,7 +15,7 @@ import {readObservation} from '../server/observer';
 if(!process.env.PGDATABASE?.endsWith('_test'))throw Error('Isolated test database required');
 const schema='ui_'+randomUUID().replaceAll('-',''),setup=new Pool();await setup.query('CREATE SCHEMA '+schema);await setup.end();
 const db=new Pool({options:'-c search_path='+schema+',public'});
-for(const name of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation','005_trade_ledger','006_market_collector','007_engine_history','008_payment_mainnet','009_reconciliation','010_cancel_unsigned','011_residence'])await db.query(readFileSync('server/migrations/'+name+'.sql','utf8'));
+for(const name of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation','005_trade_ledger','012_burn_support','006_market_collector','007_engine_history','008_payment_mainnet','009_reconciliation','010_cancel_unsigned','011_residence'])await db.query(readFileSync('server/migrations/'+name+'.sql','utf8'));
 const wallet=Wallet.createRandom(),owner=wallet.address.toLowerCase(),token='0xc322305e79337300b59ff48389f8c9a1d9e0de76',burns=new Map<string,any>();let sends=0;
 const blockHash='0x'+'b'.repeat(64);
 const rpc=async(method:string,params:any[])=>{

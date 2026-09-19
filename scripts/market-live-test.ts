@@ -21,7 +21,7 @@ const transport=readOnlyRPC(process.env.RATTERY_CAPTURE_RPC || 'https://rpc.main
 let queue:Promise<unknown>=Promise.resolve();
 const rpc=(method:string,args:unknown[])=>{const next=queue.then(async()=>{if(++requests>80)throw Error('Live RPC budget exceeded');await new Promise(r=>setTimeout(r,1500));return transport(method,args);});queue=next.catch(()=>{});return next;};
 try{
- for(const name of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation','005_trade_ledger','006_market_collector'])await pool.query(readFileSync('server/migrations/'+name+'.sql','utf8'));
+ for(const name of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation','005_trade_ledger','012_burn_support','006_market_collector'])await pool.query(readFileSync('server/migrations/'+name+'.sql','utf8'));
  const auth=new StagingAuth(pool,'http://localhost:18756'),service=new Persistence(pool,auth,marketAddress,18,async()=>{throw Error('No financial RPC');});
  const world=createWorld();await service.initialize(world);await service.advanceSimulation();
  const config=await discoverMarket(rpc,marketAddress,birthBlock),prices=new HistoricalPrices(pool),ledger=new TradeLedger(service,new Set([PRICE_SOURCE])),collector=new MarketCollector(ledger,rpc,config,prices);

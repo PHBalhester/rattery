@@ -164,6 +164,7 @@ export interface WorldEvent {
 export type MemorialRecord=Pick<Rat,"coatBucket"|"id"|"name"|"sex"|"bornAt"|"deadAt"|"deathCause"|"gen"|"motherId"|"fatherId"|"offspring"|"caregiver"|"residenceDays">;
 
 export interface World {
+  burnSupport?: import("./sim/burnSupport").BurnSupportState;
   snake?:{nextAttack:number;awakeUntil?:number;capture?:{ratId:string;started:number;x:number;y:number}};
   careProtection?:{until:number;active:boolean};
   legendaryBoost?:{untilSimDay:number;claimedBy?:string};

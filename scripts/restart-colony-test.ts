@@ -10,7 +10,7 @@ const schema='restart_'+randomUUID().replaceAll('-',''),admin=new Pool();
 await admin.query('CREATE SCHEMA '+schema);
 const db=new Pool({options:'-c search_path='+schema+',public'});
 try{
- for(const file of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation','005_trade_ledger','007_engine_history','009_reconciliation','010_cancel_unsigned'])await db.query(readFileSync('server/migrations/'+file+'.sql','utf8'));
+ for(const file of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation','005_trade_ledger','012_burn_support','007_engine_history','009_reconciliation','010_cancel_unsigned'])await db.query(readFileSync('server/migrations/'+file+'.sql','utf8'));
  const world=createWorld();world.care=careState();
  await db.query('INSERT INTO colony_state(id,world,engine_version,simulation_at,simulation_tick) VALUES(1,$1,$2,1000,55)',[world,'old']);
  const plan={transitionId:'test-restart-round',expectedRevision:'0',expectedVersion:'old'};

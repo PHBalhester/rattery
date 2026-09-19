@@ -1,8 +1,9 @@
-import {AbiCoder,keccak256} from 'ethers';
+import {AbiCoder,keccak256,id} from 'ethers';
 import {TOPIC} from '../api/_lib/pons.js';
 import type {TradeLedger,MarketEvent} from './trade-ledger.js';
 import type {HistoricalQuote} from './valuation.js';
 import {quantity,blockTag,isHash,isAddress,type ReadRPC} from './market-io.js';
+export const BURN_TRANSFER=id('Transfer(address,address,uint256)');
 const ZERO='0x'+'0'.repeat(40);
 const MAINNET={chainId:4663,factory:'0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e',manager:'0x8366a39cc670b4001a1121b8f6a443a643e40951',hook:'0xe5e702641ea86f4ae6cc3cdaed2b886f976be044'};
 const topicAddress=(s:string)=>{if(!/^0x0{24}[0-9a-f]{40}$/.test(s))throw Error('Invalid address topic');return '0x'+s.slice(-40);};
@@ -79,7 +80,7 @@ export class MarketCollector{
   // Scan logs first. Persist only event blocks and the end checkpoint.
   const headers=new Map<number,ReturnType<typeof header>>();
   headers.set(end,header(await this.rpc('eth_getBlockByNumber',[blockTag(end),false]),end));
-  const filters=[{address:this.config.curve,topics:[[TOPIC.curveBuy,TOPIC.curveSell]]},{address:this.config.manager,topics:[TOPIC.swapV4,this.config.poolId]}];
+  const filters=[{address:this.config.curve,topics:[[TOPIC.curveBuy,TOPIC.curveSell]]},{address:this.config.manager,topics:[TOPIC.swapV4,this.config.poolId]},{address:this.config.token,topics:[BURN_TRANSFER,null,'0x'+'0'.repeat(64)]}];
   const byBlock=new Map<number,any[]>();
   let count=0;
   for(const filter of filters){
@@ -106,8 +107,14 @@ export class MarketCollector{
    previous=b;
    const all=byBlock.get(number)??[];
    if(all.length>1000||new Set(all.map(l=>l.logIndex)).size!==all.length)throw Error('Duplicate or excessive logs');
-   const events:MarketEvent[]=[];
+   const events:MarketEvent[]=[];const burns:import('./trade-ledger.js').BurnEvent[]=[];
    for(const l of all){
+    if(l.address===this.config.token){
+     if(l.topics.length!==3||l.topics[0]!==BURN_TRANSFER||l.topics[2]!=='0x'+'0'.repeat(64)||!/^0x[0-9a-f]{64}$/.test(l.data))throw Error('Malformed burn');
+     const from=topicAddress(l.topics[1]),units=uint(l.data,0);if(from===ZERO)throw Error('Invalid burn sender');
+     if(units>0n)burns.push({chainId:this.config.chainId,token:this.config.token,hash:l.transactionHash,logIndex:quantity(l.logIndex),timestamp:b.timestamp,from,units:units.toString()});
+     continue;
+    }
     let eth:bigint,side:'buy'|'sell',trader:string,venue:'curve'|'pool';
     if(l.address===this.config.curve){
      if(l.topics.length!==3||![TOPIC.curveBuy,TOPIC.curveSell].includes(l.topics[0])||!/^0x[0-9a-f]{256}$/.test(l.data))throw Error('Malformed curve trade');
@@ -132,7 +139,7 @@ export class MarketCollector{
     }
     quote=quotes.get(bucket)??null;
    }
-   batch.push({block:{...b,events},quote});trades+=events.length;
+   batch.push({block:{...b,events,burns},quote});trades+=events.length;
   }
   // Check each used event header again; mixed-branch RPC responses cannot commit.
   // This relies on a consistent canonical RPC, just as log completeness does.

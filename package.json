@@ -64,7 +64,8 @@
     "test:render:adaptive": "tsx scripts/adaptive-quality-test.ts && tsx scripts/adaptive-anatomy-test.ts && tsx scripts/foot-matrix-equivalence-test.ts",
     "test:survival": "tsx scripts/survival-support-test.ts",
     "test:survival:prod": "tsx scripts/survival-production-resolution-test.ts",
-    "test:restart": "tsx scripts/restart-colony-test.ts"
+    "test:restart": "tsx scripts/restart-colony-test.ts",
+    "test:burn:support": "tsx scripts/burn-support-test.ts"
   },
   "dependencies": {
     "ethers": "6.17.0",

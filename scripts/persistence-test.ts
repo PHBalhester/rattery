@@ -49,6 +49,7 @@ try{
  await db.query(readFileSync('server/migrations/003_submission_recovery.sql','utf8'));
  await db.query(readFileSync('server/migrations/004_shared_simulation.sql','utf8'));
  await db.query(readFileSync('server/migrations/005_trade_ledger.sql','utf8'));
+ await db.query(readFileSync('server/migrations/012_burn_support.sql','utf8'));
  await db.query(readFileSync('server/migrations/009_reconciliation.sql','utf8'));
  await db.query(readFileSync('server/migrations/010_cancel_unsigned.sql','utf8'));
  await db.query(readFileSync('server/migrations/008_payment_mainnet.sql','utf8'));

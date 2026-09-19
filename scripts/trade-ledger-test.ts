@@ -21,7 +21,7 @@ const block=(n:number,events:MarketEvent[]=[]):MarketBlock=>({number:n,hash:h(n)
 const count=async()=>Number((await db.query("SELECT count(*) FROM colony_trades WHERE status='applied'")).rows[0].count);
 let groups=0;const ok=(s:string)=>console.log('PASS',++groups,s);
 try{
- for(const f of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation','005_trade_ledger'])await db.query(readFileSync('server/migrations/'+f+'.sql','utf8'));
+ for(const f of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation','005_trade_ledger','012_burn_support'])await db.query(readFileSync('server/migrations/'+f+'.sql','utf8'));
  const world=createWorld();world.realStartedAt=now;await service.initialize(world);await service.advanceSimulation();
  await ledger.initialize(4663,token,{number:10,hash:h(10),timestamp:now});
  const concurrent=await Promise.all(Array.from({length:12},()=>ledger.ingest(block(11,[event(11)]),quote)));

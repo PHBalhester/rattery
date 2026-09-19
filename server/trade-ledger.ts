@@ -1,3 +1,4 @@
+import {applyBurnSupport} from '../src/sim/burnSupport.js';
 import type {PoolClient} from 'pg';
 import type {Persistence} from './persistence.js';
 import type {World} from '../src/types.js';
@@ -11,7 +12,9 @@ export interface MarketEvent extends HistoricalTrade {
  venue:'curve'|'pool';
  trader:string;
 }
+export interface BurnEvent {chainId:number;token:string;hash:string;logIndex:number;timestamp:number;from:string;units:string;}
 export interface MarketBlock {
+ burns?:BurnEvent[];
  number:number;hash:string;parentHash:string;timestamp:number;
  events:MarketEvent[];
 }
@@ -58,8 +61,12 @@ export class TradeLedger {
     return {raw,value};
    });
    if(new Set(events.map(e=>e.logIndex)).size!==events.length)throw Error('Duplicate block log');
-   const fingerprint=digest(JSON.stringify({number:block.number,hash:block.hash,parentHash:block.parentHash,timestamp:block.timestamp,events:entries.map(e=>e.raw)}));
-   return {block,entries,fingerprint};
+   const burns=[...(block.burns??[])].sort((a,b)=>a.logIndex-b.logIndex);
+   total+=burns.length;if(total>2000)throw Error('Market batch event limit');
+   for(const e of burns)if(![4663,46630].includes(e.chainId)||!address(e.token)||!hash(e.hash)||!natural(e.logIndex)||e.timestamp!==block.timestamp||!address(e.from)||/^0x0{40}$/.test(e.from)||! /^[1-9][0-9]{0,77}$/.test(e.units)||BigInt(e.units)>=2n**256n)throw Error('Invalid burn');
+   if(new Set([...events,...burns].map(e=>e.logIndex)).size!==events.length+burns.length)throw Error('Duplicate block log');
+   const fingerprint=digest(JSON.stringify({number:block.number,hash:block.hash,parentHash:block.parentHash,timestamp:block.timestamp,events:entries.map(e=>e.raw),...(burns.length?{burns}:{})}));
+   return {block,entries,burns,fingerprint};
   });
   const result=await this.service.transaction(async c=>{
    const state=(await c.query('SELECT * FROM colony_state WHERE id=1 FOR UPDATE')).rows[0];
@@ -67,6 +74,7 @@ export class TradeLedger {
    const stream=(await c.query('SELECT * FROM trade_stream WHERE id=1')).rows[0];
    if(!stream||stream.halted)throw Error('Market stream unavailable');
    if(prepared.some(p=>p.entries.some(e=>e.raw.chainId!==stream.chain_id||e.raw.token!==stream.token)))throw Error('Market identity mismatch');
+   if(prepared.some(p=>p.burns.some(e=>e.chainId!==stream.chain_id||e.token!==stream.token)))throw Error('Burn identity mismatch');
    const priors=(await c.query('SELECT * FROM trade_blocks WHERE block_number=ANY($1::bigint[])',[prepared.map(p=>p.block.number)])).rows;
    const known=new Map(priors.map(p=>[Number(p.block_number),p]));
    for(const p of prepared){
@@ -84,6 +92,8 @@ export class TradeLedger {
    await c.query('INSERT INTO trade_blocks SELECT * FROM jsonb_to_recordset($1::jsonb) AS x(block_number bigint,block_hash text,fingerprint text)',[JSON.stringify(fresh.map(p=>({block_number:p.block.number,block_hash:p.block.hash,fingerprint:p.fingerprint})))]);
    const rows=fresh.flatMap(p=>p.entries.map(e=>({identity:e.value.identity,block_number:p.block.number,log_index:e.raw.logIndex,raw:e.raw,valuation:e.value,status:e.value.status==='pending'?'pending':'ready',available_at:Math.max(p.block.timestamp,Number(state.simulation_at)+CONFIG.time.tickMs)})));
    if(rows.length)await c.query('INSERT INTO colony_trades(identity,block_number,log_index,raw,valuation,status,available_at) SELECT * FROM jsonb_to_recordset($1::jsonb) AS x(identity text,block_number bigint,log_index integer,raw jsonb,valuation jsonb,status text,available_at bigint)',[JSON.stringify(rows)]);
+   const burns=fresh.flatMap(p=>p.burns.map(e=>({identity:e.chainId+':'+e.token+':'+e.hash+':'+e.logIndex,block_number:p.block.number,log_index:e.logIndex,raw:e,available_at:Math.max(p.block.timestamp,Number(state.simulation_at)+CONFIG.time.tickMs)})));
+   if(burns.length)await c.query('INSERT INTO colony_burns(identity,block_number,log_index,raw,available_at) SELECT * FROM jsonb_to_recordset($1::jsonb) AS x(identity text,block_number bigint,log_index integer,raw jsonb,available_at bigint)',[JSON.stringify(burns)]);
    const last=fresh.at(-1)!.block;
    await c.query('UPDATE trade_stream SET last_block=$1,last_hash=$2,last_timestamp=$3 WHERE id=1',[last.number,last.hash,last.timestamp]);
    return {duplicate:false};
@@ -114,6 +124,11 @@ export class TradeLedger {
 export async function applyQueuedTrades(c:PoolClient,world:World,at:number,tick:number){
  const stream=(await c.query('SELECT halted FROM trade_stream WHERE id=1')).rows[0];
  if(!stream||stream.halted)return;
+ const burns=(await c.query('SELECT * FROM colony_burns WHERE applied_tick IS NULL AND available_at<=$1 ORDER BY block_number,log_index LIMIT 200',[at])).rows;
+ for(const row of burns){
+  const effect=applyBurnSupport(world,row.raw.units,at,row.raw.hash);
+  await c.query('UPDATE colony_burns SET applied_tick=$2,applied_at=$3,effect=$4 WHERE identity=$1',[row.identity,tick,at,effect]);
+ }
  const rows=(await c.query("SELECT * FROM colony_trades WHERE status<>'applied' ORDER BY block_number,log_index LIMIT 200")).rows;
  for(const row of rows){
   if(row.status==='pending'||Number(row.available_at)>at)break;

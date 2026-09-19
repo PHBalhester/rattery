@@ -43,7 +43,7 @@ const fetcher=(async(url:any)=>{
 }) as typeof fetch;
 let groups=0;const ok=(s:string)=>console.log('PASS',++groups,s);
 try{
- for(const f of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation','005_trade_ledger','006_market_collector'])await db.query(readFileSync('server/migrations/'+f+'.sql','utf8'));
+ for(const f of ['001_staging','002_auth_expiry','003_submission_recovery','004_shared_simulation','005_trade_ledger','012_burn_support','006_market_collector'])await db.query(readFileSync('server/migrations/'+f+'.sql','utf8'));
  const auth=new StagingAuth(db,'http://localhost:18756',()=>now),service=new Persistence(db,auth,token,18,async()=>null,()=>now);
  const w=createWorld();w.realStartedAt=now;await service.initialize(w);await service.advanceSimulation();
  const prices=new HistoricalPrices(db,fetcher),ledger=new TradeLedger(service,new Set([PRICE_SOURCE]));
@@ -73,7 +73,7 @@ try{
  const role='worker_'+randomUUID().replaceAll('-','');
  await db.query('CREATE ROLE '+role+' NOLOGIN');
  await db.query('GRANT USAGE ON SCHEMA '+schema+' TO '+role);
- await db.query('GRANT SELECT,INSERT,UPDATE ON colony_state,rat_records,trade_stream,colony_trades TO '+role);
+ await db.query('GRANT SELECT,INSERT,UPDATE ON colony_state,rat_records,trade_stream,colony_trades,colony_burns TO '+role);
  await db.query('GRANT SELECT,INSERT ON trade_blocks,market_quotes TO '+role);
  const restricted=new Pool({options:'-c search_path='+schema+',public -c role='+role});
  try{
@@ -114,7 +114,7 @@ try{
  }
  scenario='empty';sparseCalls=0;headerCalls=0;endReads=0;
  const range=await sparse.poll(100);assert.equal(range.accepted,100);assert.equal(range.trades,0);
- assert.equal(sparseCalls,8);assert.equal(headerCalls,4);
+ assert.equal(sparseCalls,9);assert.equal(headerCalls,4);
  assert.equal(Number((await db.query('SELECT count(*) FROM trade_blocks WHERE block_number>12')).rows[0].count),1);
  const restart=new MarketCollector(ledger,sparseRPC,config,prices);assert.equal((await restart.poll(100)).accepted,0);
  // Stale competing ranges cannot advance over a cursor they did not inspect.
@@ -122,14 +122,14 @@ try{
  await db.query('DELETE FROM trade_blocks WHERE block_number>12');
  await db.query('UPDATE trade_stream SET last_block=$1,last_hash=$2,last_timestamp=$3',[checkpoint.rows[0].last_block,checkpoint.rows[0].last_hash,checkpoint.rows[0].last_timestamp]);
  scenario='mixed';endReads=0;sparseCalls=0;
- assert.equal((await sparse.poll(100)).trades,1);assert.equal(sparseCalls,10);
+ assert.equal((await sparse.poll(100)).trades,1);assert.equal(sparseCalls,11);
  assert.equal(Number((await db.query('SELECT count(*) FROM trade_blocks WHERE block_number>12')).rows[0].count),2);
  await db.query('DELETE FROM colony_trades WHERE block_number>12');await db.query('DELETE FROM trade_blocks WHERE block_number>12');
  await db.query('UPDATE trade_stream SET last_block=$1,last_hash=$2,last_timestamp=$3',[checkpoint.rows[0].last_block,checkpoint.rows[0].last_hash,checkpoint.rows[0].last_timestamp]);
- scenario='dense';sparseCalls=0;endReads=0;assert.equal((await sparse.poll(100)).trades,100);assert.equal(sparseCalls,107);
+ scenario='dense';sparseCalls=0;endReads=0;assert.equal((await sparse.poll(100)).trades,100);assert.equal(sparseCalls,108);
  await db.query('DELETE FROM colony_trades WHERE block_number>12');await db.query('DELETE FROM trade_blocks WHERE block_number>12');
  await db.query('UPDATE trade_stream SET last_block=$1,last_hash=$2,last_timestamp=$3',[checkpoint.rows[0].last_block,checkpoint.rows[0].last_hash,checkpoint.rows[0].last_timestamp]);
- ok('Sparse scan: 100 empty blocks use 8 RPC calls and one checkpoint; mixed events, restart, stale commits, outage and mid-scan reorg checked');
+ ok('Sparse scan: 100 empty blocks use 9 RPC calls and one checkpoint; mixed events, restart, stale commits, outage and mid-scan reorg checked');
  mode='anchor';await assert.rejects(collector.poll(1),/anchor/);assert.equal((await db.query('SELECT halted FROM trade_stream')).rows[0].halted,true);
  mode='';await assert.rejects(new MarketCollector(ledger,rpc,config,prices).start(10),/unavailable/);
  await assert.rejects(new MarketCollector(ledger,rpc,config,prices).poll(1),/unavailable/);
