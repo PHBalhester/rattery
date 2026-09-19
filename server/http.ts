@@ -1,3 +1,4 @@
+import {publicCareError} from '../src/careErrors.js';
 import {createServer,type IncomingMessage,type ServerResponse} from 'node:http';
 import {randomBytes} from 'node:crypto';
 import {digest,type StagingAuth} from './auth.js';
@@ -59,7 +60,7 @@ export function stagingHandler(auth:StagingAuth,service:Persistence|null,clientI
    if(req.url==='/care/reserve')return send(200,await service!.reserve(session,data.requestId,data.ratId,data.action,data.name));
    if(req.url==='/care/finalize')return send(200,await service!.finalize(session,data.id,data.hash));
    return send(404,{error:'Not found'});
-  }catch(e){const message=(e as Error).message;send(message==='Body too large'?413:message==='Unauthorized'?401:400,{error:'Request rejected'});}
+  }catch(e){const message=(e as Error).message;send(message==='Body too large'?413:message==='Unauthorized'?401:400,{error:'Request rejected',code:publicCareError(message)});}
  };
 }
 export function stagingServer(auth:StagingAuth,service:Persistence|null){
