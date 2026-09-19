@@ -10,7 +10,7 @@ import {CONFIG} from '../src/config.js';
 import {tick} from '../src/sim/tick.js';
 import {applyQueuedTrades} from './trade-ledger.js';
 import {worldRng} from '../src/sim/rng.js';
-export const ENGINE_VERSION='shared-colony-v14:'+digest(JSON.stringify(CONFIG)).slice(0,16);
+export const ENGINE_VERSION='shared-colony-v15:'+digest(JSON.stringify(CONFIG)).slice(0,16);
 export const MAX_SIMULATION_BATCH=40;
 const uuid=(s:string)=>/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(s);
 export class Persistence{
@@ -135,7 +135,7 @@ export class Persistence{
     // jsonb may reorder object keys. Pin rat traversal order before every tick.
     world.rats=Object.fromEntries(Object.entries(world.rats).sort(([a],[b])=>a<b?-1:a>b?1:0));
     await applyQueuedTrades(c,world,previous+(i+1)*CONFIG.time.tickMs,Number(row.simulation_tick)+i+1);
-    tick(world,CONFIG.time.tickMs/CONFIG.time.realMsPerSimDay,rng);
+    tick(world,CONFIG.time.tickMs/CONFIG.time.realMsPerSimDay,rng,undefined,previous+(i+1)*CONFIG.time.tickMs);
    }
    const reached=previous+steps*CONFIG.time.tickMs;
    if(steps||!row.engine_version){

@@ -1,3 +1,4 @@
+import {assistColony} from './temporaryProtection.js';
 import {identity,COAT_BUCKETS} from './ratIdentity.js';
 import {familyNest} from './familyNest.js';
 import {separateRats} from "./separation.js";
@@ -259,10 +260,14 @@ function deathChecks(world: World, r: Rat) {
  * the world. `dtDays` = CONFIG.time.simDaysPerTick. Trades are applied to
  * world.env by the caller before the tick; this applies the silence decay.
  */
-export function tick(world: World, dtDays: number, rng: () => number, envOverride?: WorldEnv): World {
+export function tick(world: World, dtDays: number, rng: () => number, envOverride?: WorldEnv, authoritativeAt?:number): World {
+  const protectedNow=!!world.careProtection&&(authoritativeAt??(world.realStartedAt+world.simDay*CONFIG.time.realMsPerSimDay))<world.careProtection.until;
+  if(world.careProtection)world.careProtection.active=protectedNow;
+  if(protectedNow)dtDays*=.01;
   for(const r of [...Object.values(world.rats),...Object.values(world.memorial??{})])r.coatBucket??=identity(r.id)%COAT_BUCKETS;
   if (envOverride) world.env = envOverride;
   world.env = decayEnv(world.env, dtDays * (CONFIG.time.realMsPerSimDay / 1000));
+  if(protectedNow)assistColony(world);
   world.simDay += dtDays;
 
   const living = aliveRats(world);
@@ -318,6 +323,7 @@ export function tick(world: World, dtDays: number, rng: () => number, envOverrid
     world.extinct = true;
     pushEvent(world, { t: world.simDay, kind: "extinct", ratId: "colony" });
   }
+  if(protectedNow)assistColony(world);
   return world;
 }
 

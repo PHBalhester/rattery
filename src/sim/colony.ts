@@ -153,7 +153,7 @@ export function spawnRat(
 }
 
 export function kill(world: World, r: Rat, cause: DeathCause) {
-  if (r.deadAt !== null) return;
+  if (r.deadAt !== null || world.careProtection?.active) return;
   r.deadAt = world.simDay;
   r.deathCause = cause;
   r.stage = "dead";
@@ -213,7 +213,7 @@ export function tryConceive(
   p: number,
   env: WorldEnv
 ): boolean {
-  if (dam.pregnant || dam.sex !== "F") return false;
+  if (world.careProtection?.active || dam.pregnant || dam.sex !== "F") return false;
   // Reserve the maximum litter size so concurrent pregnancies cannot fill every shelter.
   const living = aliveRats(world);
   const projected = living.length + living.filter(r => r.pregnant).length * 14;

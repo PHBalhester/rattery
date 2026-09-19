@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {createWorld,kill,tryConceive} from '../src/sim/colony';
+import {tick} from '../src/sim/tick';
+import {worldRng} from '../src/sim/rng';
+const w=createWorld(),r=Object.values(w.rats)[0],before=w.simDay;w.careProtection={until:20000,active:false};r.energy=0;r.bornAt=-1000;
+tick(w,1/600,worldRng(w),undefined,10000);
+assert.equal(r.deadAt,null);assert(r.energy>=.9);assert(w.simDay-before<1/600);kill(w,r,'age');assert.equal(r.deadAt,null);
+assert.equal(tryConceive(w,()=>0,r,Object.values(w.rats)[1],1,w.env),false);
+const copy=JSON.parse(JSON.stringify(w));tick(w,1/600,worldRng(w),undefined,11000);tick(copy,1/600,worldRng(copy),undefined,11000);assert.deepEqual(w,copy);
+tick(w,1/600,worldRng(w),undefined,20000);assert.equal(w.careProtection.active,false);assert.notEqual(r.deadAt,null);
+console.log('PASS assistance, death protection, conception pause, slower age, persistence and authoritative expiration');
