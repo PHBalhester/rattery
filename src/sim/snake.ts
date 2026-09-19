@@ -1,6 +1,6 @@
 import type {World,Rat} from '../types.js';
 import {kill} from './colony.js';
-export const SNAKE_DEN={x:1040,y:925,radius:90};
+export const SNAKE_DEN={x:1378,y:740,radius:90};
 export function snakeEligible(w:World,r:Rat){
  const living=Object.values(w.rats).filter(a=>a.deadAt===null);
  return !w.careProtection?.active&&living.length>60&&r.deadAt===null&&r.stage==='adult'&&!r.minted&&!w.care?.owners[r.id]&&!r.pregnant&&!r.nursing.length&&!r.retrieving&&!r.socialAction&&living.filter(a=>a.stage==='adult'&&a.sex===r.sex).length>2&&!living.some(a=>a.nursing.includes(r.id));
