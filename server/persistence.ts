@@ -10,7 +10,7 @@ import {CONFIG} from '../src/config.js';
 import {tick} from '../src/sim/tick.js';
 import {applyQueuedTrades} from './trade-ledger.js';
 import {worldRng} from '../src/sim/rng.js';
-export const ENGINE_VERSION='shared-colony-v17:'+digest(JSON.stringify(CONFIG)).slice(0,16);
+export const ENGINE_VERSION='shared-colony-v18:'+digest(JSON.stringify(CONFIG)).slice(0,16);
 export const MAX_SIMULATION_BATCH=40;
 const uuid=(s:string)=>/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(s);
 export class Persistence{
