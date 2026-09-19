@@ -56,7 +56,10 @@ export function applyHabitatActivity(world:World){
 
   const enriched=world.habitatMode!=='basic';
   if(state.den!==undefined&&(shelter||thirsty||!enriched)){delete state.den;delete state.denSlot;delete state.path;state.denCooldown=world.simDay+.5;}
-  if(enriched&&!shelter&&!thirsty&&state.den===undefined&&world.simDay>=(state.denCooldown??0)&&(counts[zoneOf(r)]/zones[zoneOf(r)].capacity>=.7||population>=40||r.energy<.55||(r.wellbeing?.isolationDistress??0)>.2)){
+  // Temporary care keeps healthy adults active in the enriched habitat. The
+  // usual high-population retreat would otherwise send nearly everyone into
+  // dens and make the requested supervised toy activity impossible.
+  if(enriched&&!world.careProtection?.active&&!shelter&&!thirsty&&state.den===undefined&&world.simDay>=(state.denCooldown??0)&&(counts[zoneOf(r)]/zones[zoneOf(r)].capacity>=.7||population>=40||r.energy<.55||(r.wellbeing?.isolationDistress??0)>.2)){
    const den=chooseDen(world,r);state.denCooldown=world.simDay+.25;
    if(den){counts[zoneOf(r)]=Math.max(0,counts[zoneOf(r)]-1);state.den=den.index;state.denSlot=den.slot!;state.denUntil=world.simDay+1.5;delete state.path;state.playingUntil=world.simDay;}
   }
