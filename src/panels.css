@@ -143,3 +143,11 @@
 
 .colony-app .condition-metric[data-level=warning] i{background:var(--attention)}
 .colony-app .condition-metric[data-level=warning] small{color:var(--attention)}
+
+.colony-app .alert-residents summary{cursor:pointer;min-height:44px;padding:2px 0;line-height:1.5}
+.colony-app .alert-residents summary>span{display:block;font-size:11px;color:var(--panel-muted);margin-top:4px}
+.colony-app .alert-residents summary:focus-visible,.colony-app .alert-rat-list button:focus-visible{outline:2px solid #a3dfbc;outline-offset:3px}
+.colony-app .alert-rat-list{display:grid;gap:6px;max-height:240px;overflow:auto;margin-top:10px}
+.colony-app .alert-rat-list button{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px;padding:9px 10px;background:#1119;border:1px solid #ffffff26;color:inherit;text-align:left;cursor:pointer;width:100%}
+.colony-app .alert-rat-list button>span{overflow-wrap:anywhere;min-width:0}
+.colony-app .alert-rat-list button small{color:var(--panel-muted);flex-shrink:0}
