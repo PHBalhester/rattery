@@ -120,7 +120,7 @@ export default function Burrow3D(){
    previousDay=world.simDay;wasCatchingUp=replaying;
    for(const r of Object.values(world.rats)){
     if(r.deadAt!==null)continue;
-    let m=rats.get(r.id);if(!m){m=new RatModel(assets,r.id,r.id==='F1');rats.set(r.id,m);if(blenderRats)m.attachBlender(blenderRats);scene.add(m.root);}
+    let m=rats.get(r.id);if(!m){m=new RatModel(assets,r.id,r.id==='F1',r.coatBucket);rats.set(r.id,m);if(blenderRats)m.attachBlender(blenderRats);scene.add(m.root);}
     m.setRenderQuality(quality.level);
     m.sync(displayedRat(r),displayedDay(),dt,time/1000,reduced.matches&&!motionOverride.current,discontinuity,camera);
    }

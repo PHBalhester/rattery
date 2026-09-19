@@ -17,8 +17,8 @@ export class RatAssets {
   birthRing=new T.RingGeometry(.8,.85,32);
   birthMaterial=new T.MeshBasicMaterial({color:0xe8c36a,transparent:true,opacity:.65,side:T.DoubleSide,depthWrite:false});
   private variants=new Map<string,T.BufferGeometry>();
-  variant(id:string){
-    const c=coatFor(id),key=c.name+c.key,cached=this.variants.get(key);if(cached)return cached;
+  variant(id:string,bucket?:number){
+    const c=coatFor(id,bucket),key=c.name+c.key,cached=this.variants.get(key);if(cached)return cached;
     const g=this.body.clone(),p=g.getAttribute('position'),colors=g.getAttribute('color');
     const dorsal=new T.Color(c.color),belly=new T.Color(c.belly);
     const accent=new T.Color('accent' in c?c.accent:c.belly);
@@ -114,7 +114,7 @@ export class RatModel {
   private encounterSeconds=0;
   attachBlender(assets:BlenderRatAssets){
     if(this.blender)return;
-    this.blender=assets.create(this.root.userData.id);for(const child of [...this.root.children])if(child!==this.birthMarker)this.root.remove(child);this.root.add(this.blender.root);
+    this.blender=assets.create(this.root.userData.id,this.coatBucket);for(const child of [...this.root.children])if(child!==this.birthMarker)this.root.remove(child);this.root.add(this.blender.root);
   }
   private torso=new T.Group();
   private body:T.Mesh;
@@ -134,12 +134,12 @@ export class RatModel {
   private birthAge=10;
   private birthMarker:T.Mesh;
 
-  constructor(private assets:RatAssets,id:string,private reference=false){
+  constructor(private assets:RatAssets,id:string,private reference=false,private coatBucket?:number){
     this.bodySize=physique(id);
     this.birthMarker=new T.Mesh(assets.birthRing,assets.birthMaterial);this.birthMarker.rotation.x=-Math.PI/2;this.birthMarker.position.y=.015;this.root.add(this.birthMarker);
     this.root.userData.id=id;for(const c of id)this.seed=(this.seed*31+c.charCodeAt(0))%997;
     this.phase=this.seed*.17;this.root.add(this.torso);this.torso.add(this.detail);
-    this.body=new T.Mesh(reference?assets.referenceBody:assets.variant(id),reference?assets.referenceFur:assets.fur);this.body.castShadow=true;this.body.receiveShadow=true;this.torso.add(this.body);
+    this.body=new T.Mesh(reference?assets.referenceBody:assets.variant(id,this.coatBucket),reference?assets.referenceFur:assets.fur);this.body.castShadow=true;this.body.receiveShadow=true;this.torso.add(this.body);
     if(reference)this.torso.add(new T.LineSegments(assets.referenceHair,assets.referenceHairMaterial));
     const mesh=(parent:T.Group,mat:T.Material,p:number[],s:number[])=>{const m=new T.Mesh(assets.sphere,reference?(mat===assets.eyes?assets.referenceEyes:mat===assets.coat?assets.referenceFur:mat===assets.skin||mat===assets.innerEar?assets.referenceSkin:mat):mat);m.position.set(p[0],p[1],p[2]);m.scale.set(s[0],s[1],s[2]);parent.add(m);return m;};
     if(reference)for(const side of [-1,1]){

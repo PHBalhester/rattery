@@ -57,11 +57,11 @@ export default function LineageTree() {
         <span className="dim">{all.filter(r=>r.deadAt===null).length} {tr('alive','存活')}</span>
       </div>
       <div className="production-residents" aria-label={tr('Living rats','存活的大鼠')}>
-        {all.filter(r=>r.deadAt===null).map(r=>{const coat=coatFor(r.id);return <button key={r.id} aria-pressed={focusedId===r.id} onClick={()=>focus(focusedId===r.id?null:r.id)}>
+        {all.filter(r=>r.deadAt===null).map(r=>{const coat=coatFor(r.id,r.coatBucket);return <button key={r.id} aria-pressed={focusedId===r.id} onClick={()=>focus(focusedId===r.id?null:r.id)}>
           <i style={{background:coat.color}}/><span>{r.name}<small>{r.sex==='F'?tr('Female','雌性'):tr('Male','雄性')} · {tr('Gen','世代')} {r.gen} · {tr(coat.name,coatNames[coat.name]??coat.name)}</small></span>
         </button>;})}
       </div>
-      {focusedId&&world.rats[focusedId]&&<div className="lineage-legend">{tr(coatFor(focusedId).rarity,coatNames[coatFor(focusedId).rarity])} {tr('coat · Age','毛色 · 年龄')} {Math.max(0,(world.rats[focusedId].deadAt??world.simDay)-world.rats[focusedId].bornAt).toFixed(1)} {tr('days','天')}<br/>{tr('Coats are cosmetic variants.','毛色仅为外观差异。')}</div>}
+      {focusedId&&world.rats[focusedId]&&<div className="lineage-legend">{tr(coatFor(focusedId,world.rats[focusedId].coatBucket).rarity,coatNames[coatFor(focusedId,world.rats[focusedId].coatBucket).rarity])} {tr('coat · Age','毛色 · 年龄')} {Math.max(0,(world.rats[focusedId].deadAt??world.simDay)-world.rats[focusedId].bornAt).toFixed(1)} {tr('days','天')}<br/>{tr('Coats are cosmetic variants.','毛色仅为外观差异。')}</div>}
       <details className="readout-details"><summary>{tr('Family tree','家族谱系')}</summary><div className="lineage-scroll">
         <svg viewBox={`0 0 ${treeWidth} ${height}`} width={treeWidth} height={height} style={{minWidth:treeWidth}} role="img" aria-label={tr('Colony family tree','种群家族谱系')}>
           {shown.map((r) =>

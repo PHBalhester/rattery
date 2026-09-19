@@ -1,3 +1,4 @@
+import {identity,COAT_BUCKETS} from './ratIdentity.js';
 import {familyNest} from './familyNest.js';
 import {separateRats} from "./separation.js";
 import {ecologyStep,individualStress} from './ecology.js';
@@ -259,6 +260,7 @@ function deathChecks(world: World, r: Rat) {
  * world.env by the caller before the tick; this applies the silence decay.
  */
 export function tick(world: World, dtDays: number, rng: () => number, envOverride?: WorldEnv): World {
+  for(const r of [...Object.values(world.rats),...Object.values(world.memorial??{})])r.coatBucket??=identity(r.id)%COAT_BUCKETS;
   if (envOverride) world.env = envOverride;
   world.env = decayEnv(world.env, dtDays * (CONFIG.time.realMsPerSimDay / 1000));
   world.simDay += dtDays;

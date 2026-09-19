@@ -58,6 +58,7 @@ export interface Pregnancy {
 }
 
 export interface Rat {
+  coatBucket?:number;
   /** Public display metadata only; never authorizes care or payments. */
   minted?: boolean;
   caregiver?:boolean;
@@ -159,9 +160,10 @@ export interface WorldEvent {
   extra?: string;
 }
 
-export type MemorialRecord=Pick<Rat,"id"|"name"|"sex"|"bornAt"|"deadAt"|"deathCause"|"gen"|"motherId"|"fatherId"|"offspring"|"caregiver"|"residenceDays">;
+export type MemorialRecord=Pick<Rat,"coatBucket"|"id"|"name"|"sex"|"bornAt"|"deadAt"|"deathCause"|"gen"|"motherId"|"fatherId"|"offspring"|"caregiver"|"residenceDays">;
 
 export interface World {
+  legendaryBoost?:{untilSimDay:number;claimedBy?:string};
   nextCrowdingDeathAt?: number;
   memorial?: Record<string,MemorialRecord>;
   care?: import("./sim/care").CareState;

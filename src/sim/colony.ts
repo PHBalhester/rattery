@@ -1,3 +1,4 @@
+import {birthCoat} from './ratIdentity.js';
 import {CENTRAL_NEST,familyNest} from './familyNest.js';
 import { CONFIG } from "../config.js";
 import type {
@@ -146,6 +147,7 @@ export function spawnRat(
     retrieving: null,
     offspring: 0,
   };
+  r.coatBucket=birthCoat(world,r.id);
   world.rats[r.id] = r;
   return r;
 }
@@ -168,7 +170,7 @@ export function kill(world: World, r: Rat, cause: DeathCause) {
   r.nursing = [];
 
   // Preserve identity separately from the active population and biological scans.
-  (world.memorial??={})[r.id]={id:r.id,name:r.name,sex:r.sex,bornAt:r.bornAt,deadAt:r.deadAt,deathCause:r.deathCause,gen:r.gen,motherId:r.motherId,fatherId:r.fatherId,offspring:r.offspring};
+  (world.memorial??={})[r.id]={coatBucket:r.coatBucket,id:r.id,name:r.name,sex:r.sex,bornAt:r.bornAt,deadAt:r.deadAt,deathCause:r.deathCause,gen:r.gen,motherId:r.motherId,fatherId:r.fatherId,offspring:r.offspring};
   world.totals.deaths += 1;
   pushEvent(world, { t: world.simDay, kind: "death", ratId: r.id, extra: cause });
 
