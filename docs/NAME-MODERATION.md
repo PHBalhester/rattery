@@ -1,0 +1,4 @@
+# Rat name moderation
+Mint and rename requests share a local name policy on the client and authoritative server. Validation runs on reservation, before starting a burn submission, and when care is applied. Rejected new requests do not create ownership or burn tokens.
+The policy detects listed racist slurs, hateful phrases and offensive terms in English, Portuguese and Chinese, with Unicode normalization, common substitutions, separators and repeated characters. It also rejects invisible/control characters.
+This maintained denylist is not comprehensive semantic moderation. New abusive variants require updates; legitimate names can require exceptions. Existing names are not retroactively changed. Previously submitted burns remain subject to the existing review/recovery flow; do not pay twice. Public ownership and payment history are preserved.

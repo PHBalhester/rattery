@@ -1,3 +1,4 @@
+import {assertAllowedName} from './namePolicy.js';
 import type { World } from '../types';
 export const CARE_RULES={
  mint:{cost:500000,hours:0},name:{cost:0,hours:24},feed:{cost:10000,hours:4},water:{cost:10000,hours:2},pet:{cost:5000,hours:1},play:{cost:5000,hours:2},treat:{cost:5000,hours:8},explore:{cost:10000,hours:1},prosocial:{cost:100000,hours:2},aggression:{cost:100000,hours:2},
@@ -18,7 +19,7 @@ export function validateCare(w:World,state:CareState,event:CareEvent){
  if(event.action==='mint'&&owner)throw new Error('Already minted');
  if(event.action==='name'&&!owner)throw new Error('Mint required to name');
  if((state.cooldowns[key(rat.id,event.action)]??0)>event.timestamp)throw new Error('Cooldown active');
- if(['mint','name'].includes(event.action)&&(!event.name||event.name.trim().length<1||[...event.name.trim()].length>24||/[\u0000-\u001f<>]/.test(event.name)))throw new Error('Invalid name');
+ if(['mint','name'].includes(event.action))assertAllowedName(event.name);
  if(!['mint','name','feed','water'].includes(event.action)&&(rat.socialAction||rat.retrieving||rat.energy<.2))throw new Error('Rat busy or needs rest');
  if(['play','explore'].includes(event.action)&&!rat.exploration)throw new Error('Exploration unavailable');
  if(event.action==='treat'&&rat.energy>=1)throw new Error('Already satiated');

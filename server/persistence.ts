@@ -1,3 +1,4 @@
+import {assertAllowedName} from '../src/sim/namePolicy.js';
 import {randomUUID} from 'node:crypto';
 import type {Pool,PoolClient} from 'pg';
 import type {World,Rat,MemorialRecord} from '../src/types';
@@ -168,6 +169,7 @@ export class Persistence{
    if(!intent||intent.status!=='reserved'||intent.cost<=0||intent.submission_started_at!==null||Number(intent.expires_at)<=this.clock()||intent.chain_id!==this.auth.chainId||intent.token!==this.token)throw Error('Submission already started or unavailable');
    const care=state.world.care??careState();
    validateCare(state.world,care,{sequence:care.lastSequence+1,ratId:intent.rat_id,wallet,action:intent.action,name:intent.name??undefined,timestamp:this.clock(),amount:intent.cost});
+   if(['mint','name'].includes(intent.action))assertAllowedName(intent.name);
    await c.query('UPDATE care_intents SET submission_started_at=$2 WHERE id=$1',[id,this.clock()]);return {id,started:true};
   });
  }

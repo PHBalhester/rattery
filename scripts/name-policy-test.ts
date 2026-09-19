@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {nameIssue} from '../src/sim/namePolicy';
+import {createWorld} from '../src/sim/colony';
+import {applyCare,careState} from '../src/sim/care';
+for(const name of ['Pump','Pons','Nigel','Scunthorpe','Cassie','Dickinson','Mei','小明','王伟','João','10M SOON'])assert.equal(nameIssue(name),null,name);
+for(const name of ['n1gg3r','N I G G E R','ｎｉｇｇｅｒ','nіgger','niggerrrr','f.u.c.k','FUCK','fuuuck','puta','黑鬼','操你妈','white power'])assert.equal(nameIssue(name),'Offensive name',name);
+assert.equal(nameIssue('Pump​'),'Invalid name');
+const w=createWorld(),r=Object.values(w.rats)[0],care=careState(),before=JSON.stringify(w);
+assert.throws(()=>applyCare(w,care,{sequence:1,ratId:r.id,wallet:'0x'+'a'.repeat(40),action:'mint',timestamp:1000,amount:500000,name:'n1gg3r'}),/Offensive name/);
+assert.equal(JSON.stringify(w),before);assert.equal(care.burned,0);assert.deepEqual(care.owners,{});
+console.log('PASS name variants, legitimate names and authoritative rejection without mutation');
