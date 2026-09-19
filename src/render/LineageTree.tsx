@@ -1,120 +1,59 @@
+import {useState} from 'react';
 import {tr} from '../i18n';
-const coatNames:Record<string,string>={'Solar gold':'太阳金','Sunfire freckles':'火焰斑点','Electric storm':'电光风暴','Jade':'翡翠','Azure':'蔚蓝','Orchid':'兰紫','Rose':'玫瑰','Hooded ivory':'象牙头罩','Cocoa pied':'可可花斑','Silver':'银色','Warm agouti':'暖棕野鼠色','Sable':'深褐色','Legendary':'传说','Rare':'稀有','Uncommon':'少见','Common':'普通'};
 import {coatFor} from './ratIdentity';
-import { getWorld, useStore } from "../store";
-import type { Rat } from "../types";
+import {getWorld,useStore} from '../store';
+import type {MemorialRecord} from '../types';
 
-const VB_W = 320;
-const ROW_H = 82;
-const TOP = 32;
-
-// Lineage of reproducers: founders, anyone with offspring, plus current adult
-// females (candidate mothers). Dead nodes are dimmed. Click focuses the camera.
-export default function LineageTree() {
-  const version = useStore((s) => s.version);
-  const focusedId = useStore((s) => s.focusedId);
-  const focus = useStore((s) => s.focus);
-  void version;
-
-  const world = getWorld();
-  const all = Object.values(world.rats);
-
-  const childrenOf = new Map<string, string[]>();
-  for (const r of all) {
-    if (r.motherId) {
-      const arr = childrenOf.get(r.motherId) ?? [];
-      arr.push(r.id);
-      childrenOf.set(r.motherId, arr);
-    }
-  }
-
-  const shown = all.filter(
-    (r) =>
-      r.gen === 0 ||
-      childrenOf.has(r.id) ||
-      (r.deadAt === null && r.stage === "adult" && r.sex === "F")
-  );
-
-  const maxGen = shown.reduce((m, r) => Math.max(m, r.gen), 0);
-  const byGen: Rat[][] = Array.from({ length: maxGen + 1 }, () => []);
-  for (const r of shown) byGen[r.gen].push(r);
-  byGen.forEach((g) => g.sort((a, b) => a.id.localeCompare(b.id)));
-
-  const treeWidth=Math.max(VB_W,...byGen.map(g=>(g.length+1)*76));
-  const pos = new Map<string, { x: number; y: number }>();
-  byGen.forEach((gen, g) => {
-    gen.forEach((r, i) => {
-      pos.set(r.id, { x: ((i + 1) / (gen.length + 1)) * treeWidth, y: TOP + g * ROW_H });
-    });
-  });
-
-  const height = TOP + (maxGen + 1) * ROW_H;
-
-  return (
-    <div className="lineage">
-      <div className="panel-head">
-        <strong>{tr('Residents','居民')}</strong>
-        <span className="dim">{all.filter(r=>r.deadAt===null).length} {tr('alive','存活')}</span>
-      </div>
-      <div className="production-residents" aria-label={tr('Living rats','存活的大鼠')}>
-        {all.filter(r=>r.deadAt===null).map(r=>{const coat=coatFor(r.id,r.coatBucket);return <button key={r.id} aria-pressed={focusedId===r.id} onClick={()=>focus(focusedId===r.id?null:r.id)}>
-          <i style={{background:coat.color}}/><span>{r.name}<small>{r.sex==='F'?tr('Female','雌性'):tr('Male','雄性')} · {tr('Gen','世代')} {r.gen} · {tr(coat.name,coatNames[coat.name]??coat.name)}</small></span>
-        </button>;})}
-      </div>
-      {focusedId&&world.rats[focusedId]&&<div className="lineage-legend">{tr(coatFor(focusedId,world.rats[focusedId].coatBucket).rarity,coatNames[coatFor(focusedId,world.rats[focusedId].coatBucket).rarity])} {tr('coat · Age','毛色 · 年龄')} {Math.max(0,(world.rats[focusedId].deadAt??world.simDay)-world.rats[focusedId].bornAt).toFixed(1)} {tr('days','天')}<br/>{tr('Coats are cosmetic variants.','毛色仅为外观差异。')}</div>}
-      <details className="readout-details"><summary>{tr('Family tree','家族谱系')}</summary><div className="lineage-scroll">
-        <svg viewBox={`0 0 ${treeWidth} ${height}`} width={treeWidth} height={height} style={{minWidth:treeWidth}} role="img" aria-label={tr('Colony family tree','种群家族谱系')}>
-          {shown.map((r) =>
-            (childrenOf.get(r.id) ?? []).map((cid) => {
-              const a = pos.get(r.id);
-              const b = pos.get(cid);
-              if (!a || !b) return null;
-              return (
-                <path
-                  key={`${r.id}-${cid}`}
-                  d={`M ${a.x} ${a.y} C ${a.x} ${(a.y + b.y) / 2}, ${b.x} ${(a.y + b.y) / 2}, ${b.x} ${b.y}`}
-                  fill="none"
-                  stroke="#3a2c20"
-                  strokeWidth={0.8}
-                />
-              );
-            })
-          )}
-          {shown.map((r) => {
-            const p = pos.get(r.id);
-            if (!p) return null;
-            const dead = r.deadAt !== null;
-            const focused = r.id === focusedId;
-            const fill = r.sex === "F" ? "#d4574a" : "#6aa7d4";
-            return (
-              <g
-                key={r.id}
-                transform={`translate(${p.x} ${p.y})`}
-                className="lineage-node"
-                tabIndex={0}
-                role="button"
-                aria-label={`${r.name}, ${r.sex === "F" ? tr('female','雌性') : tr('male','雄性')}, ${tr('generation','世代')} ${r.gen}${dead ? tr(', deceased','，已故') : ""}`}
-                aria-pressed={focused}
-                onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); focus(focused ? null : r.id); } }}
-                onClick={() => focus(focused ? null : r.id)}
-              >
-                <title>
-                  {r.name} · {r.sex} · gen {r.gen}
-                  {dead ? ` · ${tr('deceased','已故')}` : r.pregnant ? tr(' · pregnant',' · 怀孕') : ""}
-                </title>
-                {focused && <circle r={12} fill="none" stroke="#e8c36a" strokeWidth={1.2} />}
-                <circle r={r.gen === 0 ? 8 : 6} fill={fill} opacity={dead ? 0.28 : 0.92} />
-                {(r.gen === 0 || focused) && (
-                  <text y={-15} textAnchor="middle" className="lineage-label">
-                    {r.name}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-      <div className="lineage-legend"><span className="legend-f">● {tr('Female','雌性')}</span> · <span className="legend-m">● {tr('Male','雄性')}</span><br />{tr('Faded: deceased. Larger: founders.','淡色：已故。较大节点：创始成员。')}</div></details>
-    </div>
-  );
+export default function LineageTree(){
+ const version=useStore(s=>s.version),focusedId=useStore(s=>s.focusedId),focus=useStore(s=>s.focus);void version;
+ const [query,setQuery]=useState(''),[familyId,setFamilyId]=useState<string|null>(null);
+ const world=getWorld();
+ const records:Record<string,MemorialRecord>={...world.memorial,...world.rats};
+ const sorted=Object.values(records).sort((a,b)=>a.gen-b.gen||a.bornAt-b.bornAt||a.id.localeCompare(b.id));
+ const living=sorted.filter(r=>r.deadAt===null);
+ const matches=(r:MemorialRecord)=>r.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
+ const selected=records[familyId??focusedId??'']??living[0]??sorted[0];
+ const children=selected?sorted.filter(r=>r.motherId===selected.id||r.fatherId===selected.id):[];
+ const generations=[...new Set(children.map(r=>r.gen))].sort((a,b)=>a-b);
+ function choose(id:string){setFamilyId(id);if(records[id]?.deadAt===null)focus(id);}
+ function card(r:MemorialRecord,central=false){
+  const coat=coatFor(r.id,r.coatBucket);
+  return <button key={r.id} className={'family-card'+(central?' family-card-selected':'')} onClick={()=>choose(r.id)} aria-current={central?'true':undefined}>
+   <i aria-hidden="true" style={{background:coat.color}}/>
+   <span><strong>{r.name}</strong><small>{r.sex==='F'?tr('Female','雌性'):tr('Male','雄性')} · {tr('Generation','世代')} {r.gen}</small><small>{r.deadAt===null?tr('Alive','存活'):tr('Deceased','已故')}{r.gen===0?tr(' · Founder',' · 创始成员'):''}</small></span>
+  </button>;
+ }
+ function parent(id:string|null,label:string){
+  return <div className="family-parent"><h4>{label}</h4>{id&&records[id]?card(records[id]):<p className="family-empty">{id?tr('Parent not recorded','未记录父母'):selected?.gen===0?tr('Founder · no earlier ancestry','创始成员，无更早谱系'):tr('Parent unknown','父母未知')}</p>}</div>;
+ }
+ return <div className="lineage">
+  <div className="panel-head"><strong>{tr('Residents','居民')}</strong><span className="dim">{living.length} {tr('alive','存活')}</span></div>
+  <label className="family-search">{tr('Find a rat','查找大鼠')}<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search by name…','按名字搜索…')}/></label>
+  <div className="production-residents" aria-label={tr('Living rats','存活的大鼠')}>
+   {living.filter(matches).map(r=><button key={r.id} aria-pressed={focusedId===r.id} onClick={()=>{setFamilyId(r.id);focus(r.id);}}>
+    <i style={{background:coatFor(r.id,r.coatBucket).color}}/><span>{r.name}<small>{r.sex==='F'?tr('Female','雌性'):tr('Male','雄性')} · {tr('Generation','世代')} {r.gen}</small></span>
+   </button>)}
+   {!living.some(matches)&&<p className="family-empty">{tr('No living rats match this name.','没有匹配的存活大鼠。')}</p>}
+  </div>
+  <details className="readout-details family-view" open>
+   <summary>{tr('Family tree','家族谱系')}</summary>
+   <div className="family-content">
+    <p className="family-intro">{tr('Read from top to bottom: parents → selected rat → children. Select any name to explore that family.','从上到下：父母 → 选中的大鼠 → 子代。点击名字查看其家族。')}</p>
+    <label>{tr('Whose family?','查看谁的家族？')}<select value={selected?.id??''} onChange={e=>choose(e.target.value)} aria-label={tr('Choose family member','选择家族成员')}>
+     {sorted.filter(r=>matches(r)||r.id===selected?.id).map(r=><option key={r.id} value={r.id}>{r.name} · G{r.gen}{r.deadAt!==null?tr(' · deceased',' · 已故'):''}</option>)}
+    </select></label>
+    {focusedId&&selected?.id!==focusedId&&records[focusedId]&&<button className="chip" onClick={()=>setFamilyId(focusedId)}>{tr('Show selected rat’s family','查看选中大鼠的家族')}</button>}
+    {selected?<><section className="family-level"><h3>{tr('1 · Parents','1 · 父母')}</h3>
+     {parent(selected.motherId,tr('Mother','母亲'))}{parent(selected.fatherId,tr('Father','父亲'))}
+    </section><div className="family-flow" aria-hidden="true">↓</div>
+    <section className="family-level"><h3>{tr('2 · Selected rat','2 · 选中的大鼠')}</h3>{card(selected,true)}</section>
+    <div className="family-flow" aria-hidden="true">↓</div>
+    <section className="family-level"><h3>{tr('3 · Children','3 · 子代')} ({children.length})</h3>
+     <p className="family-count">{children.filter(r=>r.deadAt===null).length} {tr('alive','存活')} · {children.filter(r=>r.deadAt!==null).length} {tr('deceased','已故')}</p>
+     {generations.map(gen=><details className="family-generation" key={gen} open={generations.length===1}><summary>{tr('Generation','世代')} {gen} · {children.filter(r=>r.gen===gen).length}</summary>{children.filter(r=>r.gen===gen).map(r=>card(r))}</details>)}
+     {!children.length&&<p className="family-empty">{tr('No recorded children.','暂无子代记录。')}</p>}
+    </section><p className="family-intro">{tr('Both maternal and paternal links are shown. Deceased relatives remain in the family history.','同时显示母系和父系关系。已故亲属保留在家族历史中。')}</p></>:<p>{tr('No family records yet.','暂无家族记录。')}</p>}
+   </div>
+  </details>
+ </div>;
 }
