@@ -16,9 +16,11 @@ export const coats=[
  {name:'Warm agouti',rarity:'Common',color:'#756451',belly:'#cbb997',pattern:'solid'},
  {name:'Sable',rarity:'Common',color:'#423e39',belly:'#a0927d',pattern:'solid'},
 ] as const;
-// Each legendary occupies 1/10,000 buckets. Four solid fantasy coats share 12%.
+// Each legendary occupies 2/10,000 buckets (0.06% combined). Existing legendary buckets stay unchanged.
+// Extra buckets come from Sable; the four solid fantasy coats still share 12%.
 export function coatAtBucket(roll:number){
  const n=((Math.floor(roll)%COAT_BUCKETS)+COAT_BUCKETS)%COAT_BUCKETS;
+ if(n>=9997)return coats[n-9997];
  return coats[n<3?n:n<1203?3+Math.floor((n-3)/300):n<2600?7:n<4200?8:n<6200?9:n<8200?10:11];
 }
 export function coatFor(id:string){const hash=identity(id);return {...coatAtBucket(hash%COAT_BUCKETS),key:(hash>>>16)%8};}
