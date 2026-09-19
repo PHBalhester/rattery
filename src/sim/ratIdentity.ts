@@ -2,6 +2,9 @@ import {CONFIG} from '../config.js';
 // Cosmetic identity only. Never consumes the biological RNG.
 export function identity(id:string){let h=2166136261;for(const c of `${CONFIG.colony.seed}:${id}`){h=Math.imul(h^c.charCodeAt(0),16777619);}h^=h>>>16;h=Math.imul(h,0x7feb352d);h^=h>>>15;return h>>>0;}
 export const COAT_BUCKETS=10000;
+// Operator-created special identity, outside the natural birth lottery.
+export const DIAMOND_COAT=10000;
+export const diamondCoat={name:'Diamond aurora',rarity:'Legendary',color:'#773cc9',belly:'#d6faff',accent:'#42e8d2',pattern:'lightning'} as const;
 export const coats=[
  {name:'Solar gold',rarity:'Legendary',color:'#d8a92f',belly:'#fff0a1',pattern:'solid'},
  {name:'Sunfire freckles',rarity:'Legendary',color:'#f4cb39',belly:'#f4e5ad',accent:'#d53242',pattern:'dots'},
@@ -19,6 +22,7 @@ export const coats=[
 // Each legendary occupies 2/10,000 buckets (0.06% combined). Existing legendary buckets stay unchanged.
 // Extra buckets come from Sable; the four solid fantasy coats still share 12%.
 export function coatAtBucket(roll:number){
+ if(roll===DIAMOND_COAT)return diamondCoat;
  const n=((Math.floor(roll)%COAT_BUCKETS)+COAT_BUCKETS)%COAT_BUCKETS;
  if(n>=9997)return coats[n-9997];
  return coats[n<3?n:n<1203?3+Math.floor((n-3)/300):n<2600?7:n<4200?8:n<6200?9:n<8200?10:11];

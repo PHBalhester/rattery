@@ -8,6 +8,7 @@ import {playActivity} from '../sim/playActivity';
 
 
 import {coatFor} from './ratIdentity';
+import {DIAMOND_COAT} from '../sim/ratIdentity';
 import type { Rat } from '../types';
 import { CONFIG } from '../config';
 import { NEST_POS } from '../sim/colony';
@@ -50,6 +51,7 @@ export class RatAssets {
   body: T.BufferGeometry;
   tail:T.TubeGeometry;
   fur=new T.MeshStandardMaterial({vertexColors:true,roughness:.96});
+  diamondTail=new T.MeshPhysicalMaterial({color:'#c5f5ff',metalness:.35,roughness:.08,clearcoat:1,flatShading:true});
   skin=new T.MeshStandardMaterial({color:0xb68b80,roughness:.8});
   innerEar=new T.MeshStandardMaterial({color:0xcd9e93,roughness:.86,side:T.DoubleSide});
   eyes=new T.MeshPhysicalMaterial({color:0x090b0b,roughness:.16,clearcoat:.8});
@@ -98,7 +100,7 @@ export class RatAssets {
     this.referenceHair=new T.BufferGeometry();this.referenceHair.setAttribute('position',new T.Float32BufferAttribute(hair,3));
     const w:number[]=[];for(const side of [-1,1])for(let k=0;k<5;k++){w.push(.65,.275,side*.06,.69-k*.055,.28+(k-2)*.02,side*(.24+k*.026));}this.whiskerGeometry=new T.BufferGeometry();this.whiskerGeometry.setAttribute('position',new T.Float32BufferAttribute(w,3));
   }
-  dispose(){for(const g of this.variants.values())g.dispose();this.variants.clear();[this.referenceBody,this.referenceHair,this.birthRing,this.sphere,this.limb,this.body,this.tail,this.whiskerGeometry].forEach(g=>g.dispose());[this.referenceFur,this.referenceSkin,this.referenceEyes,this.referenceHairMaterial,this.birthMaterial,this.fur,this.skin,this.innerEar,this.eyes,this.coat,this.whiskers].forEach(m=>m.dispose());}
+  dispose(){for(const g of this.variants.values())g.dispose();this.variants.clear();[this.referenceBody,this.referenceHair,this.birthRing,this.sphere,this.limb,this.body,this.tail,this.whiskerGeometry].forEach(g=>g.dispose());[this.diamondTail,this.referenceFur,this.referenceSkin,this.referenceEyes,this.referenceHairMaterial,this.birthMaterial,this.fur,this.skin,this.innerEar,this.eyes,this.coat,this.whiskers].forEach(m=>m.dispose());}
 }
 
 type Leg={hip:T.Vector3;upper:T.Mesh;lower:T.Mesh;paw:T.Mesh;joint:T.Mesh;front:boolean;side:number};
@@ -160,7 +162,7 @@ export class RatModel {
         this.legs.push({hip:new T.Vector3(front?.25:-.37,.29,side*.18),upper,lower,paw,joint,front,side});}
     }
     this.detail.add(new T.LineSegments(assets.whiskerGeometry,assets.whiskers));
-    this.tail=new T.Mesh(assets.tail,reference?assets.referenceSkin:assets.skin);this.tail.position.set(-.55,.235,0);this.root.add(this.tail);
+    this.tail=new T.Mesh(assets.tail,coatBucket===DIAMOND_COAT?assets.diamondTail:reference?assets.referenceSkin:assets.skin);this.tail.position.set(-.55,.235,0);this.root.add(this.tail);
   }
   sync(r:Rat,day:number,dt:number,time:number,reduced:boolean,discontinuity:boolean,camera:T.Camera){
     const nestDistance=Math.hypot(r.x-NEST_POS.x,r.y-NEST_POS.y)/30;

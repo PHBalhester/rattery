@@ -7,6 +7,7 @@ import {StudyFootMotor,type Ground} from './StudyFootMotor';
 import * as T from 'three';
 import {GLTFLoader,type GLTF} from 'three/addons/loaders/GLTFLoader.js';
 import {clone} from 'three/addons/utils/SkeletonUtils.js';
+import {DIAMOND_COAT} from '../sim/ratIdentity';
 import {identity,coatFor} from './ratIdentity';
 
 function disposeScene(scene:T.Object3D){
@@ -49,6 +50,7 @@ export class BlenderRatVisual{
  private lod=-1;private elapsed=0;private phase=0;private bones=new Map<string,T.Bone>();
  private meshes:T.SkinnedMesh[]=[];
  private materials:T.Material[]=[];
+ private crystalGeometry?:T.BufferGeometry;
  constructor(gltf:GLTF,private levels:Map<string,T.BufferGeometry>[],id:string,bucket?:number){
   this.model=clone(gltf.scene);this.model.scale.setScalar(.8);this.root.add(this.model);this.root.userData.blenderRat=true;
 
@@ -75,6 +77,21 @@ export class BlenderRatVisual{
     const material=(o.material as T.MeshStandardMaterial).clone();
     material.onBeforeCompile=shader=>{shader.uniforms.ratWithdrawal=this.naturalMotion.withdrawal;shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nuniform float ratWithdrawal;').replace('#include <begin_vertex>','#include <begin_vertex>\nfloat fold=smoothstep(.716,1.02,position.y)*ratWithdrawal; transformed.x-=.12*fold; transformed.y-=.09*fold;');};
     material.customProgramCacheKey=()=> 'rat-withdrawal-ears-v1';o.material=material;this.materials.push(material);
+    if(bucket===DIAMOND_COAT&&o.name==='Warm_pink_skin'){
+     const original=material.onBeforeCompile;
+     material.onBeforeCompile=(shader,renderer)=>{
+      original.call(material,shader,renderer);
+      shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 diamondRest;').replace('#include <begin_vertex>','#include <begin_vertex>\ndiamondRest=position;');
+      shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 diamondRest;');
+      shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+       float diamondMask=1.0-smoothstep(-.76,-.70,diamondRest.x);
+       float facet=fract(floor(diamondRest.x*65.0)*.618+floor(diamondRest.z*80.0)*.381+floor(diamondRest.y*80.0)*.27);
+       vec3 crystal=mix(vec3(.25,.72,.9),vec3(.92,.97,1.0),facet);
+       diffuseColor.rgb=mix(diffuseColor.rgb,crystal,diamondMask);`);
+      shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=mix(roughnessFactor,.1,diamondMask);').replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\nmetalnessFactor=mix(metalnessFactor,.45,diamondMask);');
+     };
+     material.customProgramCacheKey=()=> 'rat-diamond-tail-v1';
+    }
    }
    if(id!=='F1'&&(o.name==='Ivory_coat'||o.name==='Fine_ivory_fibres')){
     const material=(o.material as T.MeshStandardMaterial).clone();material.color.set('#ffffff');
@@ -89,6 +106,15 @@ export class BlenderRatVisual{
     material.customProgramCacheKey=()=>`rat-${coat.pattern}-uniform-v2`;o.material=material;this.materials.push(material);
    }
   });
+  if(bucket===DIAMOND_COAT){
+   const tip=this.bones.get('caudal5');
+   if(tip){
+    this.crystalGeometry=new T.OctahedronGeometry(.085,0);
+    const material=new T.MeshPhysicalMaterial({color:'#c5f5ff',metalness:.25,roughness:.06,clearcoat:1,clearcoatRoughness:.02,flatShading:true,emissive:'#206b82',emissiveIntensity:.22});
+    this.materials.push(material);const gem=new T.Mesh(this.crystalGeometry,material);
+    gem.name='Diamond_tail_tip';gem.position.y=.12;gem.scale.set(.8,1.35,.8);tip.add(gem);
+   }
+  }
   // All seven meshes use the same joint table; share its GPU bone texture per rat.
   const skeleton=this.meshes[0]?.skeleton;
   if(skeleton)for(const mesh of this.meshes){
@@ -127,5 +153,5 @@ export class BlenderRatVisual{
  }
  naturalDiagnostics(){return this.naturalMotion.diagnostics();}
  diagnostics(){return this.motor.diagnostics();}
- dispose(){const skeletons=new Set<T.Skeleton>();this.model.traverse(o=>{if(o instanceof T.SkinnedMesh)skeletons.add(o.skeleton);});skeletons.forEach(s=>s.dispose());this.materials.forEach(m=>m.dispose());this.root.removeFromParent();this.root.clear();}
+ dispose(){this.crystalGeometry?.dispose();const skeletons=new Set<T.Skeleton>();this.model.traverse(o=>{if(o instanceof T.SkinnedMesh)skeletons.add(o.skeleton);});skeletons.forEach(s=>s.dispose());this.materials.forEach(m=>m.dispose());this.root.removeFromParent();this.root.clear();}
 }

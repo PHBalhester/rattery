@@ -1,0 +1,23 @@
+import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+import type {World} from '../src/types';
+import {aliveRats,spawnRat,inheritGenome,nestJitter,pushEvent} from '../src/sim/colony';
+import {familyNest} from '../src/sim/familyNest';
+import {worldRng} from '../src/sim/rng';
+import {DIAMOND_COAT} from '../src/sim/ratIdentity';
+// Offline operator transform. Apply only under a database lock with archived input.
+const w=JSON.parse(readFileSync(0,'utf8')) as World;
+assert(!Object.values({...w.memorial,...w.rats}).some(r=>r.coatBucket===DIAMOND_COAT),'Diamond rat already exists');
+const living=aliveRats(w);assert(living.length<100,'Population needs room');
+const mother=living.filter(r=>r.sex==='F'&&r.stage==='adult'&&!r.pregnant&&!r.retrieving&&r.energy>=.6).sort((a,b)=>Number(b.nursing.length>0)-Number(a.nursing.length>0)||a.nursing.length-b.nursing.length||b.bornAt-a.bornAt)[0];
+const father=living.filter(r=>r.sex==='M'&&r.stage==='adult').sort((a,b)=>b.energy-a.energy||b.bornAt-a.bornAt)[0];
+assert(mother&&father,'Healthy adult parents required');
+const care=JSON.stringify(w.care),deaths=w.totals.deaths,rng=worldRng(w),pos=nestJitter(rng,familyNest(mother));
+const pup=spawnRat(w,rng,{sex:'F',name:'Aurora',bornAt:w.simDay,gen:Math.max(mother.gen,father.gen)+1,motherId:mother.id,fatherId:father.id,genome:inheritGenome(mother.genome,father.genome,rng,false,true),x:pos.x,y:pos.y,energy:.85,stage:'neonate'});
+pup.coatBucket=DIAMOND_COAT;pup.heat=.9;
+if(mother.maternalNest)pup.maternalNest={...mother.maternalNest};
+const newLitter=mother.nursing.length===0;mother.nursing.push(pup.id);mother.offspring++;mother.hormones.ot=1;mother.hormones.prl=Math.max(mother.hormones.prl,.8);mother.lastBirthAt=w.simDay;
+w.totals.pups++;if(newLitter)w.totals.litters++;w.lastBirth={ratId:mother.id,t:w.simDay};
+pushEvent(w,{t:w.simDay,kind:'birth',ratId:mother.id,extra:'1/1 · Diamond aurora · operator-created'});
+assert.equal(aliveRats(w).length,living.length+1);assert.equal(JSON.stringify(w.care),care);assert.equal(w.totals.deaths,deaths);
+process.stdout.write(JSON.stringify({world:w,rat:{id:pup.id,name:pup.name,coatBucket:pup.coatBucket,motherId:mother.id,fatherId:father.id},before:living.length,after:living.length+1}));
