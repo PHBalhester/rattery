@@ -16,6 +16,7 @@ export type CyclePhase =
   | "anestrus_lactational";
 
 export type DeathCause =
+  | "predation"
   | "age"
   | "starvation"
   | "cold"
@@ -163,6 +164,7 @@ export interface WorldEvent {
 export type MemorialRecord=Pick<Rat,"coatBucket"|"id"|"name"|"sex"|"bornAt"|"deadAt"|"deathCause"|"gen"|"motherId"|"fatherId"|"offspring"|"caregiver"|"residenceDays">;
 
 export interface World {
+  snake?:{nextAttack:number;awakeUntil?:number;capture?:{ratId:string;started:number;x:number;y:number}};
   careProtection?:{until:number;active:boolean};
   legendaryBoost?:{untilSimDay:number;claimedBy?:string};
   nextCrowdingDeathAt?: number;

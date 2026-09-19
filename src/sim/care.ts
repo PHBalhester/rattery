@@ -1,6 +1,8 @@
+import {snakeEligible} from './snake.js';
 import {assertAllowedName} from './namePolicy.js';
 import type { World } from '../types';
 export const CARE_RULES={
+ snake:{cost:500000,hours:1},
  mint:{cost:500000,hours:0},name:{cost:0,hours:24},feed:{cost:10000,hours:4},water:{cost:10000,hours:2},pet:{cost:5000,hours:1},play:{cost:5000,hours:2},treat:{cost:5000,hours:8},explore:{cost:10000,hours:1},prosocial:{cost:100000,hours:2},aggression:{cost:100000,hours:2},
 } as const;
 export type CareAction=keyof typeof CARE_RULES;
@@ -15,6 +17,7 @@ export function validateCare(w:World,state:CareState,event:CareEvent){
  if(!rule||!Number.isSafeInteger(event.sequence)||event.sequence!==state.lastSequence+1||!Number.isSafeInteger(event.timestamp)||event.timestamp<=0||!/^0x[0-9a-f]{40}$/.test(event.wallet)||event.amount!==rule.cost)throw new Error('Invalid care event');
  if(event.timestamp<(state.lastTimestamp??0))throw new Error('Care timestamp regressed');
  const rat=w.rats[event.ratId];if(!rat||rat.deadAt!==null)throw new Error('Rat unavailable');
+ if(event.action==='snake'){if(w.careProtection?.active||w.snake?.capture||(w.snake?.awakeUntil??0)>w.simDay||!Object.values(w.rats).some(r=>snakeEligible(w,r)))throw Error('Snake unavailable');if((state.cooldowns['colony:snake']??0)>event.timestamp)throw Error('Cooldown active');return rat;}
  const owner=state.owners[rat.id];if(owner&&owner!==event.wallet)throw new Error('Only owner may interact');
  if(event.action==='mint'&&owner)throw new Error('Already minted');
  if(event.action==='name'&&!owner)throw new Error('Mint required to name');
@@ -32,6 +35,7 @@ export function validateCare(w:World,state:CareState,event:CareEvent){
 export function applyCare(w:World,state:CareState,event:CareEvent){
  const rat=validateCare(w,state,event),rule=CARE_RULES[event.action];
  switch(event.action){
+ case 'snake':w.snake??={nextAttack:w.simDay};w.snake.nextAttack=w.simDay;w.snake.awakeUntil=w.simDay+10;state.cooldowns['colony:snake']=event.timestamp+3600000;break;
  case 'mint':state.owners[rat.id]=event.wallet;rat.name=event.name!.trim();state.cooldowns[key(rat.id,'name')]=event.timestamp+86400000;break;
  case 'name':rat.name=event.name!.trim();break;
  case 'feed':rat.energy=Math.min(1,rat.energy+.15);break;

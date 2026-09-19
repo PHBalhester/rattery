@@ -1,3 +1,4 @@
+import {SnakeDen} from './SnakeDen';
 import {AdaptiveQuality} from './AdaptiveQuality';
 import {addCourtyard} from './Courtyard';
 import {RatNameLabels} from './RatNameLabels';
@@ -27,7 +28,7 @@ export default function Burrow3D(){
  useEffect(()=>{
   const el=host.current!;delete el.dataset.performance;delete el.dataset.quality;let renderer:T.WebGLRenderer;
   try{renderer=new T.WebGLRenderer({antialias:true});}catch{setError(true);return;}
-  renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x080a0b);renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;el.appendChild(renderer.domElement);const names=new RatNameLabels(el);
+  renderer.localClippingEnabled=true;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x080a0b);renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;el.appendChild(renderer.domElement);const names=new RatNameLabels(el);
   const contextLost=(event:Event)=>{event.preventDefault();renderer.setAnimationLoop(null);setError(true);};
   renderer.domElement.addEventListener('webglcontextlost',contextLost);
   const scene=new T.Scene(),camera=new T.PerspectiveCamera(42,1,.1,250),controls=new OrbitControls(camera,renderer.domElement);
@@ -81,6 +82,7 @@ export default function Burrow3D(){
    gltf.scene.name='Blender habitat';gltf.scene.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true;o.receiveShadow=true;}});
    scene.add(gltf.scene);legacyScenery.visible=false;legacyEnrichment.visible=false;el.dataset.habitat='blender';
   },undefined,()=>{if(!disposed)el.dataset.habitat='fallback';});
+  const snakeDen=new SnakeDen(scene);
   const assets=new RatAssets(),rats=new Map<string,RatModel>(),deathPoses=new Map<string,{at:number;y:number}>();
   let blenderRats:BlenderRatAssets|undefined;
   BlenderRatAssets.load().then(loaded=>{
@@ -121,10 +123,12 @@ export default function Burrow3D(){
    for(const r of Object.values(world.rats)){
     if(r.deadAt!==null)continue;
     let m=rats.get(r.id);if(!m){m=new RatModel(assets,r.id,r.id==='F1',r.coatBucket);rats.set(r.id,m);if(blenderRats)m.attachBlender(blenderRats);scene.add(m.root);}
+    m.root.visible=true;m.root.rotation.z=0;
     m.setRenderQuality(quality.level);
     m.sync(displayedRat(r),displayedDay(),dt,time/1000,reduced.matches&&!motionOverride.current,discontinuity,camera);
    }
    for(const [id,m] of rats)if(!world.rats[id]||world.rats[id].deadAt!==null){
+    if((world.rats[id]??world.memorial?.[id])?.deathCause==='predation'){m.dispose();rats.delete(id);deathPoses.delete(id);continue;}
     const deadAt=world.rats[id]?.deadAt??world.memorial?.[id]?.deadAt;
     if(discontinuity||deadAt==null){m.dispose();rats.delete(id);deathPoses.delete(id);continue;}
     let pose=deathPoses.get(id);
@@ -134,6 +138,7 @@ export default function Burrow3D(){
     const fall=reduced.matches?1:Math.min(1,age/.8),ease=fall*fall*(3-2*fall);
     m.root.rotation.z=Math.PI*.48*ease;m.root.position.y=pose.y+m.root.scale.x*.2*ease;
    }
+   snakeDen.update(world,rats,displayedDay(),reduced.matches&&!motionOverride.current);
    const focused=useStore.getState().focusedId,selected=focused&&world.rats[focused]?.deadAt===null?rats.get(focused)?.root:null;
    ring.visible=!!selected&&!replaying;
    if(selected&&!replaying){
@@ -142,7 +147,7 @@ export default function Burrow3D(){
     ring.position.copy(selected.position);ring.position.y+=.02;
     camera.position.add(selected.position.clone().sub(controls.target));controls.target.copy(selected.position);
    }
-   lastFocused=focused;enrichment.update(world,dt,reduced.matches&&!motionOverride.current);controls.enableDamping=!reduced.matches||motionOverride.current;controls.update();names.begin();if(!replaying)for(const [id,m]of rats){const rat=world.rats[id];const petAt=rat.petAt??((world.care?.cooldowns[id+':pet']??0)-3600000),petting=Date.now()>=petAt&&Date.now()-petAt<15000;if(world.care?.owners[id]||rat.minted||petting)names.show(id,petting?'♡ '+rat.name+' · '+tr('Gentle petting','温柔抚摸'):(rat.caregiver?'◇ ':'')+rat.name+(rat.residenceDays?' · '+rat.residenceDays+'d':''),m.root,camera,petting);}names.end();renderer.render(scene,camera);
+   lastFocused=focused;enrichment.update(world,dt,reduced.matches&&!motionOverride.current);controls.enableDamping=!reduced.matches||motionOverride.current;controls.update();names.begin();if(!replaying)for(const [id,m]of rats){const rat=world.rats[id];if(!rat||rat.deadAt!==null)continue;const petAt=rat.petAt??((world.care?.cooldowns[id+':pet']??0)-3600000),petting=Date.now()>=petAt&&Date.now()-petAt<15000;if(world.care?.owners[id]||rat.minted||petting)names.show(id,petting?'♡ '+rat.name+' · '+tr('Gentle petting','温柔抚摸'):(rat.caregiver?'◇ ':'')+rat.name+(rat.residenceDays?' · '+rat.residenceDays+'d':''),m.root,camera,petting);}names.end();renderer.render(scene,camera);
    telemetryFrames++;if(time-telemetryAt>=1000){const fps=telemetryFrames*1000/(time-telemetryAt);const info={fps:Math.round(fps*10)/10,quality:quality.profile.name,rats:rats.size,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,pixelRatio:renderer.getPixelRatio()};el.dataset.performance=JSON.stringify(info);if(performanceLabel)performanceLabel.textContent=`${info.fps} FPS · ${info.quality} · ${info.rats} rats`;telemetryAt=time;telemetryFrames=0;}
 
   });

@@ -5,7 +5,7 @@ import {useState} from 'react';
 import {getWorld,useStore} from '../store';
 import {tr,locale} from '../i18n';
 import {CARE_RULES,DEMO_WALLETS,demoCare,type CareAction} from '../sim/care';
-const labels:Record<CareAction,[string,string]>={mint:['Mint rat','铸造大鼠'],name:['Rename','重命名'],feed:['Feed','喂食'],water:['Offer water','提供饮水'],pet:['Pet','抚摸'],play:['Play','玩耍'],treat:['Offer treat','提供零食'],explore:['Invite to explore','邀请探索'],prosocial:['Sociability booster','社交增强剂'],aggression:['Irritability booster','易怒增强剂']};
+const labels:Record<CareAction,[string,string]>={snake:['Awaken snake','唤醒蛇'],mint:['Mint rat','铸造大鼠'],name:['Rename','重命名'],feed:['Feed','喂食'],water:['Offer water','提供饮水'],pet:['Pet','抚摸'],play:['Play','玩耍'],treat:['Offer treat','提供零食'],explore:['Invite to explore','邀请探索'],prosocial:['Sociability booster','社交增强剂'],aggression:['Irritability booster','易怒增强剂']};
 export default function RatCare(){
  const connected=useWallet(s=>s.account),authenticated=useWallet(s=>s.authenticated);
  const version=useStore(s=>s.version);void version;const focused=useStore(s=>s.focusedId),status=useStore(s=>s.feedStatus),world=getWorld();

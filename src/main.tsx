@@ -9,6 +9,8 @@ import "./panels.css";
 // double-start (see store.startEngine), so the simulation runs once.
 if(localCareLab&&new URLSearchParams(location.search).get('view')==='care-lab'){
  void import('./render/CareLab').then(({default:CareLab})=>createRoot(document.getElementById('root')!).render(<CareLab/>));
+}else if(new URLSearchParams(location.search).get('view')==='snake-studio'){
+  void import('./render/snakeStudio').then(m=>m.showSnakeStudio(document.getElementById('root')!));
 }else if(new URLSearchParams(location.search).get('view')==='mating-studio'){
   void import('./render/matingStudio').then(m=>m.showMatingStudio(document.getElementById('root')!));
 }else if(new URLSearchParams(location.search).get('view')==='gait-studio'){

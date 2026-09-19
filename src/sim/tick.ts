@@ -1,3 +1,4 @@
+import {snakeStep} from './snake.js';
 import {assistColony} from './temporaryProtection.js';
 import {identity,COAT_BUCKETS} from './ratIdentity.js';
 import {familyNest} from './familyNest.js';
@@ -313,6 +314,7 @@ export function tick(world: World, dtDays: number, rng: () => number, envOverrid
   socialStep(world,dtDays,rng);
   enforceCap(world);
   separateRats(world);
+  snakeStep(world,dtDays,rng);
 
   // Colony-wide states fire once on entry, not every tick.
   const now = aliveRats(world);

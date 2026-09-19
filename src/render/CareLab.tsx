@@ -12,7 +12,7 @@ async function api(op:string,data:unknown={}){
  const response=await fetch('/api/care?op='+op,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(data),signal:AbortSignal.timeout(10000)});
  if(!response.ok)throw Error('Action unavailable, expired or cooling down');return response.json();
 }
-const labels:Record<CareAction,[string,string]>={mint:['Mint','铸造'],name:['Rename','重命名'],feed:['Feed','喂食'],water:['Offer water','提供饮水'],pet:['Pet','抚摸'],play:['Play','玩耍'],treat:['Offer treat','提供零食'],explore:['Explore','探索'],prosocial:['Prosocial stimulus','亲社会刺激'],aggression:['Aggression stimulus','攻击性刺激']};
+const labels:Record<CareAction,[string,string]>={snake:['Awaken snake','唤醒蛇'],mint:['Mint','铸造'],name:['Rename','重命名'],feed:['Feed','喂食'],water:['Offer water','提供饮水'],pet:['Pet','抚摸'],play:['Play','玩耍'],treat:['Offer treat','提供零食'],explore:['Explore','探索'],prosocial:['Prosocial stimulus','亲社会刺激'],aggression:['Aggression stimulus','攻击性刺激']};
 export default function CareLab(){
  const {language,setLanguage}=useLanguage(),w=useWallet();
  const [view,setView]=useState<View|null>(null),[ratId,setRatId]=useState(''),[action,setAction]=useState<CareAction>('mint'),[name,setName]=useState('Lab Rat');

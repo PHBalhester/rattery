@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import {getWorld} from '../store';
 import {tr,locale} from '../i18n';
-export function causeLabel(c:string){const labels:Record<string,[string,string]>={age:['Old age','衰老'],starvation:['Starvation','饥饿'],cold:['Cold exposure','寒冷'],neonatal_abandon:['Neonatal abandonment','幼崽被遗弃'],neonatal_cannibal:['Neonatal cannibalism','幼崽被同类吞食'],stillbirth:['Stillbirth','死产'],crowding:['Overcrowding','过度拥挤'],none:['Not recorded','未记录']};return tr(...(labels[c]??labels.none));}
+export function causeLabel(c:string){const labels:Record<string,[string,string]>={predation:['Snake encounter','蛇的捕食'],age:['Old age','衰老'],starvation:['Starvation','饥饿'],cold:['Cold exposure','寒冷'],neonatal_abandon:['Neonatal abandonment','幼崽被遗弃'],neonatal_cannibal:['Neonatal cannibalism','幼崽被同类吞食'],stillbirth:['Stillbirth','死产'],crowding:['Overcrowding','过度拥挤'],none:['Not recorded','未记录']};return tr(...(labels[c]??labels.none));}
 export default function Memorial(){const world=getWorld();const [selected,setSelected]=useState<string|null>(null),[query,setQuery]=useState('');
  const records={...Object.fromEntries(Object.values(world.rats).filter(r=>r.deadAt!==null).map(r=>[r.id,r])),...world.memorial};
  const dead=Object.values(records).sort((a,b)=>(b.deadAt??0)-(a.deadAt??0)||a.id.localeCompare(b.id));const rat=selected?records[selected]:undefined;

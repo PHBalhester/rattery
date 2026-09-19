@@ -10,7 +10,7 @@ import {CONFIG} from '../src/config.js';
 import {tick} from '../src/sim/tick.js';
 import {applyQueuedTrades} from './trade-ledger.js';
 import {worldRng} from '../src/sim/rng.js';
-export const ENGINE_VERSION='shared-colony-v15:'+digest(JSON.stringify(CONFIG)).slice(0,16);
+export const ENGINE_VERSION='shared-colony-v16:'+digest(JSON.stringify(CONFIG)).slice(0,16);
 export const MAX_SIMULATION_BATCH=40;
 const uuid=(s:string)=>/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(s);
 export class Persistence{
@@ -71,7 +71,7 @@ export class Persistence{
    }
    if(Number((await c.query("SELECT count(*) FROM care_intents WHERE wallet=$1 AND status IN ('reserved','review')",[wallet])).rows[0].count)>=5)throw Error('Resolve pending actions first');
    const ownership=(await c.query('SELECT wallet FROM rat_ownership WHERE rat_id=$1',[ratId])).rows[0];
-   if(ownership&&(ownership.wallet!==wallet||action==='mint'))throw Error('Ownership conflict');
+   if(action!=='snake'&&ownership&&(ownership.wallet!==wallet||action==='mint'))throw Error('Ownership conflict');
    const world=state.world as World,care=world.care??careState(),now=this.clock();
    validateCare(world,care,{sequence:care.lastSequence+1,ratId,wallet,action,name,timestamp:now,amount:CARE_RULES[action].cost});
    // EVM timestamps have whole-second precision. Include the reservation's second.
