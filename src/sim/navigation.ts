@@ -75,5 +75,11 @@ export function recoverPosition(p:Point,budget:number):Point|null{
  const candidates:Point[]=segments.map(([a,b])=>{const dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));return {x:a.x+dx*t,y:a.y+dy*t};});
  const d=dist(p,NEST_POS),f=Math.min(1,(NEST_POS.r-11)/(d||1));candidates.push({x:NEST_POS.x+(p.x-NEST_POS.x)*f,y:NEST_POS.y+(p.y-NEST_POS.y)*f});
  const q=candidates.filter(q=>dist(p,q)<=35&&walkable(q)&&!refugePathBlocked(p,q)&&obstacles.every(o=>segment({x:o.p.x,y:o.p.z},p,q)>=35)).sort((a,b)=>dist(p,a)-dist(p,b))[0];
- if(!q)return null;const length=dist(p,q),step=Math.min(1,budget/(length||1));return {x:p.x+(q.x-p.x)*step,y:p.y+(q.y-p.y)*step};
+ if(!q){
+  // Invalid legacy positions can already overlap scenery, so a swept path cannot start.
+  // Repair only locally, onto the connected graph; ordinary movement still uses clearPath.
+  const repair=nodes.map((point,i)=>({point,i,d:dist(p,point)})).filter(v=>v.d<=60&&edges[v.i].length>0&&walkable(v.point)).sort((a,b)=>a.d-b.d||a.i-b.i).find(v=>findPath(v.point,NEST_POS)!==null);
+  return repair?{...repair.point}:null;
+ }
+ const length=dist(p,q),step=Math.min(1,budget/(length||1));return {x:p.x+(q.x-p.x)*step,y:p.y+(q.y-p.y)*step};
 }

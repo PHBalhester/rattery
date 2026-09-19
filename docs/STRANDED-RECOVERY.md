@@ -1,0 +1,3 @@
+# Stranded residents
+Engine v13 adds a bounded fallback for independent residents already outside navigable terrain. Existing swept recovery is attempted first. If that fails, recovery selects the nearest graph point within 60 simulation units with a route to the nest. This exceptional position repair can cross the invalid starting boundary; it is not used for ordinary movement. Names, ownership, care, biology and history are preserved.
+Regression cases cover six real stranded locations, deterministic repair, reachable water, and subsequent hydration without directly filling hydration. Normal navigation/collision tests remain applicable. Positions farther from connected terrain are not teleported.
