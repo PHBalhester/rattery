@@ -1,27 +1,24 @@
 import {useEffect,useRef,useState} from 'react';
 import {tr,useLanguage} from '../i18n';
-
-const STORAGE_KEY='rattery:welcome-tour:v1';
-function firstVisit(){try{return localStorage.getItem(STORAGE_KEY)!=='done';}catch{return true;}}
-
-/** Local-only onboarding: never connects a wallet or changes colony state. */
+const KEY='rattery:welcome-explainer:v2';
+function firstVisit(){try{return localStorage.getItem(KEY)!=='done';}catch{return true;}}
 export default function WelcomeTour(){
  useLanguage(s=>s.language);
- const [open,setOpen]=useState(firstVisit),[step,setStep]=useState(0);
+ const [open,setOpen]=useState(firstVisit);
  const dialog=useRef<HTMLDialogElement>(null),help=useRef<HTMLButtonElement>(null);
- useEffect(()=>{if(open){const node=dialog.current;if(node&&!node.open){node.showModal();node.querySelector<HTMLButtonElement>('.tour-next')?.focus();}return()=>node?.close();}},[open]);
- const dismiss=()=>{try{localStorage.setItem(STORAGE_KEY,'done');}catch{/* Storage may be unavailable in private contexts. */}dialog.current?.close();setOpen(false);help.current?.focus();};
- const tips=[
-  {title:tr('Welcome to the colony','欢迎来到群落'),text:tr('Would you like a quick look around? Four short tips will help you get started. You can skip at any time.','想快速了解一下吗？四条简短提示将帮助你开始探索。你可以随时跳过。'),detail:tr('Watching is free. No wallet needed.','观看免费，无需连接钱包。')},
-  {title:tr('Meet your residents','认识这里的大鼠'),text:tr('Drag to orbit and zoom in for a closer look. Select a rat in the colony or the Residents list to see its story and condition.','拖动以旋转视角，放大以仔细观察。选择场景中的大鼠或居民列表中的名字，查看它的经历和状态。'),detail:tr('Family tree shows relationships. Memorial remembers past residents.','家谱展示亲缘关系，纪念园记录已逝居民。')},
-  {title:tr('Read the colony’s mood','了解群落的状态'),text:tr('The panels show needs, stress and social life. Green means things are going well; red marks problems. Trades can influence resources and behaviour.','面板展示需求、压力和社交生活。绿色表示状态良好，红色提示问题。交易可能影响资源和行为。'),detail:tr('These are simulation indicators, not measurements of real animals.','这些是模拟指标，并非真实动物的测量数据。')},
-  {title:tr('Settle in','放松观察'),text:tr('Use Hide panels for a clear view and the music note for lo-fi sound. Wallet connection is optional; it is not needed to explore.','使用“隐藏面板”获得开阔视野，点击音符播放低保真音乐。连接钱包是可选的，探索无需钱包。'),detail:import.meta.env.VITE_STAGING==='true'?tr('This is a demo. Real minting and paid care are not enabled.','当前为演示环境，真实铸造与付费照料尚未启用。'):tr('Check availability and costs before any mint or care action. Find this guide again under Help in the footer.','铸造或照料前，请查看可用状态和费用。可在页脚的“帮助”中再次打开本指南。')},
- ];
- const tip=tips[step];
- return <><button ref={help} className="tour-help" type="button" onClick={()=>{setStep(0);setOpen(true);}}>{tr('Help','帮助')}</button>{open&&<dialog ref={dialog} className="welcome-tour" aria-labelledby="tour-title" aria-describedby="tour-description" onCancel={event=>{event.preventDefault();dismiss();}}>
-  <div className="tour-heading"><span>RATTERY</span><span aria-label={tr('Tutorial progress','教程进度')}>{step+1} / {tips.length}</span></div>
-  <div aria-live="polite" aria-atomic="true"><h2 id="tour-title">{tip.title}</h2><p id="tour-description">{tip.text}</p><p className="tour-detail">{tip.detail}</p></div>
-  <div className="tour-dots" aria-hidden="true">{tips.map((_,i)=><span key={i} className={i===step?'current':''}/>)}</div>
-  <div className="tour-actions"><button type="button" className="tour-skip" onClick={dismiss}>{tr('Skip','跳过')}</button><button type="button" className="tour-next" autoFocus onClick={()=>step===tips.length-1?dismiss():setStep(s=>Math.min(s+1,tips.length-1))}>{step===tips.length-1?tr('Explore colony','探索群落'):tr('Next','下一步')}<span aria-hidden="true"> →</span></button></div>
+ useEffect(()=>{const node=dialog.current;if(open&&node&&!node.open)node.showModal();return()=>node?.close();},[open]);
+ function dismiss(){try{localStorage.setItem(KEY,'done');}catch{/* Optional browser preference. */}dialog.current?.close();setOpen(false);help.current?.focus();}
+ return <><button ref={help} type="button" className="tour-help" onClick={()=>setOpen(true)}>{tr('How it works','如何运作')}</button>{open&&<dialog ref={dialog} className="welcome-tour colony-explainer" aria-labelledby="tour-title" onCancel={e=>{e.preventDefault();dismiss();}}>
+ <div className="tour-heading"><span>RATTERY / {tr('THE BASICS','基础介绍')}</span><button type="button" aria-label={tr('Close guide','关闭指南')} onClick={dismiss}>×</button></div>
+ <h2 id="tour-title">{tr('A living colony. A shared world.','生机勃勃的共享群落。')}</h2>
+ <p>{tr('Everyone watches the same digital rats. They explore, rest, form relationships and grow older—even when you leave.','每个人都在观察同一群数字大鼠。它们探索、休息、建立关系并逐渐变老，即使你离开也会继续。')}</p>
+ <ol className="explainer-steps">
+ <li><strong>{tr('Trades change their environment','交易改变环境')}</strong><p>{tr('Yes, token trading matters. Buys can support resources and exploration. Sells can add pressure and stress. Reactions depend on the colony’s condition, trade size and cooldowns.','代币交易会产生影响。买入可支持资源与探索，卖出可增加压力。反应取决于群落状态、交易规模和冷却时间。')}</p></li>
+ <li><strong>{tr('Choose a rat to help','选择一只大鼠提供帮助')}</strong><p>{tr('Select a rat, then open its care actions to name it, offer food or water, or play. Paid actions burn RATTERY permanently; review the cost and availability before confirming. Naming is recorded in the project, not as an NFT.','选择一只大鼠，查看照护操作，为它命名、提供食物或水、或玩耍。付费操作永久销毁RATTERY；确认前请检查费用和可用性。命名记录在项目内，不是NFT。')}</p></li>
+ <li><strong>{tr('Check what they need','查看它们的需求')}</strong><p>{tr('Colony status shows current needs and alerts. Open an alert to find affected rats. Temporary assisted care, when active, reduces negative effects.','群落状态显示当前需求和警报。打开警报可查看受影响的大鼠。临时照护启用时会减少负面影响。')}</p></li>
+ </ol>
+ <details><summary>{tr('A few more things to know','更多须知')}</summary><p>{tr('Unminted rats can receive care from any wallet; minted rats require their owner. Cooldowns apply. The snake is a separate harmful action that can kill an eligible rat. Behaviour is simulated, not a scientific measurement.','未铸造的大鼠可由任何钱包照护；已铸造的大鼠需由所有者照护。操作有冷却时间。蛇是独立的有害操作，可能杀死符合条件的大鼠。行为属于模拟，并非科学测量。')}</p></details>
+ <p className="tour-detail">{tr('Free to watch. No wallet needed. Drag to look around, or use Meet the rats to choose a resident.','免费观看，无需钱包。拖动以环顾，或通过“认识大鼠”选择居民。')}</p>
+ <button type="button" className="tour-next" autoFocus onClick={dismiss}>{tr('Explore the colony','探索群落')} →</button>
  </dialog>}</>;
 }

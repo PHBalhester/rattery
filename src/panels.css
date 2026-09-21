@@ -169,3 +169,39 @@
 .family-empty{font-size:12px;color:#b8beb6;padding:7px;margin:0}
 .family-generation>summary{cursor:pointer;font-size:12px;min-height:32px;padding:6px 0}
 .colony-app .family-view{margin-top:8px}
+/* Clear entry: one information panel at a time, with navigation always available. */
+.clear-layout .scene-title,.clear-layout .hud-wrap{display:none}
+.clear-layout .colony-navigation{position:absolute;top:88px;left:18px;right:18px;display:flex;gap:8px;flex-wrap:wrap;z-index:12}
+.clear-layout .colony-navigation button{border:1px solid #87988966;border-radius:8px;background:#142019ed;color:#f1f5ee;font:500 13px/1.3 "Segoe UI",sans-serif;min-height:44px;padding:10px 16px;cursor:pointer}
+.clear-layout .colony-navigation button[aria-expanded=true]{background:#d6e9d6;color:#17241b}
+.clear-layout :is(button,a,input,select,summary):focus-visible{outline:3px solid #c2eccb;outline-offset:3px}
+.clear-layout .colony-panel{top:148px;border-radius:12px;overflow:auto}
+.clear-layout.panel-residents .condition-panel,.clear-layout:not(.panel-residents) .lineage-panel{display:none}
+.clear-layout .lineage-panel{left:auto;right:18px;width:350px}
+.clear-layout .scene-controls{left:18px;justify-content:flex-start}
+.clear-layout.cinema .topbar{left:18px;right:18px;width:auto}
+.clear-layout.cinema .topbar .brand{display:block}
+.clear-layout.cinema .colony-scene .scene-controls{bottom:18px;left:18px}
+.clear-layout .shared-status{max-width:calc(100% - 32px)}
+.colony-explainer{width:min(560px,calc(100vw - 24px));padding:24px}
+.colony-explainer .tour-heading{align-items:center}
+.colony-explainer .tour-heading button{background:transparent;color:inherit;border:0;font-size:24px}
+.colony-explainer .explainer-steps{padding-left:24px}
+.colony-explainer li{padding-left:4px;margin:18px 0}
+.colony-explainer li strong{color:#e4f4e5}
+.colony-explainer li p{margin:6px 0}
+.colony-explainer summary{cursor:pointer;min-height:44px;align-content:center}
+.colony-explainer details{margin:12px 0;color:#d2dcd4}
+.colony-explainer .tour-next{width:100%;background:#d6e9d6;color:#142019;border:0}
+@media(max-width:780px){
+ .clear-layout.cinema .topbar{left:8px;right:8px}
+ .clear-layout .colony-navigation{top:70px;left:8px;right:8px;gap:6px}
+ .clear-layout .colony-navigation button{padding:8px 10px;font-size:12px}
+ .clear-layout .panel-deck{top:172px;bottom:var(--bottom-chrome,150px);height:auto;padding:0 8px;overflow:visible}
+ .clear-layout .panel-deck .colony-panel{flex:1 1 auto;width:100%;min-width:0;max-width:100%;height:100%}
+ .clear-layout:not(.cinema) .colony-scene .scene-controls{display:none}
+ .clear-layout .topbar .brand-tag{display:none}
+ .clear-layout .topbar .chip:not(.chip-accent),.clear-layout .topbar .audio-toggle{display:none}
+ .clear-layout .colony-navigation{justify-content:flex-start}
+}
+@media(prefers-reduced-motion:reduce){.clear-layout *{scroll-behavior:auto!important}}

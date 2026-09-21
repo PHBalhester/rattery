@@ -35,7 +35,7 @@ export default function LineageTree(){
    </button>)}
    {!living.some(matches)&&<p className="family-empty">{tr('No living rats match this name.','没有匹配的存活大鼠。')}</p>}
   </div>
-  <details className="readout-details family-view" open>
+  <details className="readout-details family-view">
    <summary>{tr('Family tree','家族谱系')}</summary>
    <div className="family-content">
     <p className="family-intro">{tr('Read from top to bottom: parents → selected rat → children. Select any name to explore that family.','从上到下：父母 → 选中的大鼠 → 子代。点击名字查看其家族。')}</p>

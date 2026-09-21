@@ -1,7 +1,8 @@
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import type {Trade} from '../types';
 const NO_TRADES:Trade[]=[];
 import RatCare from './RatCare';
+import Hud from './Hud';
 import HabitatComparison from './HabitatComparison';
 import Memorial from './Memorial';
 import {getWorld,useStore} from '../store';
@@ -15,8 +16,11 @@ const tones:Record<string,[string,string]>={'critical local crowding':['Critical
 const actionLabels:Record<string,[string,string]>={wheel:['Running in the wheel','跑轮运动'],digging:['Digging','挖掘'],ball:['Playing with a ball','玩球'],chewing:['Gnawing','啃咬'],foraging:['Foraging','觅食'],courtship:['Courtship','求偶'],mating:['Mating','交配'],fight:['Fighting','争斗'],groom:['Social grooming','社交梳理']};
 export default function ColonyPanel(){
  const [tab,setTab]=useState('colony');
+ const panel=useStore(s=>s.panel),panelRequest=useStore(s=>s.panelRequest);
+
  useLanguage(s=>s.language);const version=useStore(s=>s.version),focused=useStore(s=>s.focusedId),trades=useStore(s=>tab==='events'?s.trades:NO_TRADES);
  const world=getWorld(),m=useMemo(()=>colonyMetrics(world),[world,version]),rat=focused?world.rats[focused]:undefined,alerts=colonyAlerts(world,m),critical=alerts.filter(a=>a.critical).length;
+ useEffect(()=>{setTab(panel==='rat'?'rat':'colony');},[panel,focused,panelRequest]);
  const bonds=rat?Object.values(world.rats).filter(r=>r.id!==rat.id&&r.deadAt===null).map(r=>({r,value:affinity(world,rat,r)})).sort((a,b)=>Math.abs(b.value)-Math.abs(a.value)).slice(0,5):[];
  const current=rat?actionLabels[rat.socialAction?.kind??playActivity.get(rat.id)?.kind??'']:undefined;
  return <div className="colony-readout" data-severity={critical?'critical':alerts.length?'warning':'good'}>
@@ -28,6 +32,7 @@ export default function ColonyPanel(){
  {tab==='colony'&&<>
  <div className={`colony-state ${alerts.length?'is-alert':''}`}><span>{tr('Collective condition','群体状态')}</span><strong>{!m.n?tr('Colony extinct','种群灭绝'):critical?tr('Urgent attention needed','需要紧急关注'):alerts.length?tr('Conditions deteriorating','状态恶化中'):tr(...(tones[m.socialTone]??['Settling','适应中']))}</strong><p>{m.n} / {m.capacity} {tr('residents','只居民')}</p></div>
  {alerts.length?<div className="alert-list">{alerts.map(a=><article key={a.key} data-critical={a.critical}><details className="alert-residents"><summary><b>{a.critical?tr('Critical','危急'):tr('Warning','警告')} · {tr(...labels[a.key])}{a.count!==undefined?` (${a.count})`:''}</b><span>{tr('View residents','查看居民')}</span></summary><p>{alertAdvice(a.key)}</p>{['hunger','thirst','cold','hot','capacity','declining'].includes(a.key)&&<p>{tr('Colony-wide alert. Select a resident to inspect their condition.','全种群警报。选择居民查看个体状况。')}</p>}<div className="alert-rat-list">{alertResidents(world,a.key,m).map(r=><button key={r.id} onClick={()=>{useStore.getState().focus(r.id);setTab('rat');}}><span>{r.name}</span><small>{a.key==='dehydrated'?`${tr('Hydration','水合水平')} ${Math.round((r.wellbeing?.hydration??1)*100)}%`:tr('View rat →','查看个体 →')}</small></button>)}</div>{alertResidents(world,a.key,m).length===0&&<p>{tr('No living residents currently match this alert.','当前没有符合此警报的存活居民。')}</p>}{a.key==='extinct'&&<button onClick={()=>setTab('memorial')}>{tr('Open Memorial','打开纪念页')}</button>}</details></article>)}</div>:<div className="attention-note"><b>{tr('No active alerts','无当前警报')}</b><p>{tr('Monitor resources, social contact and access to shelter.','关注资源、社交接触和庇护空间。')}</p></div>}
+ <details className="readout-details"><summary>{tr('Population & token details','种群与代币详情')}</summary><Hud/></details>
  <div className="section-caption">{tr('Needs','需求')}<span>{tr('Simulation indices 0–100. Lower is better.','模拟指数0–100，越低越好。')}</span></div>
  <div className="condition-grid">{['hunger','thirst','cold','hot','stress','crowdPressure'].map(key=><Metric key={key} label={tr(...labels[key])} value={m[key as 'hunger']}/>)}</div>
  <div className="social-stats"><Stat label={tr('Occupancy','占用率')} value={`${Math.round(m.occupancy*100)}%`}/><Stat label={tr('At play','活动中')} value={m.playing}/><Stat label={tr('Conflicts / day','每日冲突')} value={m.conflicts}/></div>

@@ -68,6 +68,9 @@ export function getWorld(): World {
 interface StoreState {
   version: number; // bumped each sim-tick to nudge React re-renders
   cinema: boolean;
+  panel: "residents" | "colony" | "rat";
+  panelRequest: number;
+  openPanel: (panel: "residents" | "colony" | "rat") => void;
   focusedId: string | null;
   trades: Trade[]; // newest first, capped at TAPE_CAP for the tape
   feedStatus: FeedStatus;
@@ -80,15 +83,18 @@ interface StoreState {
 
 export const useStore = create<StoreState>((set) => ({
   version: 0,
-  cinema: false,
+  cinema: (()=>{try{return localStorage.getItem("rattery:panels")!=="open";}catch{return true;}})(),
+  panel: "colony",
+  panelRequest: 0,
+  openPanel: (panel) => set(s=>({cinema:false,panel,panelRequest:s.panelRequest+1})),
   focusedId: null,
   trades: [],
   feedStatus: "idle",
   chain: null,
   catchupPct: 0,
   shared:null,
-  toggleCinema: () => set((s) => ({ cinema: !s.cinema })),
-  focus: (id) => set({ focusedId: id }),
+  toggleCinema: () => set((s) => {try{localStorage.setItem("rattery:panels",s.cinema?"open":"closed");}catch{/* Optional preference. */}return {cinema:!s.cinema};}),
+  focus: (id) => set(id?{focusedId:id,cinema:false,panel:"rat"}:{focusedId:null}),
 }));
 
 // Browsers suspend RAF in background tabs. Rebuild the live world on return
