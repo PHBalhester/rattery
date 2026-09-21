@@ -264,7 +264,18 @@ function deathChecks(world: World, r: Rat) {
 export function tick(world: World, dtDays: number, rng: () => number, envOverride?: WorldEnv, authoritativeAt?:number): World {
   const protectedNow=!!world.careProtection&&(authoritativeAt??(world.realStartedAt+world.simDay*CONFIG.time.realMsPerSimDay))<world.careProtection.until;
   if(world.careProtection)world.careProtection.active=protectedNow;
-  if(protectedNow)dtDays*=.01;
+  if(protectedNow){
+    const activityElapsed=dtDays*.99;
+    dtDays*=.01;
+    // Protection slows biology, not the real-time pauses between habitat trips.
+    for(const r of Object.values(world.rats)){
+      if(r.deadAt!==null||r.stage!=='adult'||r.pregnant||r.nursing.length||r.retrieving)continue;
+      const e=r.exploration;if(!e)continue;
+      for(const key of ['restUntil','playingUntil','denUntil','denCooldown'] as const){
+        const until=e[key];if(until!==undefined&&until>world.simDay)e[key]=Math.max(world.simDay,until-activityElapsed);
+      }
+    }
+  }
   for(const r of [...Object.values(world.rats),...Object.values(world.memorial??{})])r.coatBucket??=identity(r.id)%COAT_BUCKETS;
   if (envOverride) world.env = envOverride;
   world.env = decayEnv(world.env, dtDays * (CONFIG.time.realMsPerSimDay / 1000));
