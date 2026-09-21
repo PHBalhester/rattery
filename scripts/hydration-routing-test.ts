@@ -20,3 +20,13 @@ r.exploration!.waterZone=0;r.exploration!.target='resource:0';r.exploration!.pat
 const before=Math.hypot(r.x-NEST_POS.x,r.y-NEST_POS.y);applyHabitatActivity(w);
 assert((r.exploration!.path?.length??0)>0||Math.hypot(r.x-NEST_POS.x,r.y-NEST_POS.y)<before);
 console.log('PASS displaced rat rebuilds completed water route');
+
+
+// A crowded thirsty colony must reserve multiple reachable water points.
+const crowded=createWorld(),template=structuredClone(Object.values(crowded.rats)[0]);crowded.rats={};
+for(let i=0;i<82;i++){const q=structuredClone(template);q.id='water-'+i;q.x=NEST_POS.x;q.y=NEST_POS.y;q.stage='adult';q.pregnant=null;q.nursing=[];q.retrieving=undefined;q.socialAction=undefined;q.wellbeing={acute:1,chronic:1,hydration:.1,lastWater:0,cause:'thirst',support:0,crowding:0,zone:0};q.exploration={route:i%6,waypoint:0,restUntil:0};crowded.rats[q.id]=q;}
+applyHabitatActivity(crowded);
+const reservations=Object.values(crowded.rats).reduce((m,q)=>m.set(q.exploration!.waterZone,(m.get(q.exploration!.waterZone)??0)+1),new Map<number|undefined,number>());
+assert([...reservations.keys()].filter(v=>v!==undefined).length>=5,'thirsty crowd must use at least five water points');
+assert(Math.max(...reservations.values())<=20,'no water point may receive the whole crowd');
+console.log('PASS crowded thirsty residents reserve distributed water points',Object.fromEntries(reservations));

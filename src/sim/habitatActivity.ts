@@ -27,6 +27,10 @@ export function applyHabitatActivity(world:World){
   if(options.length){const {z,i}=options[0];dam.maternalNest={x:z.x,y:z.y,r:35,zone:i};familyLoad[0]=Math.max(0,familyLoad[0]-size);familyLoad[i]+=size;if(dam.exploration){delete dam.exploration.path;delete dam.exploration.waterZone;}}
  }
  const occupied=new Set<number>();
+ // Keep thirsty residents spread across every reachable water point. Existing
+ // commitments are counted once; new commitments reserve a slot immediately.
+ const waterCommitments=zones.slice(0,6).map(()=>0);
+ for(const q of Object.values(world.rats))if(q.deadAt===null&&q.exploration?.waterZone!==undefined&&q.exploration.waterZone<6)waterCommitments[q.exploration.waterZone]++;
  const departures=trips.map(()=>0);for(const r of Object.values(world.rats))if(r.deadAt===null&&r.exploration&&r.exploration.waypoint>0)departures[r.exploration.route]++;
  const counts=zones.map(()=>0);for(const r of Object.values(world.rats))if(r.deadAt===null)counts[zoneOf(r)]++;
  // Count committed departures once, so successive ticks do not send the whole nest away.
@@ -47,9 +51,10 @@ export function applyHabitatActivity(world:World){
    const candidates=zones.slice(0,world.habitatMode==='basic'||r.nursing.length>0||r.pregnant?1:6).map((z,i)=>{
     const path=findPath(r,z);let distance=0,previous={x:r.x,y:r.y};
     for(const point of path??[]){distance+=Math.hypot(point.x-previous.x,point.y-previous.y);previous=point;}
-    return {i,distance:path?distance:Infinity};
-   }).filter(v=>Number.isFinite(v.distance)).sort((a,b)=>a.distance-b.distance||a.i-b.i);
+    return {i,distance:path?distance:Infinity,load:waterCommitments[i]/Math.max(1,z.capacity)};
+   }).filter(v=>Number.isFinite(v.distance)).sort((a,b)=>a.load-b.load||a.distance-b.distance||a.i-b.i);
    if(r.maternalNest&&(r.nursing.length||r.pregnant))state.waterZone=r.maternalNest.zone;else if(candidates.length)state.waterZone=candidates[0].i;
+   if(state.waterZone!==undefined&&state.waterZone<6)waterCommitments[state.waterZone]++;
   }
   const thirsty=state.waterZone!==undefined||hydration<.6;
   const seekingQuiet=(r.wellbeing?.chronic??0)>.5&&!shelter;
