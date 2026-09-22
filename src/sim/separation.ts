@@ -32,7 +32,15 @@ export function separateRats(world:World){
   const move=(r:Rat,x:number,y:number)=>{
    if(r.socialAction?.encounter)return false;
    const budget=Math.max(0,3-(spent.get(r.id)??0));if(!budget)return false;
-   const vx=x-r.x,vy=y-r.y,len=Math.hypot(vx,vy),factor=Math.min(1,budget/(len||1));
+   let vx=x-r.x,vy=y-r.y;
+   // A head-on correction alone cancels locomotion forever. Give moving
+   // residents a consistent right-hand passing direction while separating.
+   const speed=Math.hypot(r.vx,r.vy);
+   if(speed>.1&&vx*r.vx+vy*r.vy<0){
+    const lateral=Math.min(1,Math.hypot(vx,vy));
+    vx+=-r.vy/speed*lateral;vy+=r.vx/speed*lateral;
+   }
+   const len=Math.hypot(vx,vy),factor=Math.min(1,budget/(len||1));
    // Slide along a corridor boundary if the direct separating step is blocked.
    for(const turn of [0,.65,-.65,1.2,-1.2]){
     const nx=(vx*Math.cos(turn)-vy*Math.sin(turn))*factor,ny=(vx*Math.sin(turn)+vy*Math.cos(turn))*factor;
