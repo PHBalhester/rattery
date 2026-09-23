@@ -5,7 +5,7 @@
 
 RATTERY is an interactive rat-colony simulation built with React, TypeScript and Three.js. Explore a connected habitat, follow individual residents and observe how resources, social relationships and market events influence life in the colony.
 
-**Status: live production.** The shared colony, signed wallet login, native RATTERY burns and paid care are deployed at [rattery.tech](https://rattery.tech). A real paid-care burn has been applied. A real mint remains untested and was deferred until launch. This is an experimental simulation, not a scientifically validated animal model. [Current release notes](docs/PRODUCTION-RELEASE-2026-09-18.md).
+**Status: live production.** The shared colony, signed wallet login, native RATTERY burns and paid care are deployed at [rattery.tech](https://rattery.tech). Real mint and paid-care burns have been verified in production. Mint records ownership within RATTERY; it does not create an NFT. This is an experimental simulation, not a scientifically validated animal model. [Current release notes](docs/PRODUCTION-RELEASE-2026-09-18.md).
 
 [GitHub](https://github.com/PHBalhester/rattery) · [Website](https://rattery.tech) · [X / Twitter](https://x.com/ratterytech) · [Documentation](docs/README.md) · [Security](SECURITY.md)
 
@@ -98,9 +98,12 @@ Configured RPC, explorer and trusted snapshot publisher
 [Architecture](docs/ARCHITECTURE.md) · [Configuration](docs/CONFIGURATION.md)
 
 ## Validation and limitations
+
+On September 23, 2026, a read-only production check verified 28 applied mints against successful canonical burn transactions, matching ownership records and applied care events. Each mint burned 500,000 RATTERY, totaling 14,000,000 RATTERY across those transactions. The first verified mint was recorded on September 18, 2026. [First mint burn transaction](https://robinhoodchain.blockscout.com/tx/0x73c42cad9a295880e14b2eb6fbd6a3ae8b74672e9a423826b6bdf375c3af97c9).
+
 CI covers type checks, production build, controlled simulation/security suites and publication checks. Browser tests and long stress runs are separate. Some historical mainnet tests require local captures intentionally excluded from Git.
 
-There is no claim of an independent security audit, universal frame-rate guarantees or zero bugs. Remaining validation includes the first real mint, an automated offsite backup policy, wider physical-device coverage and a post-graduation holding-price adapter. Tail collision uses approximate colliders rather than full mesh physics.
+There is no claim of an independent security audit, universal frame-rate guarantees or zero bugs. Remaining work includes an automated offsite backup policy, wider physical-device coverage and a post-graduation holding-price adapter. Tail collision uses approximate colliders rather than full mesh physics.
 
 [Testing](docs/TESTING.md) · [Release checklist](docs/RELEASE.md) · [Roadmap](docs/ROADMAP.md)
 
