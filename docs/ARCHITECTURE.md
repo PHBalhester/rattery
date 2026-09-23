@@ -1,21 +1,44 @@
 # Architecture
 
-## Application
-src/store.ts starts the engine and exposes state through Zustand. React presents panels; Three.js renders generated GLB assets with procedural fallbacks. English/Chinese language preference is stored locally.
+## Shared production colony
 
-Simulation advances in discrete ticks. Random state is part of the world and snapshots. Canonical replay binds market events to simulation time, preserving reproducibility for a matching seed/configuration/history. Rendering is not payment authority.
+Production runs one authoritative simulation on a server. The browser observes confirmed snapshots and interpolates presentation; it does not advance the shared biology.
 
-## Market
-api/chain.ts provides configured metadata; api/trades.ts supplies ordered chunks. The client validates responses, handles duplicates, retries and catch-up limits. Do not replace canonical ordering with arrival order.
+```text
+On-chain trades -> Market collector -> Ordered trade ledger
+                                            |
+                                     Simulation worker
+                                            |
+                                        PostgreSQL
+                                            |
+                                     Read-only observer
+                                            |
+                                     Vercel API proxy
+                                            |
+                                  React / Zustand / Three.js
+```
 
-Configuration supports chain IDs 4663 and 46630. Protocol mappings live in api/_lib/pons.ts; verify against the intended deployment before release. CONFIG.market.ethUsdRef is fixed for determinism, not a live quote.
+The worker persists the world, random-number state, simulation clock and engine version. The observer omits private care/account state. Clients reject older observations and show delayed-connection status when data becomes stale.
 
-## Snapshots
-Envelopes include world/RNG, cursor, identity, model/configuration version and checksum. The service validates identity and the chain anchor. Checksums detect corruption, not authorship. Use only an operator-controlled publisher.
+## Local demonstration
 
-Collectors/builders require complete canonical prefixes, reject gaps and replace files atomically. Raw archives and wallet-linked captures belong in controlled storage, not Git.
+Plain Vite runs the local demonstration through src/store.ts. Its simulated balances and local actions do not authorize production care. Local replay and snapshot tools remain useful for controlled tests; they are not the production authority.
 
-## Motion and authority
-Articulated assets support gait phases, independent torso motion and secondary tail/head movement. Navigation/separation are simulation concerns; tail collision is approximate. Inspect ?view=rat-studio, ?view=gait-studio and ?view=wheel-studio.
+## Determinism and replay
 
-Browser worlds, care reducers and connected addresses are not server authorization. Real care requires authenticated ownership, durable action records and deduplicated verified receipts.
+Reproduction requires the same engine, configuration, initial world/RNG, ordered market inputs and any operator interventions. Snapshot integrity checks are not proof of authorship. Use trusted archives and record engine transitions.
+
+Production market valuation uses recorded historical quotations. The local demonstration has a fixed reference. Preserve canonical ordering, deduplication and chain validation; arrival order is not a substitute.
+
+## Wallet and care
+
+Wallet -> same-origin authentication/payment proxy -> dedicated payment service -> PostgreSQL.
+Each paid action has a reservation and a separately confirmed native token burn. The service verifies its receipt and records application at most once. Signing in is not a token approval. Mint assigns project ownership, not an NFT.
+
+Rendering, browser balances and connected addresses are never authorization. Credentials remain in service configuration.
+
+## Rendering and navigation
+
+Three.js displays articulated rats and habitat assets with procedural fallbacks. Navigation and body separation belong to the simulation; interpolation, gait and secondary motion belong to presentation. Tail collision is approximate.
+
+[Operations](OPERATIONS.md) · [Testing](TESTING.md) · [Wallet](WALLET.md)

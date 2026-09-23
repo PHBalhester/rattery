@@ -1,5 +1,7 @@
 # RATTERY token
 
+> Status update - September 23, 2026: production mint and paid care are live. A read-only check verified 28 applied mints and their burns, ownership and events. Statements below about disabled payments or an untested first mint describe earlier validation stages. See [current validation](../README.md#validation-and-limitations) and [operations](OPERATIONS.md).
+
 User-provided final contract: 0xC322305e79337300b59fF48389f8C9A1D9E0de76
 Launch page: https://www.ponsfamily.com/launchpad/0xC322305e79337300b59fF48389f8C9A1D9E0de76
 

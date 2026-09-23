@@ -1,5 +1,7 @@
 # Launch status — 2026-09-17
 
+> Status update - September 23, 2026: production mint and paid care are live. A read-only check verified 28 applied mints and their burns, ownership and events. Statements below about disabled payments or an untested first mint describe earlier validation stages. See [current validation](../README.md#validation-and-limitations) and [operations](OPERATIONS.md).
+
 Staging is available over the custom HTTPS hostname. Wallet sign-in has passed staging checks; real payments remain disabled. The read-only collector and simulation worker have been exercised with PostgreSQL persistence and restart recovery. A separate shared-world staging preview now reads the hosted worker through a read-only observer and a server-authenticated proxy. The default demonstration remains separate. The first test colony reached extinction and is preserved in its original database. The second run also reached extinction under the previous fast resource depletion. A third, calibrated run now uses a separate database; no historical rows or deaths were overwritten. A private local archive of the first database passed checksum and archive-catalog validation (not a full restoration test).
 
 ## Remaining acceptance work, in order

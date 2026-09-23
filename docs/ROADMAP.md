@@ -1,27 +1,33 @@
 # Roadmap
 
-Implemented: 3D habitat/articulated rats, contextual social simulation, trade tiers, demo care, memorial/genealogy, EN/Chinese UI, replay/snapshot primitives and explicit wallet connection.
+Status reviewed September 23, 2026. No release dates or security guarantees are promised.
 
-Before financial release: persistent authentication/authorization and payments, final token verification, deployed end-to-end validation, recovery and abuse controls.
+## Live
 
-Experience/longevity: physical-device optimization, refined collision, persistent history, accessibility and complete production CSP.
+- Shared persistent colony, server-side simulation and read-only observation.
+- 3D habitat, articulated rats, navigation, social behavior and colony condition panels.
+- Individual records, genealogy and memorials.
+- Wallet authentication, token-burn care, ownership reservations and receipt reconciliation.
+- Holding recognition and caregiver identity; see [rules and limitations](HOLDING-RECOGNITION.md).
+- Local demonstration, deterministic tests and replay tools.
 
-No dates or absolute security guarantees are promised.
+## Planned: stock seasons
 
-## Holder recognition — approved scope
+Three persistent nests, three couples and selected stock tickers, with weekly points, attacks and shields. This is a planned mode, not a description of current production.
 
-Approved for implementation, not yet implemented or enabled:
+The design calls for persistent protagonists and bounded stock influence applied once at point creation. Exact parameters, funding/distribution details and edge cases remain to be specified and tested. See [Stock seasons](STOCK-SEASONS.md).
 
-- Residence time: recognition after 7, 30 and 90 days maintaining a minimum RATTERY balance valued at US$100. A larger purchase does not grant earlier tenure. Use elapsed real time, not accelerated colony days.
-- Caregiver identity: a discreet residence badge beside the chosen name of a minted rat and in its history. Mint ownership remains authoritative; holding tokens alone does not confer ownership or naming rights.
+## Remaining engineering work
 
-The US$100 threshold now uses the updated verified price, as approved on 2026-09-18. Residence and caregiver identity are implemented; see [Holding recognition](HOLDING-RECOGNITION.md) for verification cadence, resets and limitations.
+- Automated offsite backups and repeated restoration exercises.
+- Wider physical-device, accessibility and long-session validation.
+- Monitoring of worker lag, upstream failures and protection expiry.
+- Post-graduation holding-price adapter and its validation.
+- Clear release/component version mapping and reproducible intervention history.
+- Continued navigation and collision refinement.
 
-## Later roadmap — not current implementation scope
+## Proposed, not committed
 
-- Progressive cosmetic customization: nameplates, colors and decorative details, without biological advantages.
-- Book of generations: durable lineage, events and caregiver records, preserving history after a sale.
-- Habitat votes: bounded choices for decoration and themes.
-- Shareable keepsakes: resident cards with name, personality and history, shared voluntarily by the user.
+Cosmetic customization, habitat votes, shareable resident cards and behavioral memory experiments. These proposals do not imply financial advantages or launch dates.
 
-These are future proposals without release dates. Existing memorial/genealogy functionality remains part of the project; this section concerns its proposed holder-oriented extensions. Punitive deaths for selling, public seller shaming, whale breeding privileges and order-book-dependent mechanics are not approved features.
+Public code visibility is separate from licensing; original project licensing remains unchanged.

@@ -1,5 +1,7 @@
 # Production release — 2026-09-18
 
+> Status update - September 23, 2026: production mint and paid care are live. A read-only check verified 28 applied mints and their burns, ownership and events. Statements below about disabled payments or an untested first mint describe earlier validation stages. See [current validation](../README.md#validation-and-limitations) and [operations](OPERATIONS.md).
+
 - Public URL: https://rattery.tech ; www redirects to the canonical root.
 - Cloudflare DNS-only A records: 216.198.79.1 and 64.29.17.1, as recommended by Vercel. Mail and staging records preserved.
 - Production frontend bundle: index-HQK07THA.js.

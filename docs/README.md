@@ -5,14 +5,16 @@
 | [Architecture](ARCHITECTURE.md) | Data flow, rendering and trust boundaries |
 | [Configuration](CONFIGURATION.md) | Setup, server environment and API |
 | [Simulation](SIMULATION.md) | Trade tiers, care and ownership |
-| [Wallet](WALLET.md) | Connection, SIWE proposal and payment prerequisites |
+| [Wallet](WALLET.md) | Connection, SIWE authentication and payment boundaries |
 | [Testing](TESTING.md) | Checks and fixture requirements |
 | [Operations](OPERATIONS.md) | Deployment, snapshots and recovery |
 | [Assets](ASSETS.md) | Blender, models, fonts and audio |
 | [Research](RESEARCH.md) | References and interpretation |
 | [Release](RELEASE.md) | Production gates |
-| [Launch status](LAUNCH-STATUS.md) | Current staging status, remaining launch work and welcome tutorial |
-| [Roadmap](ROADMAP.md) | Completed and remaining work |
+| [Launch status](LAUNCH-STATUS.md) | Historical staging and launch notes |
+| [Roadmap](ROADMAP.md) | Live features, plans and proposals |
+| [Stock seasons](STOCK-SEASONS.md) | Planned rules and unresolved decisions |
+| [Token](RATTERY-TOKEN.md) | Contract identity and dated verification |
 
 Machine-specific handoffs, raw captures and audit artifacts are retained locally, not published.
 
