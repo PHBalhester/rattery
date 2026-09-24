@@ -205,3 +205,14 @@
  .clear-layout .colony-navigation{justify-content:flex-start}
 }
 @media(prefers-reduced-motion:reduce){.clear-layout *{scroll-behavior:auto!important}}
+
+/* Quiet population readout directly below the navigation buttons. */
+.clear-layout .colony-summary{flex-basis:100%;display:flex;align-items:center;gap:7px;padding:2px 2px 0;color:var(--panel-muted);font:12px/1.5 "Segoe UI",Arial,sans-serif;font-variant-numeric:tabular-nums;text-shadow:0 1px 3px #000}
+.clear-layout .colony-summary b{color:var(--panel-ink);font-weight:500}
+.clear-layout .colony-summary [aria-hidden=true]{opacity:.45}
+.clear-layout .colony-panel{top:var(--navigation-bottom,174px)}
+@media(max-width:780px){
+ .clear-layout .panel-deck{top:var(--navigation-bottom,198px)}
+ .clear-layout .panel-deck .colony-panel{top:auto}
+ .clear-layout .colony-summary{font-size:11px}
+}

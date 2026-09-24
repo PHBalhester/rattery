@@ -18,15 +18,19 @@ import { truncateCA } from "./copy/pons";
 export default function App() {
   const appRef = useRef<HTMLDivElement>(null);
   const tapeRef = useRef<HTMLDivElement>(null);
+  const navigationRef = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     const app = appRef.current, tape = tapeRef.current;
     if (!app || !tape) return;
     const measure = () => {
       const bottom = parseFloat(getComputedStyle(tape).bottom) || 0;
+      const navigation = navigationRef.current;
+      if (navigation) app.style.setProperty('--navigation-bottom', `${navigation.offsetTop + navigation.offsetHeight + 12}px`);
       app.style.setProperty('--bottom-chrome', `${Math.ceil(tape.getBoundingClientRect().height + bottom + 12)}px`);
     };
     const observer = new ResizeObserver(measure);
     observer.observe(tape);
+    if (navigationRef.current) observer.observe(navigationRef.current);
     window.addEventListener('resize', measure);
     measure();
     return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
@@ -52,6 +56,10 @@ export default function App() {
   const world=getWorld();
   const alerts=colonyAlerts(world,colonyMetrics(world));
   const known=feedStatus==="live"||feedStatus==="demo";
+  const residents = Object.values({...world.memorial, ...world.rats});
+  const living = residents.filter(r => r.deadAt === null);
+  const dead = residents.length - living.length;
+  const pups = Object.values(world.rats).filter(r => r.deadAt === null && r.stage !== 'adult').length;
   const simDay = Math.floor(getWorld().simDay);
   const feedLabel = feedStatus === "demo" ? tr("Demo","演示") : feedStatus === "catchup" ? tr("Replaying","重建中") : feedStatus === "live" ? tr("Live","实时") : feedStatus === "history-limit" ? tr("History limit","历史限制") : feedStatus === "error" ? tr("Disconnected","连接中断") : tr("Connecting","连接中");
 
@@ -87,10 +95,17 @@ export default function App() {
           </div>
         </header>
 
-        <nav className="colony-navigation" aria-label={tr("Explore the colony","探索群落")}>
+        <nav ref={navigationRef} className="colony-navigation" aria-label={tr("Explore the colony","探索群落")}>
           <button aria-expanded={!cinema&&panel==="residents"} aria-controls="residents-panel" onClick={()=>openPanel("residents")}>{tr("Meet the rats","认识大鼠")}</button>
           <button aria-expanded={!cinema&&panel!=="residents"} aria-controls="condition-panel" onClick={()=>openPanel("colony")}>{tr("Colony status","群落状态")} · {known?(alerts.length ? alerts.length+" "+tr("alerts","项警报") : tr("No alerts","无警报")):tr("Connecting…","连接中…")}</button>
           <WelcomeTour />
+          <div className="colony-summary" aria-label={tr("Colony population","群落数量")}>
+            <span><b>{known ? living.length : '—'}</b> {tr("alive","存活")}</span>
+            <span aria-hidden="true">/</span>
+            <span><b>{known ? dead : '—'}</b> {tr("dead","死亡")}</span>
+            <span aria-hidden="true">/</span>
+            <span title={tr("Living pups, including weanlings","存活幼鼠，包括断奶幼鼠")}><b>{known ? pups : '—'}</b> {tr("pups","幼鼠")}</span>
+          </div>
         </nav>
         <div className="scene-title">
           <span className="eyebrow">{tr('Observatory / day','观察站／天数')} {simDay}</span>
