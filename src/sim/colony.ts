@@ -1,3 +1,4 @@
+import {isCoreResident} from './permanentCore.js';
 import {birthCoat} from './ratIdentity.js';
 import {CENTRAL_NEST,familyNest} from './familyNest.js';
 import { CONFIG } from "../config.js";
@@ -153,7 +154,7 @@ export function spawnRat(
 }
 
 export function kill(world: World, r: Rat, cause: DeathCause) {
-  if (r.deadAt !== null || world.careProtection?.active) return;
+  if (r.deadAt !== null || world.careProtection?.active || isCoreResident(world,r)) return;
   r.deadAt = world.simDay;
   r.deathCause = cause;
   r.stage = "dead";
@@ -347,7 +348,7 @@ export function enforceCap(world: World) {
  if(living.length<=CONFIG.colony.maxAlive||world.simDay<(world.nextCrowdingDeathAt??0))return;
  const adults=living.filter(r=>r.stage==='adult');
  const males=adults.filter(r=>r.sex==='M').length,females=adults.filter(r=>r.sex==='F').length;
- const candidates=adults.filter(r=>!r.pregnant&&!r.nursing.length&&!r.retrieving&&(r.sex==='M'?males:females)>2)
+ const candidates=adults.filter(r=>!isCoreResident(world,r)&&!r.pregnant&&!r.nursing.length&&!r.retrieving&&(r.sex==='M'?males:females)>2)
   .sort((a,b)=>a.bornAt-b.bornAt||(a.id<b.id?-1:a.id>b.id?1:0));
  if(!candidates.length)return;
  kill(world,candidates[0],'crowding');

@@ -167,6 +167,7 @@ export interface World {
   burnSupport?: import("./sim/burnSupport").BurnSupportState;
   snake?:{nextAttack:number;awakeUntil?:number;capture?:{ratId:string;started:number;x:number;y:number}};
   careProtection?:{until:number;active:boolean};
+  permanentCore?:{ratIds:string[];activatedAt:number};
   legendaryBoost?:{untilSimDay:number;claimedBy?:string};
   nextCrowdingDeathAt?: number;
   memorial?: Record<string,MemorialRecord>;

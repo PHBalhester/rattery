@@ -28,6 +28,7 @@ export default function ColonyPanel(){
  <nav className="readout-tabs" aria-label={tr('Colony information','种群信息')}>{[['colony',tr('Colony','种群')],['rat',tr('Rat','个体')],['events',tr('Events','事件')],['memorial',tr('Memorial','纪念')]].map(([id,label])=><button key={id} aria-pressed={tab===id} onClick={()=>setTab(id)}>{label}</button>)}</nav>
  {alerts.length>0&&<button className={`alert-banner ${critical?'critical':''}`} onClick={()=>setTab('colony')} aria-label={tr('View colony alerts','查看种群警报')}><span className="alert-signal" aria-hidden="true"/><b>{critical?tr('Critical','危急'):tr('Warning','警告')}</b> · {alerts.length} {tr('active alerts','项当前警报')}{critical>0&&<span> · {critical} {tr('critical','项危急')}</span>}</button>}
  <div className="readout-content">
+ {world.permanentCore&&<p className="attention-note">{tr('Permanent core · 6 residents receive automatic care and cannot die. Other residents follow their normal life cycle.','永久核心 · 6只居民自动受到照护，不会死亡。其他居民遵循正常生命周期。')}</p>}
  {world.careProtection?.active&&<p className="attention-note">{tr('Temporary assisted care active · normal rules resume automatically.','临时照护已启用，到期后自动恢复正常规则。')}</p>}
  {tab==='colony'&&<>
  <div className={`colony-state ${alerts.length?'is-alert':''}`}><span>{tr('Collective condition','群体状态')}</span><strong>{!m.n?tr('Colony extinct','种群灭绝'):critical?tr('Urgent attention needed','需要紧急关注'):alerts.length?tr('Conditions deteriorating','状态恶化中'):tr(...(tones[m.socialTone]??['Settling','适应中']))}</strong><p>{m.n} / {m.capacity} {tr('residents','只居民')}</p></div>

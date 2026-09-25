@@ -1,3 +1,4 @@
+import {assistPermanentCore} from './permanentCore.js';
 import {snakeStep} from './snake.js';
 import {assistColony} from './temporaryProtection.js';
 import {identity,COAT_BUCKETS} from './ratIdentity.js';
@@ -280,6 +281,7 @@ export function tick(world: World, dtDays: number, rng: () => number, envOverrid
   if (envOverride) world.env = envOverride;
   world.env = decayEnv(world.env, dtDays * (CONFIG.time.realMsPerSimDay / 1000));
   if(protectedNow)assistColony(world);
+  assistPermanentCore(world);
   world.simDay += dtDays;
 
   const living = aliveRats(world);
@@ -337,6 +339,7 @@ export function tick(world: World, dtDays: number, rng: () => number, envOverrid
     pushEvent(world, { t: world.simDay, kind: "extinct", ratId: "colony" });
   }
   if(protectedNow)assistColony(world);
+  assistPermanentCore(world);
   return world;
 }
 

@@ -1,9 +1,10 @@
+import {isCoreResident} from './permanentCore.js';
 import type {World,Rat} from '../types.js';
 import {kill} from './colony.js';
 export const SNAKE_DEN={x:1180,y:735,radius:90};
 export function snakeEligible(w:World,r:Rat){
  const living=Object.values(w.rats).filter(a=>a.deadAt===null);
- return !w.careProtection?.active&&living.length>60&&r.deadAt===null&&r.stage==='adult'&&!r.minted&&!w.care?.owners[r.id]&&!r.pregnant&&!r.nursing.length&&!r.retrieving&&!r.socialAction&&living.filter(a=>a.stage==='adult'&&a.sex===r.sex).length>2&&!living.some(a=>a.nursing.includes(r.id));
+ return !isCoreResident(w,r)&&!w.careProtection?.active&&living.length>60&&r.deadAt===null&&r.stage==='adult'&&!r.minted&&!w.care?.owners[r.id]&&!r.pregnant&&!r.nursing.length&&!r.retrieving&&!r.socialAction&&living.filter(a=>a.stage==='adult'&&a.sex===r.sex).length>2&&!living.some(a=>a.nursing.includes(r.id));
 }
 export function snakeStep(w:World,dt:number,rng:()=>number){
  const s=w.snake??={nextAttack:w.simDay+10};

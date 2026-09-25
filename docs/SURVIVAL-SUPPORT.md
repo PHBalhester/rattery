@@ -80,9 +80,9 @@ CI, because the 120-day version costs about 80 seconds.
 
 ## Limits, stated plainly
 
-A silent tape still ends the colony. With no buys at all, at production
+Without an activated permanent core, a silent tape still ends the colony. With no buys at all, at production
 resolution, seed 7 reaches zero living rats within 120 simulated days. Support
-is what prevents extinction; nothing here makes a colony immortal, revives dead
+is what prevents extinction in that legacy mode. Production v24 adds a separately activated permanent six-resident core (see OPERATIONS.md). The purchase support described here does not make a colony immortal, revive dead
 rats, or resets a round.
 
 The buy/sell ratio means a balanced market trends strongly toward full
