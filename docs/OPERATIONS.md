@@ -46,3 +46,20 @@ All simulated death causes are blocked for these identities at the common mortal
 Temporary protection remains separate and applies to the entire colony until its authoritative deadline. Its expiration cannot disable the permanent core. This avoids market-inactivity extinction during normal simulation operation; it does not promise infrastructure availability or recovery from data corruption.
 
 Validation: `npm run test:permanent-core` covers all death causes, expiry, individual-only assistance, predator/crowding exclusion, deterministic persistence, exact production ticks and extended silence.
+
+
+## Movement recovery — 2026-09-25
+
+Engine v25 preserves the existing world and permanent core. It treats ordinary
+route endpoints as shared guidance (12-unit arrival tolerance) while keeping
+exact toy/resource/den contact. Intermediate graph nodes may be skipped only
+when the next segment is clear. Moving residents use at most 65% of their step
+for positional separation, bounded by the existing 3-unit maximum, so collision
+corrections cannot cancel locomotion indefinitely.
+
+Verified against the private production snapshot: all six core residents changed
+routes and moved more than 100 units from their starting position during 3,000
+authoritative 100ms ticks, with identical replay. Public separation, crowded
+motion, navigation and permanent-core tests also passed. Private snapshots are
+not repository artifacts. The optional reproduction command is
+`npx tsx scripts/motion-live-recovery-test.ts /private/path/world.json`.

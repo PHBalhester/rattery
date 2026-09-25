@@ -37,3 +37,19 @@ for(let t=0;t<100;t++){
 }
 assert(left.x>800+45&&right.x<800-45,'opposing walkers remain blocked');
 console.log('PASS: opposing walkers pass with bounded, walkable separation');
+
+
+// Regression: two residents oppose each other beside a shelter opening.
+// Their intended progress must not be fully cancelled by separation.
+const narrow=createWorld();
+const [n1,n2]=Object.values(narrow.rats);
+for(const r of Object.values(narrow.rats))if(r!==n1&&r!==n2)r.deadAt=0;
+Object.assign(n1,{x:166.4,y:740.6,vx:-2.6,vy:0});
+Object.assign(n2,{x:132.4,y:735.3,vx:1,vy:-2.4});
+const pre=[n1,n2].map(r=>({x:r.x,y:r.y,speed:Math.hypot(r.vx,r.vy)}));
+separateRats(narrow);
+for(const [i,r] of [n1,n2].entries()){
+ assert(walkable(r));
+ assert(Math.hypot(r.x-pre[i].x,r.y-pre[i].y)<=pre[i].speed*.65+1e-8);
+}
+console.log('PASS: narrow-passage correction preserves a moving resident’s forward budget');

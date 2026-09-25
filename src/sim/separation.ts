@@ -31,7 +31,11 @@ export function separateRats(world:World){
   const step=Math.min(1,(minimum-Math.hypot(b.x-a.x,b.y-a.y))*.5);
   const move=(r:Rat,x:number,y:number)=>{
    if(r.socialAction?.encounter)return false;
-   const budget=Math.max(0,3-(spent.get(r.id)??0));if(!budget)return false;
+   // A correction must not erase a moving resident's whole forward step.
+   // Keep the full correction budget for stationary residents.
+   const motion=Math.hypot(r.vx,r.vy);
+   const limit=motion>.1?Math.min(3,motion*.65):3;
+   const budget=Math.max(0,limit-(spent.get(r.id)??0));if(!budget)return false;
    let vx=x-r.x,vy=y-r.y;
    // A head-on correction alone cancels locomotion forever. Give moving
    // residents a consistent right-hand passing direction while separating.

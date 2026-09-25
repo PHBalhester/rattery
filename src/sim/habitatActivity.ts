@@ -102,7 +102,11 @@ export function applyHabitatActivity(world:World){
    if(clearPath(r,exit)&&clearPath(exit,second))state.path[0]=exit;
   }
   // Shared waypoints are guides: separation must not prevent two rats from passing them.
-  if(thirsty)while(state.path.length>1&&Math.hypot(r.x-state.path[0].x,r.y-state.path[0].y)<35&&clearPath(r,state.path[1]))state.path.shift();
+  while(state.path.length>1&&Math.hypot(r.x-state.path[0].x,r.y-state.path[0].y)<(thirsty?35:28)&&clearPath(r,state.path[1]))state.path.shift();
+  // Ordinary route endpoints are shared guidance, not exact contact targets.
+  // Separation can keep two residents orbiting a terminal waypoint forever.
+  // Keep exact arrival for toys, shelter, water and reserved den positions.
+  if(!restingInDen&&!shelter&&!thirsty&&!seekingQuiet&&!target.toy&&state.path.length===1&&Math.hypot(r.x-target.x,r.y-target.y)<=12&&clearPath(r,target))state.path=[];
   const next=advance(r,state.path,movementSpeed(r,world));
   if(!clearPath(r,next)){delete state.path;continue;}
   r.vx=next.x-r.x;r.vy=next.y-r.y;r.x=next.x;r.y=next.y;r.inNest=inNest(r);
