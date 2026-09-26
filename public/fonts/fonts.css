@@ -47,3 +47,10 @@
   font-display: swap;
   src: url(/fonts/font-6.ttf) format('truetype');
 }
+@font-face {
+  font-family: 'Cinzel Decorative';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/fonts/cinzel-decorative-700.woff2) format('woff2');
+}

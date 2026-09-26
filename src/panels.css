@@ -283,3 +283,66 @@
  .rat-vitals{grid-template-columns:1fr 1fr}
 }
 @media(min-width:1300px){.clear-layout .condition-panel,.clear-layout .lineage-panel{width:380px}}
+
+/* ---- Season 1 rail ---- */
+.colony-app{--s-gold:#e8c36a;--s-gold-hi:#fff1bf;--s-gold-lo:#a9782c;--s-ink:#f3ecd9}
+.season-rail{position:absolute;z-index:5;left:18px;top:var(--navigation-bottom,174px);width:272px;padding:22px 18px 18px;border:1px solid #e8c36a55;border-radius:12px;text-align:center;
+ background:radial-gradient(120% 80% at 50% 0%,#e8c36a1f,transparent 60%),linear-gradient(180deg,rgba(28,26,20,.96),rgba(16,18,16,.96))!important;box-shadow:0 10px 40px #0007,inset 0 0 0 1px #00000060,inset 0 1px 0 #fff1bf22!important}
+.season-corner{position:absolute;width:14px;height:14px;border:solid var(--s-gold);opacity:.8}
+.season-corner.tl{top:6px;left:6px;border-width:1px 0 0 1px}.season-corner.tr{top:6px;right:6px;border-width:1px 1px 0 0}.season-corner.bl{bottom:6px;left:6px;border-width:0 0 1px 1px}.season-corner.br{bottom:6px;right:6px;border-width:0 1px 1px 0}
+.season-kicker{display:block;font:600 10px/1.4 "IBM Plex Mono",monospace;letter-spacing:.22em;text-transform:uppercase;color:#cdb98a}
+.season-title-row{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0 4px}
+.season-rail h2,.season-tutorial h2{margin:0;font:700 34px/1 "Cinzel Decorative","Fraunces",Georgia,serif;letter-spacing:.02em;white-space:nowrap;
+ background:linear-gradient(180deg,var(--s-gold-hi) 0%,var(--s-gold) 45%,var(--s-gold-lo) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #3a2a0e) drop-shadow(0 0 14px #e8c36a40)}
+.season-rail h2 span,.season-tutorial h2 span{font-size:1.18em}
+.season-flourish{width:40px;height:12px;flex:0 0 auto;fill:none;stroke:var(--s-gold);stroke-width:1.3;stroke-linecap:round}.season-flourish .gem{fill:var(--s-gold);stroke:none}.season-flourish.is-flipped{transform:scaleX(-1)}
+.season-sub{margin:6px 0 12px;font:13px/1.4 "Fraunces",Georgia,serif;font-style:italic;color:#e6dcc2}
+.season-status{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border:1px solid #e8c36a66;border-radius:999px;font:600 11px/1.4 "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--s-gold)}
+.season-status i{width:7px;height:7px;border-radius:50%;background:var(--s-gold);box-shadow:0 0 8px var(--s-gold);animation:season-pulse 2s ease-in-out infinite}
+@keyframes season-pulse{50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.season-status i{animation:none}}
+.season-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.season-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:10px 12px;border-radius:8px;border:1px solid #e8c36a77;background:#e8c36a0d;color:var(--s-ink);font:600 13px/1.2 "Segoe UI",Arial,sans-serif;text-decoration:none;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+.season-button:hover:not(:disabled){background:#e8c36a1f;border-color:var(--s-gold);transform:translateY(-1px)}
+.season-button.is-primary{background:linear-gradient(180deg,#f3d58a,#d6a948);border-color:#f3d58a;color:#231a08;box-shadow:0 2px 0 #7a5718,0 6px 18px #e8c36a33}
+.season-button.is-primary:hover:not(:disabled){background:linear-gradient(180deg,#fae3a6,#e0b556)}
+.season-button:disabled{opacity:.5;cursor:not-allowed}
+.season-button small{font:500 9px/1 "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.1em;padding:3px 5px;border-radius:4px;background:#ffffff14;color:#cdb98a}
+.season-nav-button{display:none!important}
+.colony-app.cinema .season-rail{opacity:0;visibility:hidden;pointer-events:none}
+.season-rail{transition:opacity .25s ease,visibility .25s ease}
+
+.season-tutorial{width:min(620px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;padding:0;border:1px solid #e8c36a66;border-radius:14px;color:var(--s-ink);background:radial-gradient(120% 60% at 50% 0%,#e8c36a1a,transparent 55%),#15150f;box-shadow:0 30px 80px #000c}
+.season-tutorial::backdrop{background:#050604cc;backdrop-filter:blur(3px)}
+.season-tutorial-head{display:flex;justify-content:space-between;align-items:flex-start;padding:22px 24px 6px}
+.season-tutorial h2{font-size:30px;margin-top:6px}
+.season-close{background:none;border:1px solid #ffffff22;border-radius:8px;color:inherit;font-size:22px;width:40px;height:40px;cursor:pointer}
+.season-draft{margin:8px 24px 0;padding:8px 12px;border-radius:8px;background:#e8c36a14;border:1px dashed #e8c36a66;font-size:12px;line-height:1.5;color:#e9d7a8}
+.season-progress{list-style:none;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:18px 24px 0;padding:0}
+.season-progress button{width:100%;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0;background:none;border:0;color:#a79f8a;cursor:pointer;font:inherit}
+.season-progress span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1px solid #e8c36a55;font:600 13px "IBM Plex Mono",monospace}
+.season-progress small{font-size:10.5px;line-height:1.25;text-align:center}
+.season-progress [data-done] span{background:#e8c36a33;color:var(--s-gold)}
+.season-progress [aria-current=step]{color:var(--s-ink)}.season-progress [aria-current=step] span{background:var(--s-gold);color:#231a08;border-color:var(--s-gold);box-shadow:0 0 14px #e8c36a66}
+.season-step{margin:18px 24px 0;padding:22px;border-radius:12px;background:#ffffff07;border:1px solid #ffffff14;animation:season-in .25s ease}
+@keyframes season-in{from{opacity:0;transform:translateY(6px)}}
+.season-step-icon{font-size:40px;line-height:1;margin-bottom:10px}
+.season-step-count{font:600 11px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:#cdb98a}
+.season-step h3{margin:6px 0 10px;font:600 22px/1.2 "Fraunces",Georgia,serif;color:#fff6dc}
+.season-step p{margin:0;font-size:15px;line-height:1.65;color:#ddd6c3}
+.season-tip{margin-top:14px!important;padding:10px 12px;border-left:3px solid var(--s-gold);background:#e8c36a0f;border-radius:0 8px 8px 0;font-size:13px!important}
+.season-tip b{display:block;font:600 10px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--s-gold);margin-bottom:3px}
+.season-ca{margin-top:12px!important;font-size:13px!important}.season-ca code{font-family:"IBM Plex Mono",monospace;color:var(--s-gold)}
+.season-tutorial-foot{display:flex;justify-content:space-between;gap:10px;padding:18px 24px 22px}
+.season-tutorial-foot .season-button{min-width:120px}
+
+@media(max-width:1150px){.season-rail{width:236px}.season-rail h2{font-size:29px}.season-flourish{width:30px}}
+@media(max-width:780px){
+ .season-rail{display:none}
+ .season-nav-button{display:inline-flex!important;align-items:center;border-color:#e8c36a88!important;background:linear-gradient(180deg,#2a2412,#1a170d)!important;color:var(--s-gold)!important;font-family:"Cinzel Decorative","Fraunces",serif!important;font-weight:700!important}
+ .season-progress small{display:none}
+ .season-tutorial-head,.season-step,.season-progress,.season-draft{margin-left:16px;margin-right:16px}.season-tutorial-head{padding:18px 16px 4px;margin:0}.season-tutorial-foot{padding:16px}
+ .season-step{padding:18px}
+}
+.season-rail{width:288px}.season-rail h2{font-size:31px}.season-rail .season-flourish{width:30px}
+@media(max-width:1150px){.season-rail{width:250px}.season-rail h2{font-size:27px}.season-rail .season-flourish{width:22px}}

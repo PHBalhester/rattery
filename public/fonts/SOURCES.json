@@ -33,5 +33,10 @@
     "file": "font-6.ttf",
     "url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAO8lc.ttf",
     "sha256": "754dfc9d50cf7aabfb6b108d2c2f7d20a3f1f2cc6f6c01640c6728091272cec0"
+  },
+  {
+    "file": "cinzel-decorative-700.woff2",
+    "url": "https://registry.npmjs.org/@fontsource/cinzel-decorative/-/cinzel-decorative-5.3.0.tgz#files/cinzel-decorative-latin-700-normal.woff2",
+    "sha256": "0826d61da654ac987a9f0046cdc6bcb95eba7f8d2d20f93531d51d008fedea14"
   }
 ]
