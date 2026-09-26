@@ -21,7 +21,7 @@ const assert=require('node:assert/strict'),path=require('node:path');
  await p.locator('[data-nest="NVDA"]').getByRole('button',{name:'View nest',exact:true}).click();
  await p.waitForTimeout(800);await p.screenshot({path:path.join(outputDir,'season-nests-closeup.png')});
  await p.getByRole('button',{name:'Overview',exact:true}).click();
- await p.emulateMedia({reducedMotion:'reduce'});await p.waitForTimeout(500);state=await read();assert.equal(state.particles,0);assert(state.nests[0].crown);
+ await p.emulateMedia({reducedMotion:'reduce'});await p.waitForFunction(()=>JSON.parse(document.querySelector('.burrow-host').dataset.seasonPreview).particles===0);state=await read();assert.equal(state.particles,0);assert(state.nests[0].crown);
  await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await p.screenshot({path:path.join(outputDir,'season-nests-mobile.png')});
  await p.getByRole('button',{name:'Reset scene',exact:true}).click();await p.waitForFunction(()=>JSON.parse(document.querySelector('.burrow-host').dataset.seasonPreview).winner===null);
  state=await read();assert(state.nests.every(n=>n.score===0&&!n.crown));assert.deepEqual(errors,[]);

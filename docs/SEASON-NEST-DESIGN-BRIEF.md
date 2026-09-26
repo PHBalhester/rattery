@@ -27,3 +27,25 @@ Please return patches, screenshots at desktop and mobile sizes, and the build/te
 Production build and all three adaptive rendering regression suites pass. The development preview passes placement, six-mascot, tier, explicit winner, particle-budget, reduced-motion, mobile overflow and reset checks. Simulation and config files are unchanged. The preview controls and scene module are absent from production JavaScript. The remaining Vite large-chunk warning predates this work. Hardware performance still needs physical-device checks.
 
 Use View nest for close-up inspection and Overview to return to the reference layout. Artwork thresholds and mascots are preview-only. Authoritative nest membership, persisted score ingestion and winner finality must be integrated before a public Season release.
+
+## Opus art and motion pass
+
+Built on the preview structure above. Everything remains development-only (`?season-preview=1`), absent from production JavaScript, and never touches `src/sim`, `config.ts`, payments, identities or the permanent residents.
+
+- **Construction kit** (`src/render/season/craft.ts`): procedural woven courses (wefts over stakes plus a packed-fibre band), dome ribs, thatch bundles over a straw shell, loose bedding, fabric with per-company weave, deterministic so every viewer sees the same nest.
+- **Personality**: NVIDIA tall faceted skep with green sash and banded crates; Apple smooth hemisphere, linen canopy and an apple basket; Amazon low wide dome, stacked parcels and a pull cart. Shared language: straw, twig, plank, brass, rope.
+- **Build tiers** (visual only): 4 / 20 / 32 / 39 pieces. Pieces arrive in order (drop with landing squash, grow, unfold, pop) with dust puffs; losing a tier crumbles pieces in reverse. Mascots bring bedding while the nest is under construction.
+- **Mascots**: ethogram-based behaviours (sniff with whisking, rearing, cephalocaudal grooming, bedding work, carrying food in the mouth, nose-to-nose and a short play bout, freeze then flee, hide, cheer with hops). Turn in place before walking, personal-space separation, routes that detour around the woven wall. `BlenderRatVisual.gesture()` and `mouth()` are cosmetic hooks used only by these mascots.
+- **Flag**: double-sided cloth (name reads on both faces), pinned at the pole, travelling waves plus gusts, droops when a rival wins. A licensed logo placed at `public/season/flags/<TICKER>.png` replaces the wordmark automatically; no logo artwork ships in this repository.
+- **Feed**: parachute sack sways down, canopy collapses, dust puff, `+20`, mascots rush over and carry seed inside.
+- **Shield**: woven-light dome rising from the ground, fresnel rim, scan band, pixel dissolve; blocks the next strike (the snake bounces off).
+- **Snake** (`src/render/season/SeasonSnake.ts`): leaves the existing den hole, lateral undulation where every body ring follows the head's own trail, short coil and <0.15 s lunge, impact shake and straw burst, U-turn and return into the hole. The score change lands on impact. It never harms residents.
+- **Winner**: camera flies in (user drag returns control at once), golden ring, crown descends and lands with a bounce, mascots rear and hop, five firework shells in the company colour, rival flags droop.
+- **Controls**: glass nest cards, score count-up with +/- deltas, stage track, busy progress on each action, ripple and hover feedback, hovering a card highlights its nest in 3D. Reduced motion disables all of it.
+
+### Budgets and limitations
+
+- Particles share one pool: 192 / 128 / 72 / 40 by AdaptiveQuality level, 0 under reduced motion. Flag normals update every other frame at economy and below; lantern lights only at high quality.
+- Fully built scene (all three nests at 3,000+): about 390 Season drawables and 526k triangles, most of it the six LOD-0 mascots. Before a public release, merge each nest's static pieces once construction settles (≈15 draws per nest) and cap mascot LOD.
+- The snake path ignores tunnels; routes chosen for the three current nests clear them. Grooming approximates forepaw strokes with head and chest motion; the rig has no arm-to-face IK.
+- Verified with software rendering only (about 2 fps real time, frames stepped with a virtual clock). Check real phones and laptops.
