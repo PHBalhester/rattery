@@ -32,7 +32,7 @@ export class BlenderRatAssets{
   if(sources.length!==3){sources.forEach(g=>disposeScene(g.scene));throw Error('Could not load rat assets');}
   try{return new BlenderRatAssets(sources);}catch(e){sources.forEach(g=>disposeScene(g.scene));throw e;}
  }
- create(id:string,bucket?:number){return new BlenderRatVisual(this.sources[0],this.levels,id,bucket);}
+ create(id:string,bucket?:number,visualTint?:string){return new BlenderRatVisual(this.sources[0],this.levels,id,bucket,visualTint);}
  dispose(){this.sources.forEach(g=>disposeScene(g.scene));}
 }
 export class BlenderRatVisual{
@@ -51,10 +51,10 @@ export class BlenderRatVisual{
  private meshes:T.SkinnedMesh[]=[];
  private materials:T.Material[]=[];
  private crystalGeometry?:T.BufferGeometry;
- constructor(gltf:GLTF,private levels:Map<string,T.BufferGeometry>[],id:string,bucket?:number){
+ constructor(gltf:GLTF,private levels:Map<string,T.BufferGeometry>[],id:string,bucket?:number,visualTint?:string){
   this.model=clone(gltf.scene);this.model.scale.setScalar(.8);this.root.add(this.model);this.root.userData.blenderRat=true;
 
-  const coat=coatFor(id,bucket);this.phase=identity(id)/4294967295*Math.PI*2;
+  const originalCoat=coatFor(id,bucket),coat=visualTint?{...originalCoat,color:visualTint,belly:'#f1e7d0',pattern:'solid' as const}:originalCoat;this.phase=identity(id)/4294967295*Math.PI*2;
   this.model.traverse(o=>{if(o instanceof T.Bone){this.bones.set(o.name,o);this.rest.set(o.name,o.quaternion.clone());this.restPositions.set(o.name,o.position.clone());}});
 
   this.tailCollision=new TailCollision(this.bones);

@@ -1,0 +1,29 @@
+const {chromium,outputDir}=require('./lib/browser-runtime.cjs');
+const assert=require('node:assert/strict'),path=require('node:path');
+(async()=>{const browser=await chromium.launch({headless:true});try{
+ const p=await browser.newPage({viewport:{width:1440,height:1000}});p.setDefaultTimeout(30000);const errors=[];
+ p.on('pageerror',e=>errors.push(e.message));p.on('console',m=>{if(m.type()==='error'&&/shader|THREE|Season visual/.test(m.text()))errors.push(m.text());});
+ await p.addInitScript(()=>localStorage.setItem('rattery:welcome-explainer:v2','done'));
+ await p.goto('http://localhost:5173/?season-preview=1');
+ await p.waitForFunction(()=>{const h=document.querySelector('.burrow-host');return h?.dataset.seasonPreview&&JSON.parse(h.dataset.seasonPreview).nests.every(n=>n.mascots===2);});
+ const read=()=>p.locator('.burrow-host').getAttribute('data-season-preview').then(JSON.parse);
+ let state=await read();assert.deepEqual(state.nests.map(n=>n.id),['NVDA','AAPL','AMZN']);assert(state.nests[0].position[0]>0&&state.nests[0].position[2]>0);assert(state.nests[1].position[0]>0&&state.nests[1].position[2]<0);assert(state.nests[2].position[0]<0&&state.nests[2].position[2]>0);
+ await p.screenshot({path:path.join(outputDir,'season-nests-start.png')});
+ for(const [company,score] of [['NVIDIA','3600'],['Apple','1200'],['Amazon','400']])await p.getByRole('slider',{name:company+' demo points'}).evaluate((el,value)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));},score);
+ await p.waitForFunction(()=>JSON.parse(document.querySelector('.burrow-host').dataset.seasonPreview).nests[0].tier===3);
+ // Allow the build-up animation to finish on software-rendered test machines.
+ await p.waitForTimeout(3000);await p.screenshot({path:path.join(outputDir,'season-nests-evolved.png')});
+ await p.locator('[data-nest="NVDA"]').getByRole('button',{name:'Shield FX',exact:true}).click();
+ await p.locator('[data-nest="AMZN"]').getByRole('button',{name:'Attack FX',exact:true}).click();
+ await p.locator('[data-nest="NVDA"]').getByRole('button',{name:'Reveal winner',exact:true}).click();
+ await p.waitForFunction(()=>{const s=JSON.parse(document.querySelector('.burrow-host').dataset.seasonPreview);return s.nests[0].crown&&s.particles>0&&s.particles<=192;});
+ await p.screenshot({path:path.join(outputDir,'season-nests-winner.png')});
+ await p.locator('[data-nest="NVDA"]').getByRole('button',{name:'View nest',exact:true}).click();
+ await p.waitForTimeout(800);await p.screenshot({path:path.join(outputDir,'season-nests-closeup.png')});
+ await p.getByRole('button',{name:'Overview',exact:true}).click();
+ await p.emulateMedia({reducedMotion:'reduce'});await p.waitForTimeout(500);state=await read();assert.equal(state.particles,0);assert(state.nests[0].crown);
+ await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await p.screenshot({path:path.join(outputDir,'season-nests-mobile.png')});
+ await p.getByRole('button',{name:'Reset scene',exact:true}).click();await p.waitForFunction(()=>JSON.parse(document.querySelector('.burrow-host').dataset.seasonPreview).winner===null);
+ state=await read();assert(state.nests.every(n=>n.score===0&&!n.crown));assert.deepEqual(errors,[]);
+ console.log('PASS nest placement, six cosmetic mascots, score tiers, reveal, reduced motion, mobile layout and reset');
+ }finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});
