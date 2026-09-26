@@ -49,3 +49,6 @@ Built on the preview structure above. Everything remains development-only (`?sea
 - Fully built scene (all three nests at 3,000+): about 390 Season drawables and 526k triangles, most of it the six LOD-0 mascots. Before a public release, merge each nest's static pieces once construction settles (≈15 draws per nest) and cap mascot LOD.
 - The snake path ignores tunnels; routes chosen for the three current nests clear them. Grooming approximates forepaw strokes with head and chest motion; the rig has no arm-to-face IK.
 - Verified with software rendering only (about 2 fps real time, frames stepped with a virtual clock). Check real phones and laptops.
+
+### Astra batching and hardware follow-up
+Static construction now batches reversibly after settling (48 material draws across all three full nests). Mascots are capped at LOD 1 or 2. See SEASON-NEST-GPU-VALIDATION.md for desktop hardware measurements, recording and remaining physical-device checks.

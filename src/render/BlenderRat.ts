@@ -47,6 +47,8 @@ export class BlenderRatVisual{
  private rest=new Map<string,T.Quaternion>();
 
  qualityLevel=0;
+ /** Cosmetic detail floor; normal residents retain the default. */
+ minimumLod=0;
  private lod=-1;private elapsed=0;private phase=0;private bones=new Map<string,T.Bone>();
  private meshes:T.SkinnedMesh[]=[];
  private materials:T.Material[]=[];
@@ -127,7 +129,7 @@ export class BlenderRatVisual{
   this.model.position.y=wheel?.09:-.02;
   const profile=qualityProfiles[this.qualityLevel];
   // Keep close-up detail within the GPU budget. All LODs retain anatomy and joints.
-  const level=Math.max(distance<12?0:distance<26?1:2,profile.minLod);
+  const level=Math.max(distance<12?0:distance<26?1:2,profile.minLod,Math.min(2,Math.max(0,Math.floor(this.minimumLod))));
   if(level!==this.lod){for(const o of this.meshes){o.geometry=this.levels[level].get(o.name)!;o.castShadow=level===0&&o.name!=='Fine_ivory_fibres';}this.lod=level;this.root.userData.lod=level;}
   for(const mesh of this.meshes)if(mesh.name==='Fine_ivory_fibres')mesh.visible=profile.furDistance>0&&distance<profile.furDistance;
   if(reset)this.elapsed=0;else if(!reduced)this.elapsed+=dt;

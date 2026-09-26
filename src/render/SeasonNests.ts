@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {StaticNestBatch} from './season/StaticNestBatch';
 import {NEST_DESIGNS,TIER_NAMES,visualTier,type NestId,type VisualEvent} from '../season/visualState';
 import type {BlenderRatAssets,BlenderRatVisual} from './BlenderRat';
 import {SNAKE_DEN} from '../sim/snake';
@@ -22,7 +22,7 @@ type Piece={obj:T.Object3D;style:Style;home:T.Vector3;scale:T.Vector3;landed:boo
 type Behaviour='idle'|'walk'|'sniff'|'rear'|'groom'|'arrange'|'carry'|'social'|'flee'|'hide'|'rush'|'cheer';
 type Mascot={rat:BlenderRatVisual;x:number;z:number;heading:number;speed:number;route:T.Vector2[];behaviour:Behaviour;next:Behaviour|null;timer:number;dur:number;
  prop:T.Mesh|null;carrying:boolean;head:number;rise:number;yaw:number;hop:number;distress:number;social:boolean;seed:number};
-type Nest={id:NestId;design:typeof NEST_DESIGNS[number];root:T.Group;pieces:Piece[];tierEnd:number[];build:number;target:number;tier:number;score:number;
+type Nest={batch:StaticNestBatch;id:NestId;design:typeof NEST_DESIGNS[number];root:T.Group;pieces:Piece[];tierEnd:number[];build:number;target:number;tier:number;score:number;
  flag:{mesh:T.Mesh<T.PlaneGeometry,T.MeshStandardMaterial>;back:T.Mesh;base:Float32Array;map:T.CanvasTexture};droop:number;
  sign:{canvas:HTMLCanvasElement;map:T.CanvasTexture;shown:number;flash:number;board:T.Mesh};
  halo:T.Mesh<T.RingGeometry,T.MeshBasicMaterial>;shield:T.Mesh<T.SphereGeometry,T.ShaderMaterial>;shieldAt:number;
@@ -127,7 +127,7 @@ export class SeasonNests{
   const shield=new T.Mesh(new T.SphereGeometry(3.95,48,24,0,Math.PI*2,0,Math.PI/2),shieldMaterial(design.color));shield.material.uniforms.height.value=3.95;shield.visible=false;shield.renderOrder=4;this.geos.push(shield.geometry);this.mats.push(shield.material);shield.position.z=.3;root.add(shield);
   const crown=this.crown(design.color);crown.visible=false;root.add(crown);
   const sack=this.sack(fabric,k);sack.visible=false;root.add(sack);
-  const nest:Nest={id:design.id,design,root,pieces,tierEnd,build:tierEnd[0],target:tierEnd[0],tier:0,score:-1,flag:{mesh:flagMesh,back,base:(flagGeo.attributes.position.array as Float32Array).slice(),map:flagMap},droop:0,
+  const nest:Nest={batch:new StaticNestBatch(root,[mound,straw,pole,knob,...pieces.map(p=>p.obj)]),id:design.id,design,root,pieces,tierEnd,build:tierEnd[0],target:tierEnd[0],tier:0,score:-1,flag:{mesh:flagMesh,back,base:(flagGeo.attributes.position.array as Float32Array).slice(),map:flagMap},droop:0,
    sign:{canvas:signCanvas,map:signMap,shown:0,flash:0,board},halo,shield,shieldAt:-100,crown,crownAt:-100,lantern,sack,sackAt:-100,rats:[],shake:0,hover:0,event:null,eventAt:-100};
   this.drawSign(nest,0);return nest;
  }
@@ -192,7 +192,7 @@ export class SeasonNests{
  // ---------- mascots --------------------------------------------------------------------------------
  attachRats(assets:BlenderRatAssets){
   for(const n of this.nests.values()){if(n.rats.length)continue;
-   for(let i=0;i<2;i++){const rat=assets.create(`preview-${n.id}-${i}`,undefined,n.design.color);rat.root.name=`Cosmetic ${n.id} mascot ${i+1}`;rat.root.scale.setScalar(1.15);n.root.add(rat.root);
+   for(let i=0;i<2;i++){const rat=assets.create(`preview-${n.id}-${i}`,undefined,n.design.color);rat.root.name=`Cosmetic ${n.id} mascot ${i+1}`;rat.minimumLod=1;rat.root.scale.setScalar(1.15);n.root.add(rat.root);
     const start=WAYPOINTS[i+1];const prop=this.mesh(new T.SphereGeometry(.07,8,6),i?this.kit.seed:this.kit.strawDark);prop.scale.set(i?1:3.2,i?.7:.35,i?.8:.35);prop.visible=false;this.root.add(prop);
     n.rats.push({rat,x:start.x,z:start.y,heading:i?Math.PI:0,speed:0,route:[],behaviour:'idle',next:null,timer:0,dur:.6+i,prop,carrying:false,head:0,rise:0,yaw:0,hop:0,distress:0,social:false,seed:n.id.charCodeAt(1)*97+i*13});}
   }
@@ -259,7 +259,7 @@ export class SeasonNests{
    const other=n.rats[1-i];if(other){const dx=m.x-other.x,dz=m.z-other.z,d=Math.hypot(dx,dz),min=m.social&&other.social?.9:1.4;if(d<min&&d>1e-4){const push=(min-d)*.5;m.x+=dx/d*push;m.z+=dz/d*push;}else if(d<=1e-4)m.x+=.5;}
    // Smooth gesture blending (overlapping action): head leads, body follows a little later.
    m.head=damp(m.head,head,10,dt);m.rise=damp(m.rise,rise,7,dt);m.yaw=damp(m.yaw,yaw,6,dt);m.hop=damp(m.hop,hop,18,dt);m.distress=damp(m.distress,distress,6,dt);
-   const y=this.ground(n,m.x,m.z);m.rat.root.position.set(m.x,y+m.hop,m.z);m.rat.root.rotation.y=m.heading;m.rat.root.updateMatrixWorld(true);m.rat.qualityLevel=this.level;
+   const y=this.ground(n,m.x,m.z);m.rat.root.position.set(m.x,y+m.hop,m.z);m.rat.root.rotation.y=m.heading;m.rat.root.updateMatrixWorld(true);m.rat.qualityLevel=this.level;m.rat.minimumLod=this.level>=2?2:1;
    const world=m.rat.root.getWorldPosition(new T.Vector3());
    const toWorld=(wx:number,wz:number)=>{const l=n.root.worldToLocal(new T.Vector3(wx,0,wz));return n.root.position.y+this.ground(n,l.x,l.z)+m.hop;};
    m.rat.update(dt,camera.position.distanceTo(world),moving||v>.04||m.behaviour==='walk',Math.max(v,moving?.2:0),this.reduced,false,true,false,m.social,toWorld,false,false,false,undefined,m.distress);
@@ -275,7 +275,7 @@ export class SeasonNests{
   // A snake strike changes the score when it lands, not when it is ordered.
   if(this.snake.busy&&this.snakeTarget===id&&!this.struck&&score<n.score){this.deferred=score;return;}
   const prev=n.score;n.score=score;n.tier=visualTier(score);
-  n.target=n.tierEnd[n.tier];if(this.reduced)n.build=n.target;
+  if(n.target!==n.tierEnd[n.tier])n.batch.restore();n.target=n.tierEnd[n.tier];if(this.reduced)n.build=n.target;
   if(prev>=0&&score!==prev&&!this.reduced){n.sign.flash=.6;if(score<prev&&visualTier(score)<visualTier(prev))n.shake=Math.max(n.shake,.5);}
  }
  setHover(id:NestId|null){this.hovered=id;}
@@ -313,7 +313,8 @@ export class SeasonNests{
    // Construction: pieces arrive in order; demolition runs backwards with a crumble.
    const growing=n.target>n.build;const rate=growing?5.5:9;
    n.build=reduced?n.target:growing?Math.min(n.target,n.build+rate*dt):Math.max(n.target,n.build-rate*dt);
-   n.pieces.forEach((p,i)=>this.animatePiece(n,p,clamp(n.build-i,0,1),growing));
+   if(n.batch.active&&n.build!==n.target)n.batch.restore();
+   if(!n.batch.active){n.pieces.forEach((p,i)=>this.animatePiece(n,p,clamp(n.build-i,0,1),growing));if(n.build===n.target)n.batch.merge();}
    // Flag: pinned at the pole, travelling waves plus gusts; drooping when a rival wins.
    const others=this.winner&&this.winner!==n.id&&this.time-this.revealAt<8;n.droop=damp(n.droop,others?1:0,2,dt);
    if(!reduced&&(level<2||this.frame%2===0))this.waveFlag(n);
@@ -379,8 +380,9 @@ export class SeasonNests{
  /** Development aid: run the scene clock forward without rendering (screenshots on slow machines). */
  advance(seconds:number,reduced:boolean,level:number,camera:T.Camera){for(let t=0;t<seconds;t+=1/30)this.update(1/30,reduced,level,camera);}
  anchor(id:NestId){return this.nests.get(id)!.root.position.clone();}
- diagnostics(){return {nests:[...this.nests].map(([id,v])=>({id,position:v.root.position.toArray(),score:v.score,tier:v.tier,build:Math.round(v.build*10)/10,mascots:v.rats.length,crown:v.crown.visible,behaviours:v.rats.map(r=>r.behaviour)})),particles:this.alive,winner:this.winner,snake:this.snake.busy};}
+ diagnostics(){return {nests:[...this.nests].map(([id,v])=>({id,position:v.root.position.toArray(),score:v.score,tier:v.tier,build:Math.round(v.build*10)/10,mascots:v.rats.length,crown:v.crown.visible,behaviours:v.rats.map(r=>r.behaviour),batchDraws:v.batch.draws,sourceDraws:v.batch.sourceDraws,mascotLods:v.rats.map(r=>r.rat.root.userData.lod)})),particles:this.alive,winner:this.winner,snake:this.snake.busy};}
  dispose(){
+  for(const n of this.nests.values())n.batch.dispose();
   for(const n of this.nests.values())for(const m of n.rats){m.rat.dispose();m.prop?.removeFromParent();}
   this.snake.dispose();this.particles.dispose();this.text.dispose();
   this.geos.forEach(g=>g.dispose());this.mats.forEach(m=>m.dispose());this.textures.forEach(t=>t.dispose());this.kit.dispose();
@@ -388,4 +390,3 @@ export class SeasonNests{
   this.root.removeFromParent();
  }
 }
-void mergeGeometries;
