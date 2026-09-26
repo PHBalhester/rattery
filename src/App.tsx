@@ -11,6 +11,7 @@ import LineageTree from "./render/LineageTree";
 import TradeTape from "./render/TradeTape";
 import WalletConnection from "./render/WalletConnection";
 import AmbientAudio from "./render/AmbientAudio";
+import Count from "./render/Count";
 import SeasonRail,{SeasonNavButton} from "./render/SeasonRail";
 import { SITE, ponsUrl } from "./config";
 import { truncateCA } from "./copy/pons";
@@ -53,6 +54,20 @@ export default function App() {
   void version;
 
   useEffect(() => { startEngine(); }, []);
+  // Tactile feedback: a small ripple from the pointer on any control (skipped under reduced motion).
+  useEffect(() => {
+    const app = appRef.current; if (!app) return;
+    const down = (e: PointerEvent) => {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const button = (e.target as HTMLElement).closest('button:not(:disabled)') as HTMLElement | null;
+      if (!button || !app.contains(button) || button.closest('.burrow-host')) return;
+      const r = button.getBoundingClientRect(), dot = document.createElement('span');
+      dot.className = 'ripple-dot'; dot.style.left = `${e.clientX - r.left}px`; dot.style.top = `${e.clientY - r.top}px`;
+      button.appendChild(dot); setTimeout(() => dot.remove(), 600);
+    };
+    app.addEventListener('pointerdown', down);
+    return () => app.removeEventListener('pointerdown', down);
+  }, []);
 
   const world=getWorld();
   const alerts=colonyAlerts(world,colonyMetrics(world));
@@ -102,11 +117,11 @@ export default function App() {
           <WelcomeTour />
           <SeasonNavButton />
           <div className="colony-summary" aria-label={tr("Colony population","群落数量")}>
-            <span><b>{known ? living.length : '—'}</b> {tr("alive","存活")}</span>
+            <span>{known ? <Count value={living.length}/> : <b>—</b>} {tr("alive","存活")}</span>
             <span aria-hidden="true">/</span>
-            <span><b>{known ? dead : '—'}</b> {tr("dead","死亡")}</span>
+            <span>{known ? <Count value={dead}/> : <b>—</b>} {tr("dead","死亡")}</span>
             <span aria-hidden="true">/</span>
-            <span title={tr("Living pups, including weanlings","存活幼鼠，包括断奶幼鼠")}><b>{known ? pups : '—'}</b> {tr("pups","幼鼠")}</span>
+            <span title={tr("Living pups, including weanlings","存活幼鼠，包括断奶幼鼠")}>{known ? <Count value={pups}/> : <b>—</b>} {tr("pups","幼鼠")}</span>
           </div>
         </nav>
         <div className="scene-title">

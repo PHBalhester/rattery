@@ -151,6 +151,19 @@ export class BlenderRatVisual{
   for(const o of this.meshes)if(o.name==='Ruby_black_eyes')o.visible=eyesOpen;
   this.model.scale.z=.8*(pregnant?1.13:1);
  }
+ /**
+  * Cosmetic pose layered after update(): pitch the head (+ looks up) and raise the chest (+ rears up on the
+  * hind legs, lifting the forepaws). Rendering only; never feeds the simulation.
+  */
+ gesture(headPitch:number,rise:number,headYaw=0){
+  if(!headPitch&&!rise&&!headYaw)return;
+  const pose=(name:string,angle:number,axis:T.Vector3)=>{if(!angle)return;const bone=this.bones.get(name);if(!bone)return;
+   const local=axis.clone().applyQuaternion(bone.getWorldQuaternion(new T.Quaternion()).invert()).normalize();
+   bone.quaternion.multiply(new T.Quaternion().setFromAxisAngle(local,angle));bone.updateWorldMatrix(false,true);};
+  this.model.updateWorldMatrix(true,true);
+  const side=new T.Vector3(0,0,1).transformDirection(this.model.matrixWorld),up=new T.Vector3(0,1,0).transformDirection(this.model.matrixWorld);
+  pose('spine',rise,side);pose('head',headPitch-rise*.6,side);pose('head',headYaw,up);
+ }
  naturalDiagnostics(){return this.naturalMotion.diagnostics();}
  diagnostics(){return this.motor.diagnostics();}
  dispose(){this.crystalGeometry?.dispose();const skeletons=new Set<T.Skeleton>();this.model.traverse(o=>{if(o instanceof T.SkinnedMesh)skeletons.add(o.skeleton);});skeletons.forEach(s=>s.dispose());this.materials.forEach(m=>m.dispose());this.root.removeFromParent();this.root.clear();}
