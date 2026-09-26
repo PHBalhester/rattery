@@ -19,7 +19,7 @@ const Finish={
  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
  fragmentShader:`uniform sampler2D tDiffuse;uniform float time,vignette,grain;varying vec2 vUv;
  float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
- void main(){vec4 c=texture2D(tDiffuse,vUv);vec2 d=vUv-.5;float v=smoothstep(.85,.2,length(d*vec2(1.15,1.)));
+ void main(){vec4 c=texture2D(tDiffuse,vUv);vec2 d=vUv-.5;float v=(1.-smoothstep(.2,.85,length(d*vec2(1.15,1.))));
  c.rgb*=mix(1.-vignette,1.,v);c.rgb+=(h(vUv*vec2(1733.,997.)+fract(time))-.5)*grain;gl_FragColor=c;}`,
 };
 
@@ -63,11 +63,11 @@ export function enrichHabitatMaterials(root:T.Object3D){
 export type AtmosphereLevel=0|1|2|3;
 export class Atmosphere{
  private composer:EffectComposer;private gtao:GTAOPass;private tiltH:ShaderPass;private tiltV:ShaderPass;private bloom:UnrealBloomPass;private finish:ShaderPass;
- private env:T.Texture;private table:T.Mesh;private dust:T.Points;private dustBase:Float32Array;private disposables:{dispose():void}[]=[];
+ private env:T.WebGLRenderTarget;private table:T.Mesh;private dust:T.Points;private dustBase:Float32Array;private disposables:{dispose():void}[]=[];
  private level:AtmosphereLevel=0;private time=0;private focusY=.5;
  constructor(private renderer:T.WebGLRenderer,private scene:T.Scene,private camera:T.PerspectiveCamera,private target:T.Vector3){
-  const pmrem=new T.PMREMGenerator(renderer);const room=new RoomEnvironment();this.env=pmrem.fromScene(room,.04).texture;room.dispose();pmrem.dispose();
-  scene.environment=this.env;scene.environmentIntensity=.28;renderer.toneMappingExposure=.92;
+  const pmrem=new T.PMREMGenerator(renderer);const room=new RoomEnvironment();this.env=pmrem.fromScene(room,.04);room.dispose();pmrem.dispose();
+  scene.environment=this.env.texture;scene.environmentIntensity=.28;renderer.toneMappingExposure=.92;
   const bg=backdropTexture();scene.background=bg;(scene.fog as T.FogExp2|null)?.color.set(0x0c0d0d);
   const tex=tableTexture(),tableGeo=new T.CircleGeometry(95,96),tableMat=new T.MeshStandardMaterial({map:tex,roughness:.72,metalness:0});
   this.table=new T.Mesh(tableGeo,tableMat);this.table.rotation.x=-Math.PI/2;this.table.position.y=-1.53;this.table.receiveShadow=true;this.table.name='Atmosphere table';scene.add(this.table);
@@ -101,5 +101,5 @@ export class Atmosphere{
   if(this.level===3){this.renderer.render(this.scene,this.camera);return;}
   this.composer.render(dt);
  }
- dispose(){this.composer.dispose();this.gtao.dispose();this.bloom.dispose();this.table.removeFromParent();this.dust.removeFromParent();this.disposables.forEach(d=>d.dispose());this.scene.environment=null;this.scene.background=null;}
+ dispose(){for(const pass of this.composer.passes)pass.dispose();this.composer.dispose();this.table.removeFromParent();this.dust.removeFromParent();this.disposables.forEach(d=>d.dispose());this.scene.environment=null;this.scene.background=null;}
 }

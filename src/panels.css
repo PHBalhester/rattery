@@ -346,3 +346,7 @@
 }
 .season-rail{width:288px}.season-rail h2{font-size:31px}.season-rail .season-flourish{width:30px}
 @media(max-width:1150px){.season-rail{width:250px}.season-rail h2{font-size:27px}.season-rail .season-flourish{width:22px}}
+
+/* Keep both Season actions inside narrow desktop cards. */
+.season-actions{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.season-actions .season-button{min-width:0;flex-wrap:wrap;padding:10px 6px;gap:5px}

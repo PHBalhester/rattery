@@ -105,7 +105,7 @@ export default function Burrow3D(){
   const inspect=new URLSearchParams(location.search).has('inspect-performance');
   const performanceLabel=inspect?document.createElement('div'):null;
   if(performanceLabel){performanceLabel.className='performance-readout';performanceLabel.style.cssText='position:fixed;top:calc(env(safe-area-inset-top, 0px) + 84px);left:50%;transform:translateX(-50%);padding:6px 10px;background:#000b;color:#ddd;pointer-events:none;font:12px monospace;z-index:90;max-width:calc(100vw - 16px);white-space:nowrap';document.body.appendChild(performanceLabel);}
-  function applyQuality(){const profile=quality.profile;atmosphere.setLevel(quality.level);renderer.setPixelRatio(Math.min(devicePixelRatio,profile.pixelRatio));renderer.shadowMap.enabled=profile.shadows;sun.castShadow=profile.shadows;
+  function applyQuality(){const profile=quality.profile;atmosphere.setLevel(quality.level);renderer.setPixelRatio(Math.min(devicePixelRatio,profile.pixelRatio));atmosphere.setSize(el.clientWidth,el.clientHeight);renderer.shadowMap.enabled=profile.shadows;sun.castShadow=profile.shadows;
    if(sun.shadow.mapSize.x!==profile.shadowSize){sun.shadow.map?.dispose();sun.shadow.map=null;sun.shadow.mapSize.set(profile.shadowSize,profile.shadowSize);}
    renderer.shadowMap.needsUpdate=true;el.dataset.quality=profile.name;
   }
