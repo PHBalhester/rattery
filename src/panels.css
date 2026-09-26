@@ -350,3 +350,6 @@
 /* Keep both Season actions inside narrow desktop cards. */
 .season-actions{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 .season-actions .season-button{min-width:0;flex-wrap:wrap;padding:10px 6px;gap:5px}
+
+.season-nav-button:disabled{cursor:default;opacity:.7}
+.season-actions .season-button small{flex-basis:100%;background:none;line-height:1.3}
