@@ -110,6 +110,7 @@ function segment(mesh:T.Mesh,a:T.Vector3,b:T.Vector3,radius=1){const delta=b.clo
 export class RatModel {
   root=new T.Group();
   private blender?:BlenderRatVisual;
+  private gHead=0;private gRise=0;private gYaw=0;
   setRenderQuality(level:number){if(this.blender)this.blender.qualityLevel=Math.max(0,Math.min(3,Math.floor(level)));}
   private bodySize=1;
   private encounterStart=NaN;
@@ -245,7 +246,28 @@ export class RatModel {
       this.blender.root.position.set(0,0,0);this.blender.root.rotation.set(0,0,0);
       if(pose&&r.sex==='M'){this.blender.root.position.y=pose.y+pose.lift*.7*Math.max(0,encounter!.scale/(size*this.bodySize)-1);this.blender.root.rotation.z=pose.pitch;}
       this.blender.update(dt,camera.position.distanceTo(this.root.position)/Math.max(.25,size),activity>.08,Math.max(this.speed,running||digging?.7:0),reduced,discontinuity,age>=CONFIG.bio.eyesOpenDay,!!r.pregnant,!!social,wheel?wheelGround:ratGround,running||digging,running,true,pose?{blend:r.sex==='M'?pose.lift:1,frontHeight:r.sex==='M'?pose.frontHeight*encounter!.scale:0,rhythm:reduced?0:r.sex==='M'?pose.rhythm:0}:undefined,r.wellbeing?.isolationDistress??0);
+      this.idleGesture(dt,time,reduced,activity,headingDelta,!!social||!!pose||running||digging||r.stage==='neonate'||(r.wellbeing?.isolationDistress??0)>.5);
     }
+  }
+  /**
+   * Rendering-only ethogram layer for residents (no simulation input or output). While still, a rat
+   * alternates between rearing to sniff the air, cephalocaudal grooming and scanning; while walking the
+   * head leads into turns. The schedule is a pure function of id and clock, so every viewer agrees.
+   */
+  private idleGesture(dt:number,time:number,reduced:boolean,activity:number,turn:number,busy:boolean){
+    let head=0,rise=0,yaw=0;
+    if(!reduced&&!busy){
+      if(activity<.08){
+        const t=time+this.seed*3.7,slot=Math.floor(t/8.5),k=t-slot*8.5,pick=((Math.sin(slot*12.9898+this.seed*78.233)*43758.5453)%1+1)%1;
+        const hold=(a:number,b:number,c:number)=>k<a?0:k<a+.35?1-(1-(k-a)/.35)**3:k<b?1:k<b+c?1-((k-b)/c)**2:0;
+        const whisk=Math.sin(time*2*Math.PI*7+this.seed)*.02;
+        if(pick<.3){const e=hold(.4,2.4,.4);rise=.5*e;head=(.24+whisk)*e;yaw=Math.sin(k*1.6)*.42*e;}
+        else if(pick<.52){const e=hold(.3,2.6,.35);rise=.26*e;head=(-.3+Math.sin(time*2*Math.PI*5)*.1)*e;if(k>2.1)yaw=Math.sin((k-2.1)*3)*.7*e;}
+        else if(pick<.8){const e=hold(.2,4.2,.5);head=(.06+whisk)*e;yaw=Math.sin(k*1.15)*.38*e;}
+      }else yaw=Math.max(-.35,Math.min(.35,turn*.6));
+    }
+    const k=1-Math.exp(-7*dt);this.gHead+=(head-this.gHead)*k;this.gRise+=(rise-this.gRise)*(1-Math.exp(-5*dt));this.gYaw+=(yaw-this.gYaw)*(1-Math.exp(-6*dt));
+    this.blender?.gesture(this.gHead,this.gRise,this.gYaw);
   }
   dispose(){this.blender?.dispose();this.root.removeFromParent();this.root.clear();}
 }
