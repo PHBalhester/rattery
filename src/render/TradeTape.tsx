@@ -27,6 +27,7 @@ export default function TradeTape() {
       <div className="tape-status">
         <span className={`dot dot-${status}`} />
         <span className="dim">{statusText()[status]}</span>
+        <span className="tape-legend"><b className="buy">▲ {tr('Buy','买入')}</b> {tr('feeds','补给')} <b className="sell">▼ {tr('Sell','卖出')}</b> {tr('stresses','施压')}</span>
       </div>
       <div className="tape-scroll">
         {trades.length === 0 && status !== "history-limit" && <span className="dim tape-empty">{tr('Waiting for the first trade…','等待第一笔交易…')}</span>}

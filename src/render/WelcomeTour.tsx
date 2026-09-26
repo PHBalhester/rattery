@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {tr,useLanguage} from '../i18n';
+import MarketGuide from './MarketGuide';
 const KEY='rattery:welcome-explainer:v2';
 function firstVisit(){try{return localStorage.getItem(KEY)!=='done';}catch{return true;}}
 export default function WelcomeTour(){
@@ -13,7 +14,7 @@ export default function WelcomeTour(){
  <h2 id="tour-title">{tr('A living colony. A shared world.','生机勃勃的共享群落。')}</h2>
  <p>{tr('Everyone watches the same digital rats. They explore, rest, form relationships and grow older—even when you leave.','每个人都在观察同一群数字大鼠。它们探索、休息、建立关系并逐渐变老，即使你离开也会继续。')}</p>
  <ol className="explainer-steps">
- <li><strong>{tr('Trades change their environment','交易改变环境')}</strong><p>{tr('Yes, token trading matters. Buys can support resources and exploration. Sells can add pressure and stress. Reactions depend on the colony’s condition, trade size and cooldowns.','代币交易会产生影响。买入可支持资源与探索，卖出可增加压力。反应取决于群落状态、交易规模和冷却时间。')}</p></li>
+ <li><strong>{tr('Trades change their environment','交易改变环境')}</strong><MarketGuide compact/></li>
  <li><strong>{tr('Choose a rat to help','选择一只大鼠提供帮助')}</strong><p>{tr('Select a rat, then open its care actions to name it, offer food or water, or play. Paid actions burn RATTERY permanently; review the cost and availability before confirming. Naming is recorded in the project, not as an NFT.','选择一只大鼠，查看照护操作，为它命名、提供食物或水、或玩耍。付费操作永久销毁RATTERY；确认前请检查费用和可用性。命名记录在项目内，不是NFT。')}</p></li>
  <li><strong>{tr('Check what they need','查看它们的需求')}</strong><p>{tr('Colony status shows current needs and alerts. Open an alert to find affected rats. Temporary assisted care, when active, reduces negative effects.','群落状态显示当前需求和警报。打开警报可查看受影响的大鼠。临时照护启用时会减少负面影响。')}</p></li>
  </ol>

@@ -216,3 +216,70 @@
  .clear-layout .panel-deck .colony-panel{top:auto}
  .clear-layout .colony-summary{font-size:11px}
 }
+
+/* ---- Clarity pass: guide, needs, grouped care ---- */
+.colony-app{--buy:#88d2a0;--sell:#ff8a8a;--warn:#f0c46c}
+.colony-app .topbar .chip-trade{display:inline-flex!important;align-items:center;background:#d6e9d6;color:#142019;border-color:#d6e9d6;font-weight:600}
+.colony-app .topbar .chip-trade:hover{background:#eaf6ea}
+.colony-app.cinema .topbar .chip-trade{display:inline-flex!important}
+.colony-app .ca-chip span{opacity:.7;margin-left:2px}
+.colony-app .scene-controls .motion-version{display:none!important}
+
+.market-guide{margin:4px 16px 14px;padding:12px;border:1px solid var(--panel-rule);border-radius:10px;background:#ffffff06}
+.market-guide-title{font-size:13px;font-weight:600;margin-bottom:10px}
+.market-guide-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.market-guide-card{display:flex;flex-direction:column;gap:4px;padding:10px;border-radius:8px;font-size:12px;line-height:1.45;color:var(--panel-muted)}
+.market-guide-card b{font-size:13px}
+.market-guide-card.is-buy{background:#88d2a014;border-left:3px solid var(--buy)}.market-guide-card.is-buy b{color:var(--buy)}
+.market-guide-card.is-sell{background:#ff8a8a12;border-left:3px solid var(--sell)}.market-guide-card.is-sell b{color:var(--sell)}
+.market-guide-quiet{margin:8px 0 0;font-size:12px;line-height:1.5;color:var(--panel-muted)}.market-guide-quiet b{color:var(--panel-ink);font-weight:500}
+.market-guide-compact{margin:8px 0 0;padding:0;border:0;background:none}
+.colony-explainer .market-guide-card{color:#d2dcd4}
+
+.colony-app .panel-hint{margin:0;padding:10px 16px 0;font-size:12px;line-height:1.5;color:var(--panel-muted)}
+.colony-app .production-residents button{position:relative;align-items:center}
+.colony-app .production-residents button>span{flex:1;min-width:0}
+.resident-need{font-style:normal;font-size:11px;padding:3px 7px;border-radius:999px;background:#f0c46c22;color:var(--warn);white-space:nowrap}
+.resident-need.is-critical{background:#ff8a8a26;color:var(--sell)}
+
+.rat-needs{margin:0 16px 14px;padding:12px;border-radius:10px;border-left:3px solid var(--warn);background:#f0c46c10;font-size:13px}
+.rat-needs>b{display:block;margin-bottom:6px;color:var(--warn)}
+.rat-needs.is-critical{border-left-color:var(--sell);background:#ff8a8a12}.rat-needs.is-critical>b{color:var(--sell)}
+.rat-needs.is-fine{border-left-color:var(--buy);background:#88d2a010;display:flex;flex-direction:column;gap:3px}.rat-needs.is-fine b{color:var(--buy);margin:0}.rat-needs.is-fine span{color:var(--panel-muted);font-size:12px}
+.rat-needs ul{list-style:none;margin:0;padding:0;display:grid;gap:5px}.rat-needs li{display:flex;justify-content:space-between;gap:10px}.rat-needs li span{color:var(--panel-muted);text-align:right}
+.rat-vitals{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;padding:4px 16px 16px}
+.vital>div:first-child{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}.vital b{font-variant-numeric:tabular-nums;font-weight:600}
+.vital .bar-track{height:6px;border-radius:3px;background:#ffffff15;overflow:hidden}.vital .bar-track i{display:block;height:100%;background:var(--buy)}
+.vital[data-level=warning] .bar-track i{background:var(--warn)}.vital[data-level=critical] .bar-track i{background:var(--sell)}.vital[data-level=critical] b{color:var(--sell)}
+
+.care-picker{display:grid;gap:12px;margin:10px 0}
+.care-group{border:0;margin:0;padding:0;min-width:0}
+.care-group legend{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--panel-muted);padding:0;margin-bottom:6px}
+.care-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.care-option{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:64px;padding:9px 10px;text-align:left;border-radius:8px;border:1px solid #ffffff22;background:#ffffff08;color:var(--panel-ink);cursor:pointer;font:inherit}
+.care-option:hover:not(:disabled){border-color:#ffffff55;background:#ffffff10}
+.care-option[aria-pressed=true]{border-color:var(--buy);background:#88d2a01a}
+.care-option[data-suggested]{border-color:var(--warn)}
+.care-option:disabled{opacity:.45;cursor:not-allowed}
+.care-option-top{display:flex;align-items:center;gap:6px;width:100%;font-size:13px}.care-option-top strong{font-weight:600}
+.care-option-top em{margin-left:auto;font-style:normal;font-size:10px;padding:2px 6px;border-radius:999px;background:#f0c46c26;color:var(--warn)}
+.care-option small{font-size:11px;line-height:1.35;color:var(--panel-muted)}
+.care-option .care-cost{color:#d8cfae}
+.care-group-danger .care-option{border-color:#ff8a8a55;background:#ff8a8a0d}.care-group-danger legend{color:var(--sell)}
+.care-name-form{padding:10px;border:1px solid var(--panel-rule);border-radius:8px;margin:8px 0}
+.care-selected-explanation{display:block;padding:10px;border-radius:8px;background:#ffffff08;font-size:12px;line-height:1.5}.care-selected-explanation b{display:block;margin-bottom:4px;color:var(--panel-ink)}
+.care-review{width:100%;justify-content:center;margin:6px 0 10px}
+.colony-app .demo-notice{display:flex;flex-direction:column;gap:6px;border-radius:8px;font-size:12px;color:var(--panel-muted)}.colony-app .demo-notice b{color:var(--warn)}.colony-app .demo-notice label{margin:0}
+.care-status:empty{display:none}.care-status{padding:8px 10px;border-radius:8px;background:#ffffff0a;color:var(--panel-ink)!important}
+.care-rules{margin:4px 0 16px!important}
+
+.tape-legend{margin-left:14px;font-size:11px;color:var(--panel-muted);white-space:nowrap}.tape-legend b{font-weight:600;margin-left:6px}.tape-legend .buy{color:var(--buy)}.tape-legend .sell{color:var(--sell)}
+
+@media(max-width:780px){
+ .clear-layout .panel-deck{top:auto;bottom:var(--bottom-chrome,150px);height:min(58vh,560px)}
+ .clear-layout .panel-deck .colony-panel{border-radius:14px 14px 10px 10px}
+ .clear-layout .topbar .chip-trade{min-height:34px;padding:6px 10px}
+ .tape-legend{display:none}
+ .rat-vitals{grid-template-columns:1fr 1fr}
+}
+@media(min-width:1300px){.clear-layout .condition-panel,.clear-layout .lineage-panel{width:380px}}

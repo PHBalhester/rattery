@@ -87,10 +87,10 @@ export default function App() {
           </div>
           <div className="topbar-right"><button type="button" className="language-toggle" aria-label="Language / 语言" aria-pressed={language==='zh'} title={language==='en'?'Switch to Chinese':'切换到英语'} onClick={()=>setLanguage(language==='en'?'zh':'en')}><span className={language==='en'?'active':''}>EN</span><span className={language==='zh'?'active':''}>CN</span></button>
             <span className={`feed-label feed-${feedStatus}`} title={feedStatus === "history-limit" ? "History too long to replay here. Live simulation paused." : undefined}><i />{shared?tr('Shared · ','共享 · ')+feedLabel:testnet?`TESTNET · ${feedLabel}`:feedLabel}</span>
-            <button className="chip chip-accent" onClick={toggleCinema} aria-pressed={cinema}>{cinema ? tr("Show panels","显示面板") : tr("Hide panels","隐藏面板")}</button>
+            <button className="chip chip-accent" onClick={toggleCinema} aria-pressed={cinema}>{cinema ? tr("Show info","显示信息") : tr("Hide info","隐藏信息")}</button>
             <AmbientAudio />
-            {ca ? <button className="chip" onClick={copyCA} title={ca}>{copied ? tr('Copied','已复制') : `CA ${truncateCA(ca)}`}</button> : <span className="chip chip-static">{tr('Token pending','代币待发布')}</span>}
-            <a className="chip chip-link trade-link" href={testnet?chain!.links.explorer:ponsUrl(ca)} target="_blank" rel="noreferrer">{testnet?tr('Testnet explorer ↗','测试网浏览器 ↗'):tr('Trade ↗','交易 ↗')}</a>
+            {ca ? <button className="chip ca-chip" onClick={copyCA} title={`${tr('Copy contract address','复制合约地址')}: ${ca}`}>{copied ? tr('Copied ✓','已复制 ✓') : <>CA {truncateCA(ca)} <span aria-hidden="true">⧉</span></>}</button> : <span className="chip chip-static">{tr('Token pending','代币待发布')}</span>}
+            <a className="chip chip-link trade-link chip-trade" href={testnet?chain!.links.explorer:ponsUrl(ca)} target="_blank" rel="noreferrer">{testnet?tr('Testnet explorer ↗','测试网浏览器 ↗'):tr('Trade ↗','交易 ↗')}</a>
             <WalletConnection />
           </div>
         </header>

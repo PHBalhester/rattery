@@ -83,7 +83,7 @@ interface StoreState {
 
 export const useStore = create<StoreState>((set) => ({
   version: 0,
-  cinema: (()=>{try{return localStorage.getItem("rattery:panels")!=="open";}catch{return true;}})(),
+  cinema: (()=>{let saved:string|null=null;try{saved=localStorage.getItem("rattery:panels");}catch{/* Optional preference. */}if(saved==="open")return false;if(saved==="closed")return true;return typeof window==="undefined"||window.innerWidth<780;})(),
   panel: "colony",
   panelRequest: 0,
   openPanel: (panel) => set(s=>({cinema:false,panel,panelRequest:s.panelRequest+1})),

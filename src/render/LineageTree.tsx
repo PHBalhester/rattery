@@ -2,6 +2,7 @@ import {useState} from 'react';
 import {tr} from '../i18n';
 import {coatFor} from './ratIdentity';
 import {getWorld,useStore} from '../store';
+import {ratNeeds,ratActivity} from './ratNeeds';
 import type {MemorialRecord} from '../types';
 
 export default function LineageTree(){
@@ -28,10 +29,11 @@ export default function LineageTree(){
  }
  return <div className="lineage">
   <div className="panel-head"><strong>{tr('Residents','居民')}</strong><span className="dim">{living.length} {tr('alive','存活')}</span></div>
+  <p className="panel-hint">{tr('Pick a rat to follow it and see what it needs.','选择一只大鼠，跟随它并查看它的需求。')}</p>
   <label className="family-search">{tr('Find a rat','查找大鼠')}<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search by name…','按名字搜索…')}/></label>
   <div className="production-residents" aria-label={tr('Living rats','存活的大鼠')}>
    {living.filter(matches).map(r=><button key={r.id} aria-pressed={focusedId===r.id} onClick={()=>{setFamilyId(r.id);focus(r.id);}}>
-    <i style={{background:coatFor(r.id,r.coatBucket).color}}/><span>{r.name}<small>{r.sex==='F'?tr('Female','雌性'):tr('Male','雄性')} · {tr('Generation','世代')} {r.gen}</small></span>
+    <i style={{background:coatFor(r.id,r.coatBucket).color}}/><span>{r.name}<small>{r.sex==='F'?tr('Female','雌性'):tr('Male','雄性')} · {tr('Gen','第')} {r.gen}{tr('','代')} · {world.rats[r.id]?ratActivity(world.rats[r.id]):''}</small></span>{(()=>{const n=world.rats[r.id]?ratNeeds(world.rats[r.id]):[];return n.length?<em className={`resident-need${n.some(x=>x.critical)?' is-critical':''}`} title={n.map(x=>x.label).join(', ')}>{n[0].label}</em>:null;})()}
    </button>)}
    {!living.some(matches)&&<p className="family-empty">{tr('No living rats match this name.','没有匹配的存活大鼠。')}</p>}
   </div>
