@@ -85,7 +85,8 @@ export class Atmosphere{
   this.composer.addPass(new OutputPass());
   this.finish=new ShaderPass(Finish);this.composer.addPass(this.finish);
  }
- setSize(w:number,h:number){this.composer.setPixelRatio(this.renderer.getPixelRatio());this.composer.setSize(w,h);this.tiltH.uniforms.h.value=1/(w||1);this.tiltV.uniforms.v.value=1/(h||1);}
+ setSize(w:number,h:number){if(!w||!h)return;// Hidden or collapsed host: keep the last valid targets.
+ this.composer.setPixelRatio(this.renderer.getPixelRatio());this.composer.setSize(w,h);this.tiltH.uniforms.h.value=1/(w||1);this.tiltV.uniforms.v.value=1/(h||1);}
  /** 0 high: everything · 1 balanced: no GTAO · 2 economy: tilt-shift only, no dust · 3 minimal: plain render. */
  setLevel(level:number){this.level=Math.max(0,Math.min(3,level)) as AtmosphereLevel;this.gtao.enabled=this.level===0;this.bloom.enabled=this.level<=1;this.dust.visible=this.level<=1;this.tiltH.enabled=this.tiltV.enabled=this.level<=2;this.finish.enabled=this.level<=2;}
  render(dt:number,reduced:boolean){
