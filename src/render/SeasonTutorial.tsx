@@ -116,8 +116,8 @@ export default function SeasonTutorial({onClose}:{onClose:()=>void}){
  const go=useCallback((to:number)=>setIndex(Math.max(0,Math.min(STEPS.length-1,to))),[]);
 
  // Panels must be visible while the guide points at them; restore the visitor's choice afterwards.
- useEffect(()=>{const was=useStore.getState().cinema;if(was)useStore.setState({cinema:false});document.documentElement.classList.add('stut-open');
-  return()=>{document.documentElement.classList.remove('stut-open');cueStage({nest:null});if(was)useStore.setState({cinema:true});};},[]);
+ useEffect(()=>{const previousFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;const was=useStore.getState().cinema;if(was)useStore.setState({cinema:false});document.documentElement.classList.add('stut-open');
+  return()=>{document.documentElement.classList.remove('stut-open');cueStage({nest:null});if(was)useStore.setState({cinema:true});if(previousFocus?.isConnected)previousFocus.focus({preventScroll:true});};},[]);
 
  useEffect(()=>{
   if(step.panel)useStore.getState().openPanel(step.panel);
@@ -130,6 +130,12 @@ export default function SeasonTutorial({onClose}:{onClose:()=>void}){
 
  useEffect(()=>{
   const key=(e:KeyboardEvent)=>{
+   if(e.key==='Tab'){
+    const buttons=Array.from(card.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')??[]);
+    const current=buttons.indexOf(document.activeElement as HTMLButtonElement);
+    const nextIndex=e.shiftKey?(current<=0?buttons.length-1:current-1):(current+1)%buttons.length;
+    buttons[nextIndex]?.focus({preventScroll:true});e.preventDefault();e.stopImmediatePropagation();return;
+   }
    if(e.key==='Escape'){e.preventDefault();onClose();}
    else if(e.key==='ArrowRight'){e.preventDefault();go(index+1);}
    else if(e.key==='ArrowLeft'){e.preventDefault();go(index-1);}

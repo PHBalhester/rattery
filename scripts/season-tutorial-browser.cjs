@@ -25,6 +25,10 @@ const path=require('node:path');
   await p.keyboard.press('ArrowLeft');
   assert.equal((await p.locator('.stut-count').textContent()).trim(),`${steps-1} / ${steps}`);
   await p.screenshot({path:path.join(outputDir,`season-tutorial-${width}.png`)});
+  for(const key of ['Tab','Tab','Tab','Shift+Tab','Shift+Tab','Shift+Tab']){
+   await p.keyboard.press(key);
+   assert(await p.evaluate(()=>!!document.activeElement?.closest('.stut-card')),'Keyboard focus escaped the modal');
+  }
   await p.keyboard.press('Escape');
   await p.locator('.stut').waitFor({state:'detached'});
   assert.deepEqual(errors,[]);console.log('PASS season tutorial',width,height);
