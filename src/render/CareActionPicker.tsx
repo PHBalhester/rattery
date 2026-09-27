@@ -2,7 +2,7 @@ import {CARE_RULES,type CareAction} from '../sim/care';
 import {tr,locale,useLanguage} from '../i18n';
 
 export const CARE_ICONS:Record<CareAction,string>={feed:'🍎',water:'💧',pet:'🤲',play:'🎾',treat:'🍬',explore:'🧭',mint:'🏷️',name:'✏️',prosocial:'🤝',aggression:'😠',snake:'🐍'};
-export const CARE_LABELS:Record<CareAction,[string,string]>={snake:['Awaken snake','唤醒蛇'],mint:['Mint & name','铸造并命名'],name:['Rename','重命名'],feed:['Feed','喂食'],water:['Water','饮水'],pet:['Pet','抚摸'],play:['Play','玩耍'],treat:['Treat','零食'],explore:['Explore','探索'],prosocial:['Sociability','社交增强'],aggression:['Irritability','易怒增强']};
+export const CARE_LABELS:Record<CareAction,[string,string]>={snake:['Awaken snake','唤醒蛇'],mint:['Name','命名'],name:['Rename','重命名'],feed:['Feed','喂食'],water:['Water','饮水'],pet:['Pet','抚摸'],play:['Play','玩耍'],treat:['Treat','零食'],explore:['Explore','探索'],prosocial:['Sociability','社交增强'],aggression:['Irritability','易怒增强']};
 const BLURBS:Record<CareAction,[string,string]>={
  feed:['+15 energy','+15能量'],
  water:['+15 hydration','+15水分'],
@@ -16,11 +16,10 @@ const BLURBS:Record<CareAction,[string,string]>={
  aggression:['More irritable for 2h','2小时内更易怒'],
  snake:['Can kill a rat','可能杀死大鼠'],
 };
+export const VISIBLE_CARE_ACTIONS:CareAction[]=['mint','name','prosocial','aggression'];
 const GROUPS:{id:string;title:[string,string];actions:CareAction[]}[]=[
- {id:'care',title:['Everyday care','日常照护'],actions:['feed','water','pet','play','treat','explore']},
- {id:'identity',title:['Ownership','所有权'],actions:['mint','name']},
- {id:'advanced',title:['Behaviour boosters · adults','行为增强 · 成年个体'],actions:['prosocial','aggression']},
- {id:'danger',title:['Danger','危险'],actions:['snake']},
+ {id:'identity',title:['Name','名字'],actions:['mint','name']},
+ {id:'advanced',title:['Stimuli · adults','刺激 · 成年个体'],actions:['prosocial','aggression']},
 ];
 
 type Props={

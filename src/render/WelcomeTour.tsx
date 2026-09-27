@@ -15,7 +15,7 @@ export default function WelcomeTour(){
  <p>{tr('Everyone watches the same digital rats. They explore, rest, form relationships and grow older—even when you leave.','每个人都在观察同一群数字大鼠。它们探索、休息、建立关系并逐渐变老，即使你离开也会继续。')}</p>
  <ol className="explainer-steps">
  <li><strong>{tr('Trades change their environment','交易改变环境')}</strong><MarketGuide compact/></li>
- <li><strong>{tr('Choose a rat to help','选择一只大鼠提供帮助')}</strong><p>{tr('Select a rat, then open its care actions to name it, offer food or water, or play. Paid actions burn RATTERY permanently; review the cost and availability before confirming. Naming is recorded in the project, not as an NFT.','选择一只大鼠，查看照护操作，为它命名、提供食物或水、或玩耍。付费操作永久销毁RATTERY；确认前请检查费用和可用性。命名记录在项目内，不是NFT。')}</p></li>
+ <li><strong>{tr('Choose a rat to help','选择一只大鼠提供帮助')}</strong><p>{tr('Select a rat to name it or apply a sociability or irritability stimulus. Paid actions burn RATTERY permanently; review the cost and availability before confirming. Naming is recorded in the project, not as an NFT.','选择一只大鼠，为它命名或施加社交、易怒刺激。付费操作永久销毁RATTERY；确认前请检查费用和可用性。命名记录在项目内，不是NFT。')}</p></li>
  <li><strong>{tr('Check what they need','查看它们的需求')}</strong><p>{tr('Colony status shows current needs and alerts. Open an alert to find affected rats. Temporary assisted care, when active, reduces negative effects.','群落状态显示当前需求和警报。打开警报可查看受影响的大鼠。临时照护启用时会减少负面影响。')}</p></li>
  </ol>
  <details><summary>{tr('A few more things to know','更多须知')}</summary><p>{tr('Unminted rats can receive care from any wallet; minted rats require their owner. Cooldowns apply. The snake is a separate harmful action that can kill an eligible rat. Behaviour is simulated, not a scientific measurement.','未铸造的大鼠可由任何钱包照护；已铸造的大鼠需由所有者照护。操作有冷却时间。蛇是独立的有害操作，可能杀死符合条件的大鼠。行为属于模拟，并非科学测量。')}</p></details>
