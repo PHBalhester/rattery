@@ -132,7 +132,7 @@ export default function App() {
           <p>{tr('Every interaction leaves a story.','每次互动都留下一段故事。')}</p>
         </div>
 
-        {shared&&<div className="shared-status" role="status" data-revision={shared.revision}>{feedStatus==='error'?tr('Connection delayed · showing the last confirmed state · reconnecting…','连接延迟 · 显示最后确认的状态 · 正在重新连接…'):shared.revision<0?tr('Connecting to the shared colony…','正在连接共享群落…'):staging?tr('Shared staging colony · read-only market feed · payments disabled','共享测试群落 · 只读市场数据 · 支付未启用'):tr('Shared colony · RATTERY on Robinhood Chain','共享群落 · Robinhood Chain上的RATTERY')}{shared.marketHalted&&<strong>{tr(' · Market collection paused',' · 市场数据采集暂停')}</strong>}</div>}
+        {shared&&(feedStatus==='error'||shared.revision<0||staging||shared.marketHalted)&&<div className="shared-status" role="status" data-revision={shared.revision}>{feedStatus==='error'?tr('Connection delayed · showing the last confirmed state · reconnecting…','连接延迟 · 显示最后确认的状态 · 正在重新连接…'):shared.revision<0?tr('Connecting to the shared colony…','正在连接共享群落…'):staging?tr('Shared staging colony · read-only market feed · payments disabled','共享测试群落 · 只读市场数据 · 支付未启用'):tr('Shared colony · RATTERY on Robinhood Chain','共享群落 · Robinhood Chain上的RATTERY')}{shared.marketHalted&&<strong>{tr(' · Market collection paused',' · 市场数据采集暂停')}</strong>}</div>}
 
 
         <SeasonRail />
