@@ -2,7 +2,7 @@ import {CARE_ERRORS} from '../careErrors';
 import {assertAllowedName,nameIssue} from '../sim/namePolicy';
 import {useEffect,useRef,useState} from 'react';
 import {getWorld,useStore} from '../store';
-import CareActionPicker,{CARE_ICONS} from './CareActionPicker';
+import CareActionPicker,{CARE_ICONS,VISIBLE_CARE_ACTIONS} from './CareActionPicker';
 import {ratNeeds} from './ratNeeds';
 import {useWallet,mainnetBurnRequest} from '../wallet';
 import {mainnetPayments,PAYMENT_TOKEN} from '../paymentMode';
@@ -11,7 +11,7 @@ import {tokenUnits} from '../market/burn';
 import {tr,locale,useLanguage} from '../i18n';
 type Intent={id:string;rat_id:string;action:CareAction;name:string|null;cost:number;units:string;token:string;chain_id:number;status:string;submission_started_at:string|null;submitted_hash:string|null;expires_at:string};
 type View={residence?:{verified_ms:string;checked_at:string;value_micros:string;status:string}|null;wallet:string;chainId:number;token:string;decimals:number;revision:number;rats:{id:string;name:string;owner:string|null;dead:boolean}[];intents:Intent[]};
-const labels:Record<CareAction,[string,string]>={snake:['Awaken snake','唤醒蛇'],mint:['Mint rat','铸造大鼠'],name:['Rename','重命名'],feed:['Feed','喂食'],water:['Offer water','提供饮水'],pet:['Gentle petting','温柔抚摸'],play:['Play','玩耍'],treat:['Offer treat','提供零食'],explore:['Invite to explore','邀请探索'],prosocial:['Sociability booster','社交增强剂'],aggression:['Irritability booster','易怒增强剂']};
+const labels:Record<CareAction,[string,string]>={snake:['Awaken snake','唤醒蛇'],mint:['Name & ownership','命名与所有权'],name:['Rename','重命名'],feed:['Feed','喂食'],water:['Offer water','提供饮水'],pet:['Gentle petting','温柔抚摸'],play:['Play','玩耍'],treat:['Offer treat','提供零食'],explore:['Invite to explore','邀请探索'],prosocial:['Sociability booster','社交增强剂'],aggression:['Irritability booster','易怒增强剂']};
 const explanations:Record<CareAction,[string,string]>={
  snake:['Burn 500,000 RATTERY to awaken the snake for 10 simulation days, ending after one capture. It waits for a random eligible adult near its den; a capture is not guaranteed. Minted rats, parents with dependents and the breeding reserve are protected. Disabled during assisted care and below 61 residents. Colony cooldown: 1 real hour.','销毁500,000枚RATTERY唤醒蛇，持续10个模拟日或捕获一次。随机捕获洞口附近符合条件的成年大鼠，不保证捕获。受保护的大鼠不会被捕获。'],
  mint:['Register ownership of this rat and choose its name. Only your wallet can provide care afterward. This is not an NFT.','登记此大鼠的所有权并命名，此后仅您的钱包可提供照护。这不是NFT。'],
@@ -29,9 +29,9 @@ function CareHelp(){
  const dialog=useRef<HTMLDialogElement>(null);
  return <><button type="button" className="chip care-help-button" aria-label={tr('Explain mint and care','了解铸造与照护')} aria-haspopup="dialog" onClick={()=>dialog.current?.showModal()}>?</button>
  <dialog ref={dialog} className="wallet-dialog care-help-dialog" aria-labelledby="care-help-title">
- <header><h2 id="care-help-title">{tr('Mint & care guide','铸造与照护指南')}</h2><button type="button" className="chip" aria-label={tr('Close help','关闭帮助')} onClick={()=>dialog.current?.close()}>×</button></header>
+ <header><h2 id="care-help-title">{tr('Name & stimuli guide','名字与刺激指南')}</h2><button type="button" className="chip" aria-label={tr('Close help','关闭帮助')} onClick={()=>dialog.current?.close()}>×</button></header>
  <p>{tr('Every paid action permanently burns RATTERY. Network fees are separate and paid in ETH. Review the action before confirming in your wallet.','每项付费操作都会永久销毁RATTERY。网络费用另以ETH支付。请在钱包确认前核对操作。')}</p>
- <dl>{(Object.keys(labels) as CareAction[]).map(action=><div className="care-help-item" key={action}><dt>{tr(...labels[action])}</dt><dd><strong>{CARE_RULES[action].cost.toLocaleString(locale())} RATTERY</strong> · {CARE_RULES[action].hours?tr(`Once every ${CARE_RULES[action].hours} real hours`,`每${CARE_RULES[action].hours}个现实小时一次`):tr('Once per rat','每只大鼠一次')}<p>{tr(...explanations[action])}</p></dd></div>)}</dl>
+ <dl>{VISIBLE_CARE_ACTIONS.map(action=><div className="care-help-item" key={action}><dt>{tr(...labels[action])}</dt><dd><strong>{CARE_RULES[action].cost.toLocaleString(locale())} RATTERY</strong> · {CARE_RULES[action].hours?tr(`Once every ${CARE_RULES[action].hours} real hours`,`每${CARE_RULES[action].hours}个现实小时一次`):tr('Once per rat','每只大鼠一次')}<p>{tr(...explanations[action])}</p></dd></div>)}</dl>
  <p>{tr('The two boosters share a 2-hour cooldown and cannot stack. Care may be unavailable when a rat is busy, resting, satiated or dead. These are simulation indices, not medical measurements.','两种增强剂共享2小时冷却且不可叠加。大鼠忙碌、休息、饱腹或死亡时，部分照护不可用。这些是模拟指数，不是医学测量值。')}</p>
  <button type="button" className="chip chip-accent" onClick={()=>dialog.current?.close()}>{tr('Got it','明白了')}</button>
  </dialog></>;
@@ -72,8 +72,8 @@ export default function PaidCare({ratId}:{ratId:string|null}){
  });
  const recover=()=>run(async()=>{if(!intent)throw Error('No reservation');validate(intent);const receipt=intent.submitted_hash||saved.hash||hash.trim();if(intent.cost&&(!receipt||!/^0x[0-9a-f]{64}$/i.test(receipt)))throw Error('Transaction hash required');const result=await api('finalize',{id:intent.id,hash:receipt});setNotice(result.status==='applied'?tr('Confirmed and applied. No second burn.','已确认并生效，无需再次销毁。'):tr('Burn recorded for review. Do not pay again.','销毁已记录并待审核，请勿重复支付。'));});
  if(!mainnetPayments)return null;
- return <section className="rat-care paid-care"><div className="panel-head"><strong>{tr('Mint & care','铸造与照护')}</strong><CareHelp/></div>
- {!w.authenticated?<><p>{tr('Connect and sign in to mint or care for a rat. Observation is free.','连接并登录以铸造或照护大鼠，观察始终免费。')}</p><button className="chip" onClick={()=>useWallet.setState({open:true})}>{tr('Open wallet','打开钱包')}</button></>:!view?<p>{tr('Loading account…','正在加载账户…')}</p>:<>
+ return <section className="rat-care paid-care"><div className="panel-head"><strong>{tr('Name & stimuli','名字与刺激')}</strong><CareHelp/></div>
+ {!w.authenticated?<><p>{tr('Connect and sign in to name a rat or apply a stimulus. Observation is free.','连接并登录以命名大鼠或施加刺激，观察始终免费。')}</p><button className="chip" onClick={()=>useWallet.setState({open:true})}>{tr('Open wallet','打开钱包')}</button></>:!view?<p>{tr('Loading account…','正在加载账户…')}</p>:<>
  <label>{tr('Choose a rat','选择大鼠')}<select aria-label={tr('Choose a rat for mint and care','选择要铸造或照护的大鼠')} value={rat?.dead?'':rat?.id??''} disabled={busy} onChange={e=>useStore.getState().focus(e.target.value||null)}><option value="">{tr('Select a living rat…','选择存活的大鼠…')}</option>{view.rats.filter(r=>!r.dead).map(r=><option key={r.id} value={r.id}>{r.name}{r.owner===w.account?tr(' · Yours',' · 您的'):r.owner?tr(' · Owned',' · 已有主人'):''}</option>)}</select></label>
  <details className="care-explanation"><summary>{tr('Holding recognition · optional','持有认可 · 可选')}</summary><strong>{tr('Residence · 7 / 30 / 90 days','居住时间 · 7 / 30 / 90天')}</strong><p>{tr('Keep at least US$100 in RATTERY at the current verified price. Falling below resets progress, including price drops and burns. Recognition only; no financial reward.','按当前已验证价格持有至少100美元的RATTERY。低于门槛将重置进度，包括价格下跌及销毁。仅为身份认可，无财务奖励。')}</p><p>{view.residence?`${(Number(view.residence.verified_ms)/86400000).toFixed(2)} ${tr('verified days','已验证天数')} · ${view.residence.status==='eligible'&&Date.now()-Number(view.residence.checked_at)<180000?tr('Qualifying','符合条件'):view.residence.status==='below-threshold'?tr('Below US$100','低于100美元'):tr('Verification pending','等待验证')}`:tr('Verification begins after signed login. No past holding time is assumed.','签名登录后开始验证，不推定之前的持有时间。')}</p></details>
  {pending.length>0&&<details open><summary>{tr('Pending actions','待处理操作')} ({pending.length})</summary>{pending.map(i=><button className="chip" key={i.id} disabled={busy} onClick={()=>{setSelected(i.id);setHash('')}}>{tr(...labels[i.action])} · {view.rats.find(r=>r.id===i.rat_id)?.name??i.name??i.rat_id}</button>)}</details>}
