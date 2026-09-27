@@ -10,7 +10,8 @@ for(const [width,height,lang] of [[1440,900,'en'],[390,844,'en'],[360,640,'zh']]
  const gpu=await p.evaluate(()=>{const gl=document.createElement('canvas').getContext('webgl2'),e=gl.getExtension('WEBGL_debug_renderer_info');return gl.getParameter(e.UNMASKED_RENDERER_WEBGL)});assert(!/SwiftShader|llvmpipe/i.test(gpu));
  await p.evaluate(()=>{window.__frames=[];window.__prev=performance.now();window.__stop=false;function tick(t){window.__frames.push(t-window.__prev);window.__prev=t;if(!window.__stop)requestAnimationFrame(tick)}requestAnimationFrame(tick)});
  const steps=[];
- for(let i=0;i<16;i++){
+ const total=await p.locator('.stut-progress i').count();
+ for(let i=0;i<total;i++){
  await p.waitForTimeout(800);
  const layout=await p.evaluate(()=>{const c=document.querySelector('.stut-card'),r=c.getBoundingClientRect(),body=document.querySelector('.stut-content');return {step:document.querySelector('.stut').dataset.step,x:r.x,y:r.y,width:r.width,height:r.height,overflow:body.scrollWidth-body.clientWidth,viewport:[innerWidth,innerHeight]}});
  assert(layout.x>=-1&&layout.y>=-1&&layout.x+layout.width<=width+1&&layout.y+layout.height<=height+1,JSON.stringify(layout));assert(layout.overflow<=2,'Content horizontal overflow '+JSON.stringify(layout));
@@ -19,7 +20,7 @@ for(const [width,height,lang] of [[1440,900,'en'],[390,844,'en'],[360,640,'zh']]
  const expected={feed:'NVDA',shield:'AAPL',attack:'AMZN',winner:'NVDA'}[layout.step];assert.equal(s.focus,expected,JSON.stringify({step:layout.step,s}));if(layout.step==='winner')assert.equal(s.winner,expected);else assert.equal(s.event.kind,layout.step);
  }
  if([0,7,13].includes(i))await p.screenshot({path:path.join(out,`tutorial-${branch}-${width}-${i}.png`)});
- steps.push(layout);if(i<15)await p.locator('.stut-next').click();
+ steps.push(layout);if(i<total-1)await p.locator('.stut-next').click();
  }
  const fps=await p.evaluate(()=>{window.__stop=true;const a=window.__frames.slice(2),sorted=[...a].sort((a,b)=>a-b);return {mean:a.length*1000/a.reduce((a,b)=>a+b,0),p95Ms:sorted[Math.floor(sorted.length*.95)]}});
  await p.locator('.stut-next').click();assert.equal(await p.locator('.stut').count(),0);

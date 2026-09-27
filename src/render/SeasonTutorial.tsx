@@ -33,7 +33,8 @@ const STEPS:Step[]=[
  {id:'nests',chapter:['The nests','巢穴'],title:['Each nest is home to a resident couple','每个巢穴都住着一对居民'],targets:['.nest-preview-cards'],cue:{nest:null},body:()=><>
   <p>{tr('Points build the nest. Players can feed their own nest, protect it with a shield or attack a rival nest.','积分让巢穴成长。玩家可以喂养自己的巢穴、用护盾保护它，或攻击对手巢穴。')}</p>
   <List items={[tr('Snake attacks and point losses never kill resident rats.','蛇的攻击和积分损失永远不会杀死居民大鼠。'),tr('Permanent residents keep their identities and protection.','永久居民保留其身份与保护。'),tr('One active nest membership per wallet.','每个钱包只能有一个有效的巢穴成员资格。')]}/></>},
- {id:'clock',chapter:['The weekly clock','每周时间表'],title:['Every week is a new competition','每周都是一场新的竞赛'],targets:['.season-status','.season-rail','.season-nav-button'],body:()=><>
+ {id:'clock',chapter:['The weekly clock','每周时间表'],title:['Every week is a new competition','每周都是一场新的竞赛'],targets:['.season-prize-clock','.season-status','.season-rail','.season-nav-button'],body:()=><>
+  <p>{tr('This line of the Weekly Prize window counts down to the close and shows the entry price right now.','每周奖金窗口的这一行显示距结束的倒计时以及当前入场价。')}</p>
   <ol className="stut-timeline">
    <li><b>{tr('Mon 13:00','周一 13:00')}</b><span>{tr('Competition opens','竞赛开启')}</span></li>
    <li><b>{tr('Sun 19:00','周日 19:00')}</b><span>{tr('Nest switching closes','停止更换巢穴')}</span></li>
@@ -58,26 +59,34 @@ const STEPS:Step[]=[
   <Price usd={20}>{tr('Removes 10% of a rival\'s current score, rounded down, max 500','移除对手当前积分的10%，向下取整，最多500')}</Price>
   <div className="stut-example"><span>237 {tr('pts','分')}</span><i aria-hidden="true">→</i><b>−23</b><small>{tr('Under 10 points loses nothing.','低于10分则不损失。')}</small></div>
   <List items={[tr('Removed points vanish. The attacker gains nothing.','被移除的积分直接消失，攻击方不会获得。'),tr('Each attacking nest shares a 60 minute cooldown, even if a shield blocked it.','每个攻击方巢穴共享60分钟冷却，即使被护盾挡住。'),tr('Attacks settle in blockchain order. A later shield cannot undo them.','攻击按区块链顺序结算，之后的护盾无法撤销。'),tr('Attacks cut the nest score, never the contribution members already earned.','攻击只减少巢穴积分，不会减少成员已获得的贡献。')]}/></>},
+ {id:'stocks',chapter:['Scoring','计分'],title:['This week\'s stocks','本周股票'],targets:['.season-stocks'],cue:{nest:null},body:()=><>
+  <p>{tr('Each nest follows its company\'s stock. This window shows the three prices used this week.','每个巢穴跟随其公司的股票。此窗口显示本周使用的三只股票价格。')}</p>
+  <dl className="stut-legend">
+   <div><dt>{tr('Today','今日')}</dt><dd>{tr('Price versus the previous regular close. Up, flat or down sets the 10 minute effect.','相对前一常规收盘价的变化。涨、平或跌决定每10分钟的影响。')}</dd></div>
+   <div><dt>{tr('Week','本周')}</dt><dd>{tr('Return since last Friday\'s close × 10: the bonus so far, final with this Friday\'s close.','自上周五收盘以来的收益率×10：目前的调整，以本周五收盘为准。')}</dd></div>
+   <div><dt>/10m</dt><dd>{tr('What the nest gains or loses every 10 minutes right now, with the current colony mood.','按当前群落状况，该巢穴每10分钟获得或失去的积分。')}</dd></div>
+  </dl>
+  <Note>{tr('When the market is closed the stock effect is neutral.','休市时股价影响为中性。')}</Note></>},
  {id:'mood',chapter:['Scoring','计分'],title:['A calm colony earns, a stressed one bleeds','平静的群落得分，紧张的群落失分'],targets:['#condition-panel .condition-grid','#condition-panel'],panel:'colony',body:()=><>
   <p>{tr('Every 10 minutes each nest gains or loses points from the colony\'s average stress and its company\'s stock versus the previous close.','每10分钟，各巢穴会根据群落平均压力及其公司股价相对前一收盘价的变化获得或失去积分。')}</p>
   <div className="stut-moods"><span data-m="happy"><b>{tr('Happy','愉快')}</b>{tr('stress under 30%','压力低于30%')}</span><span data-m="neutral"><b>{tr('Neutral','中性')}</b>{tr('30 to 45%','30%至45%')}</span><span data-m="stressed"><b>{tr('Stressed','紧张')}</b>{tr('45% or more','45%及以上')}</span></div>
   <Rows head={['',tr('Stock up','股价上涨'),tr('Flat or closed','持平或休市'),tr('Stock down','股价下跌')]} rows={[[tr('Happy','愉快'),'+2','+1','+0.5'],[tr('Neutral','中性'),'0','0','0'],[tr('Stressed','紧张'),'−0.5','−1','−2']]}/>
-  <Note>{tr('Points per 10 minutes. Outside regular trading hours the stock effect is neutral. Timing details are finalized before launch.','每10分钟的积分。常规交易时段以外，股价影响为中性。具体时间细节将在上线前确定。')}</Note></>},
- {id:'stock',chapter:['Scoring','计分'],title:['The weekly stock bonus','每周股价调整'],targets:['.nest-preview-cards'],cue:{nest:null},body:()=><>
+  <Note>{tr('Points per 10 minutes, shown live in the /10m column. Outside regular trading hours the stock effect is neutral. Timing details are finalized before launch.','每10分钟的积分，实时显示在/10m列中。常规交易时段以外，股价影响为中性。具体时间细节将在上线前确定。')}</Note></>},
+ {id:'stock',chapter:['Scoring','计分'],title:['The weekly stock bonus','每周股价调整'],targets:['.season-stocks','.nest-preview-cards'],cue:{nest:null},body:()=><>
   <Formula><span>{tr('Weekly return %','周收益率%')}</span><i>×</i><b>10</b><i>=</i><span>{tr('points','积分')}</span></Formula>
   <div className="stut-pair"><span className="up">+2% → <b>+20</b></span><span className="down">−2% → <b>−20</b></span></div>
   <p>{tr('Applied once at settlement, from the Friday close before the week to the Friday close within it. It is not multiplied by score or players, and it has no cap.','在结算时一次性计入，按本周前一个周五收盘价到本周周五收盘价计算。不按积分或人数放大，也没有上限。')}</p>
-  <Note>{tr('Final scores never go below zero.','最终积分不会低于零。')}</Note></>},
+  <Note>{tr('The Week column shows this bonus so far. Final scores never go below zero.','“本周”列显示目前的调整。最终积分不会低于零。')}</Note></>},
  {id:'winner',chapter:['Winning','获胜'],title:['Highest score wins','最高分获胜'],targets:['.nest-preview-cards','.season-rail','.season-nav-button'],cue:{nest:'NVDA',play:'winner'},body:()=><>
   <p>{tr('If nests tie, the order is:','如果出现平局，依次比较：')}</p>
   <ol className="stut-steps"><li>{tr('Most points produced by entries and feeds.','入场和喂养产生的积分最多者。')}</li><li>{tr('The nest that reached that total first on chain.','在链上最先达到该总数的巢穴。')}</li><li>{tr('Season I priority: NVIDIA, Apple, Amazon.','第一赛季优先顺序：NVIDIA、Apple、Amazon。')}</li></ol>
   <Note>{tr('The crown shown here is a scene demo, not a prediction.','此处的王冠仅为场景演示，并非预测。')}</Note></>},
- {id:'pot',chapter:['Rewards','奖励'],title:['Where the prize comes from','奖金来源'],targets:['.season-rail','.season-nav-button'],body:()=><>
+ {id:'pot',chapter:['Rewards','奖励'],title:['Where the prize comes from','奖金来源'],targets:['.season-prize','.season-rail','.season-nav-button'],body:()=><>
   <p>{tr('Season I opens with a committed 1,000 USDC, plus 70% of the weekly ETH fees the project receives.','第一赛季以承诺的1,000 USDC开启，另加项目每周收到的ETH手续费的70%。')}</p>
   <Split parts={[[70,tr('Prizes','奖金'),'#e8c36a'],[15,tr('Buyback & burn','回购销毁'),'#ef7a5a'],[15,tr('Team & infra','团队与基础设施'),'#7f8d86']]}/>
   <p>{tr('Prize money is then split:','奖金再分配为：')}</p>
   <Split parts={[[80,tr('Winning players','获胜玩家'),'#91cf36'],[20,tr('Holders','持有者'),'#8fb8e8']]}/>
-  <Note>{tr('Both are paid in the winning company\'s Stock Token. The 1,000 USDC is a commitment, not yet a verified deposit.','两部分均以获胜公司的Stock Token支付。1,000 USDC为承诺金额，尚非已验证的存款。')}</Note></>},
+  <Note>{tr('The Weekly Prize window shows the running estimate; ETH values are estimates until converted. Both parts are paid in the winning company\'s Stock Token. The 1,000 USDC is a commitment, not yet a verified deposit.','每周奖金窗口显示实时估算；ETH价值在兑换前均为估算。两部分均以获胜公司的Stock Token支付。1,000 USDC为承诺金额，尚非已验证的存款。')}</Note></>},
  {id:'share',chapter:['Rewards','奖励'],title:['Your share if your nest wins','巢穴获胜时你的份额'],targets:['.wallet-trigger'],body:()=><>
   <Formula><span>{tr('Weight','权重')}</span><i>=</i><span>{tr('your contribution','你的贡献')}</span><i>×</i><span>(1 + {tr('holder bonus','持有奖励')} + {tr('burner bonus','销毁奖励')})</span></Formula>
   <p>{tr('The 80% pool is shared in proportion to each winning member\'s weight.','80%的奖池按每位获胜成员的权重比例分配。')}</p>
@@ -106,9 +115,10 @@ function findTarget(selectors?:string[]){
  return null;
 }
 
-export default function SeasonTutorial({onClose}:{onClose:()=>void}){
+export default function SeasonTutorial({onClose,start}:{onClose:()=>void;start?:string}){
  useLanguage(s=>s.language);
- const [index,setIndex]=useState(0);
+ const [index,setIndex]=useState(()=>Math.max(0,STEPS.findIndex(s=>s.id===start)));
+ const [more,setMore]=useState(false);
  const step=STEPS[index],last=index===STEPS.length-1;
  const card=useRef<HTMLDivElement>(null),spot=useRef<HTMLDivElement>(null),next=useRef<HTMLButtonElement>(null);
  const placed=useRef(false);
@@ -120,6 +130,7 @@ export default function SeasonTutorial({onClose}:{onClose:()=>void}){
   return()=>{document.documentElement.classList.remove('stut-open');cueStage({nest:null});if(was)useStore.setState({cinema:true});if(previousFocus?.isConnected)previousFocus.focus({preventScroll:true});};},[]);
 
  useEffect(()=>{
+  setMore(false);
   if(step.panel)useStore.getState().openPanel(step.panel);
   if(step.cue)cueStage(step.cue);
   const t=setTimeout(()=>findTarget(step.targets)?.el.scrollIntoView({block:'nearest',inline:'nearest',behavior:reduced()?'auto':'smooth'}),60);
@@ -131,7 +142,7 @@ export default function SeasonTutorial({onClose}:{onClose:()=>void}){
  useEffect(()=>{
   const key=(e:KeyboardEvent)=>{
    if(e.key==='Tab'){
-    const buttons=Array.from(card.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')??[]);
+    const buttons=Array.from(card.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')??[]).filter(b=>b.offsetParent!==null);
     const current=buttons.indexOf(document.activeElement as HTMLButtonElement);
     const nextIndex=e.shiftKey?(current<=0?buttons.length-1:current-1):(current+1)%buttons.length;
     buttons[nextIndex]?.focus({preventScroll:true});e.preventDefault();e.stopImmediatePropagation();return;
@@ -178,7 +189,7 @@ export default function SeasonTutorial({onClose}:{onClose:()=>void}){
   layout();return()=>cancelAnimationFrame(raf);
  },[step]);
 
- return createPortal(<div className="stut" data-step={step.id} data-scene={step.cue?.play?'':undefined}>
+ return createPortal(<div className="stut" data-step={step.id} data-scene={step.cue?.play?'':undefined} data-more={more||undefined}>
   <div className="stut-block" aria-hidden="true"/>
   <div ref={spot} className="stut-spot" aria-hidden="true"/>
   <div ref={card} className="stut-card" role="dialog" aria-modal="true" aria-labelledby="stut-title">
@@ -191,6 +202,7 @@ export default function SeasonTutorial({onClose}:{onClose:()=>void}){
    <div className="stut-content" key={step.id} aria-live="polite">
     <h2 id="stut-title">{T(step.title)}</h2>
     <div className="stut-body">{step.body()}</div>
+    {step.cue?.play&&!more&&<button type="button" className="stut-more" onClick={()=>setMore(true)}>{tr('Show details','显示详情')} <span aria-hidden="true">↓</span></button>}
    </div>
    <footer className="stut-foot">
     <span className="stut-count">{index+1} / {STEPS.length}</span>

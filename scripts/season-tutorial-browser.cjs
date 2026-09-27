@@ -14,7 +14,7 @@ const path=require('node:path');
   await p.goto(base+'?season-tutorial');
   await p.waitForSelector('.stut-card.is-placed');
   const steps=await p.locator('.stut-progress i').count();
-  assert.equal(steps,16);
+  assert.equal(steps,17);
   for(let i=0;i<steps;i++){
    assert.equal((await p.locator('.stut-count').textContent()).trim(),`${i+1} / ${steps}`);
    const box=await p.locator('.stut-card').boundingBox();
