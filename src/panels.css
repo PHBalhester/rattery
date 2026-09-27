@@ -468,3 +468,32 @@
 }
 .clear-layout .colony-scene .scene-controls{left:50%!important;right:auto!important;transform:translateX(-50%);width:max-content;max-width:calc(100% - 36px);flex-wrap:nowrap}
 @media(min-width:781px){.clear-layout:not(.cinema) .colony-scene .scene-controls{left:calc(50% - 60px)!important}}
+
+/* ---- Live pulse (as in Token Town's "in town" dot) ---- */
+@keyframes live-pulse{0%{box-shadow:0 0 0 0 rgba(61,220,132,.55)}70%,100%{box-shadow:0 0 0 7px rgba(61,220,132,0)}}
+@keyframes demo-pulse{0%{box-shadow:0 0 0 0 rgba(237,193,124,.5)}70%,100%{box-shadow:0 0 0 7px rgba(237,193,124,0)}}
+.colony-app .dot{width:8px;height:8px}
+.colony-app .dot-live,.colony-app .feed-label.feed-live i{background:#3ddc84;animation:live-pulse 2.2s ease-out infinite}
+.colony-app .dot-demo,.colony-app .feed-label.feed-demo i{animation:demo-pulse 2.6s ease-out infinite}
+.colony-app .feed-label i{box-shadow:none}
+
+/* ---- Resident tour: Previous / Next with a counter ---- */
+.rat-tour{position:absolute;z-index:11;top:var(--navigation-bottom,174px);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:18px;animation:tour-in .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes tour-in{from{opacity:0;transform:translate(-50%,-8px)}}
+.rat-tour button{display:flex;align-items:center;gap:10px;padding:10px 20px;border-radius:30px;border:1px solid rgba(255,255,255,.2);background:rgba(28,34,30,.36);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#f1ecdc;font:500 15px "Segoe UI",Arial,sans-serif;cursor:pointer;transition:background .2s ease,transform .16s cubic-bezier(.23,1,.32,1),border-color .2s ease}
+.rat-tour button span[aria-hidden]{transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+@media (hover:hover) and (pointer:fine){.rat-tour button:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.32)}.rat-tour button:first-child:hover span[aria-hidden]{transform:translateX(-3px)}.rat-tour button:last-child:hover span[aria-hidden]{transform:translateX(3px)}}
+.rat-tour button:active{transform:scale(.97)}
+.rat-tour-count{display:flex;flex-direction:column;align-items:center;min-width:96px;text-shadow:0 1px 8px rgba(10,15,24,.7)}
+.rat-tour-count strong{font:600 15px "Fraunces",Georgia,serif;color:#fff;animation:swap-in .5s cubic-bezier(.2,.8,.2,1) both}
+.rat-tour-count small{font:600 11px "IBM Plex Mono",monospace;letter-spacing:.12em;color:#cfd6cc;font-variant-numeric:tabular-nums}
+.colony-app.cinema .rat-tour{top:92px}
+@media(max-width:1150px){.rat-tour-label{display:none}.rat-tour button{padding:10px 14px}}
+@media(max-width:780px){.rat-tour{top:auto;bottom:calc(var(--bottom-chrome,150px) + 8px);left:8px;right:8px;transform:none;justify-content:space-between;animation:none}.clear-layout:not(.cinema) .rat-tour{display:none}}
+
+/* ---- Card swap: old content leaves, new content rises in a short cascade ---- */
+@keyframes swap-in{from{opacity:0;transform:translateY(7px)}}
+.rat-swap>*{animation:swap-in .5s cubic-bezier(.2,.8,.2,1) both}
+.rat-swap>*:nth-child(2){animation-delay:.05s}.rat-swap>*:nth-child(3){animation-delay:.1s}.rat-swap>*:nth-child(n+4){animation-delay:.14s}
+@media (prefers-reduced-motion:reduce){.rat-tour,.rat-tour-count strong,.rat-swap>*{animation:none!important}.colony-app .dot,.colony-app .feed-label i{animation:none!important}}
+.season-preview-mode .rat-tour{display:none!important}
