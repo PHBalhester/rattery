@@ -8,7 +8,7 @@ const path=require('node:path');
   p.setDefaultTimeout(15000);
   p.on('pageerror',e=>errors.push(e.message));
   p.on('console',m=>{if(m.type()==='error'&&/shader|WebGL|THREE/i.test(m.text()))errors.push(m.text());});
-  await p.goto('http://localhost:5173/');
+  await p.goto(process.env.RATTERY_BASE_URL||'http://localhost:5173/');
   await p.getByRole('button',{name:'Explore the colony',exact:false}).click();
   await p.waitForSelector('.burrow-host[data-rats="blender"]');
   const panel=p.locator('.condition-panel');

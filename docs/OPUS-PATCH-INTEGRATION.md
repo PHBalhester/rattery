@@ -3,7 +3,7 @@
 Date: 2026-09-26
 Base: 7e3f505, matching origin/main when fetched.
 Branch: integrate/opus-ui-season-diorama
-Checkout: /home/phbal/Rattery/opus-ui-release
+Checkout: isolated Opus UI integration worktree
 
 ## Applied in order
 
