@@ -155,7 +155,7 @@ export class BlenderRatVisual{
  }
  /**
   * Cosmetic pose layered after update(): pitch the head (+ looks up) and raise the chest (+ rears up on the
-  * hind legs, lifting the forepaws). Used only by preview mascots; colony residents never call it.
+  * hind legs, lifting the forepaws). Rendering only; never feeds the simulation.
   */
  gesture(headPitch:number,rise:number,headYaw=0){
   if(!headPitch&&!rise&&!headYaw)return;

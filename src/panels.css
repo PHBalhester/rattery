@@ -421,3 +421,50 @@
 .season-preview-mode .colony-scene{top:80px;bottom:300px}
 .season-preview-mode:has(.nest-preview-controls:not(.is-open)) .colony-scene{bottom:115px}
 @media(max-width:780px){.season-preview-mode .colony-scene{top:65px;bottom:48vh}.season-preview-mode:has(.nest-preview-controls:not(.is-open)) .colony-scene{bottom:140px}}
+/* ---- Interaction polish: one motion language for panels and buttons ---- */
+.colony-app{--ease-out:cubic-bezier(.23,1,.32,1);--glass:linear-gradient(180deg,rgba(26,30,26,.78),rgba(14,17,15,.88));--glass-line:rgba(255,244,214,.1)}
+.clear-layout .floating-panel{background:var(--glass)!important;border:1px solid var(--glass-line)!important;border-radius:16px;backdrop-filter:blur(18px) saturate(1.25);-webkit-backdrop-filter:blur(18px) saturate(1.25);box-shadow:0 18px 50px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.06)!important}
+.clear-layout .topbar{border-radius:14px}
+.clear-layout .colony-panel{animation:panel-in .32s var(--ease-out) both}
+@keyframes panel-in{from{opacity:0;transform:translateY(10px) scale(.985)}}
+.clear-layout .readout-content>*{animation:content-in .28s var(--ease-out) both}
+@keyframes content-in{from{opacity:0;transform:translateY(6px)}}
+/* Buttons: lift on hover (fine pointers only), press to .97, visible focus, ripple. */
+.colony-app :is(.chip,.colony-navigation button,.tour-help,.readout-tabs button,.care-option,.scene-controls button,.production-residents button,.alert-rat-list button,.season-button,.language-toggle){position:relative;overflow:hidden;transition:transform .16s var(--ease-out),background-color .18s ease,border-color .18s ease,box-shadow .2s ease,color .18s ease}
+@media (hover:hover) and (pointer:fine){
+ .colony-app :is(.chip,.colony-navigation button,.tour-help,.scene-controls button,.care-option,.alert-rat-list button):hover:not(:disabled){transform:translateY(-1px);border-color:rgba(255,236,190,.38);box-shadow:0 6px 18px rgba(0,0,0,.28)}
+ .colony-app .production-residents button:hover{transform:translateX(2px)}
+ .colony-app .chip-trade:hover{box-shadow:0 0 0 1px #d6e9d6,0 8px 24px rgba(160,220,170,.28)}
+ .colony-app .readout-tabs button:hover{color:var(--panel-ink)}
+}
+.colony-app :is(.chip,.colony-navigation button,.tour-help,.scene-controls button,.care-option,.production-residents button,.season-button,.alert-rat-list button):active:not(:disabled){transform:scale(.97)}
+.colony-app :is(button,a,input,select,summary):focus-visible{outline:2px solid #c2eccb;outline-offset:2px}
+.colony-app .ripple-dot{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:rgba(255,255,255,.35);pointer-events:none;animation:ripple-out .55s var(--ease-out) forwards}
+@keyframes ripple-out{from{opacity:.55;transform:scale(0)}to{opacity:0;transform:scale(26)}}
+/* Tabs: sliding underline instead of a hard switch. */
+.colony-app .readout-tabs button{border-bottom:0!important;position:relative}
+.colony-app .readout-tabs button::after{content:"";position:absolute;left:18%;right:18%;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--stable);transform:scaleX(0);transition:transform .25s var(--ease-out)}
+.colony-app .readout-tabs button[aria-pressed=true]::after{transform:scaleX(1)}
+/* Meters glide to new values. */
+.colony-app .bar-track i{transition:width .6s var(--ease-out),background-color .3s ease}
+.colony-app .condition-metric[data-level=critical] .bar-track i,.colony-app .vital[data-level=critical] .bar-track i{animation:meter-pulse 1.6s ease-in-out infinite}
+@keyframes meter-pulse{50%{opacity:.55}}
+.colony-app .alert-banner .alert-signal{animation:meter-pulse 1.4s ease-in-out infinite}
+/* Scene controls: one glass pill group. */
+.clear-layout .colony-scene .scene-controls{gap:0!important;padding:4px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);backdrop-filter:blur(14px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.clear-layout .colony-scene .scene-controls button{background:transparent!important;border:0!important;border-radius:999px;color:#e8e2cf!important;padding:8px 13px;font:600 12px "Segoe UI",Arial,sans-serif;min-height:34px}
+.clear-layout .colony-scene .scene-controls button:hover{background:rgba(255,255,255,.08)!important;box-shadow:none!important}
+.clear-layout .colony-scene .scene-controls button[aria-label="Zoom in"],.clear-layout .colony-scene .scene-controls button[aria-label="Zoom out"]{width:34px;padding:0;font-size:16px}
+/* Care options feel tactile; the suggested one breathes. */
+.colony-app .care-option[data-suggested]{animation:suggest 2.4s ease-in-out infinite}
+@keyframes suggest{50%{box-shadow:0 0 0 3px rgba(240,196,108,.18)}}
+.colony-app .care-option[aria-pressed=true]{box-shadow:inset 0 0 0 1px var(--buy),0 6px 16px rgba(136,210,160,.15)}
+/* Numbers that change get a brief flash. */
+.colony-app .count-flash{animation:count-flash .6s ease}
+@keyframes count-flash{30%{color:#fff;text-shadow:0 0 12px rgba(255,240,200,.6)}}
+@media (prefers-reduced-motion:reduce){
+ .colony-app *,.colony-app *::after{animation:none!important;transition:none!important}
+ .colony-app .ripple-dot{display:none}
+}
+.clear-layout .colony-scene .scene-controls{left:50%!important;right:auto!important;transform:translateX(-50%);width:max-content;max-width:calc(100% - 36px);flex-wrap:nowrap}
+@media(min-width:781px){.clear-layout:not(.cinema) .colony-scene .scene-controls{left:calc(50% - 60px)!important}}
