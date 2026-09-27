@@ -99,7 +99,7 @@ export default function Burrow3D(){
   const onControlStart=()=>{overview=false;useStore.getState().focus(null);flight=null;};
   renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);controls.addEventListener('start',onControlStart);
   let playArea=0;
-  action.current=v=>{if(v==='reset')reset();else {overview=false;if(v==='play'){useStore.getState().focus(null);const p=habitatRoutes[playArea++%habitatRoutes.length][74];controls.target.copy(point(p.x,p.z));camera.position.copy(controls.target).add(new T.Vector3(5,7,8));}else if(v==='nest'){useStore.getState().focus(null);controls.target.copy(nest);camera.position.copy(nest).add(new T.Vector3(5,8,9));}else camera.position.sub(controls.target).multiplyScalar(v==='in'?.8:1.25).clampLength(3,controls.maxDistance).add(controls.target);}controls.update();};
+  action.current=v=>{flight=null;if(v==='reset')reset();else {overview=false;if(v==='play'){useStore.getState().focus(null);const p=habitatRoutes[playArea++%habitatRoutes.length][74];controls.target.copy(point(p.x,p.z));camera.position.copy(controls.target).add(new T.Vector3(5,7,8));}else if(v==='nest'){useStore.getState().focus(null);controls.target.copy(nest);camera.position.copy(nest).add(new T.Vector3(5,8,9));}else camera.position.sub(controls.target).multiplyScalar(v==='in'?.8:1.25).clampLength(3,controls.maxDistance).add(controls.target);}controls.update();};
   const resize=()=>{const w=el.clientWidth,h=el.clientHeight;if(!w||!h)return;renderer.setSize(w,h);atmosphere.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(overview)fitOverview();};const observer=new ResizeObserver(resize);observer.observe(el);resize();
   const quality=new AdaptiveQuality();
   const inspect=new URLSearchParams(location.search).has('inspect-performance');
@@ -152,12 +152,14 @@ export default function Burrow3D(){
      // Fly between residents: damped travel with a mid-flight pull-back arc, then settle (no teleport).
      else{const span=controls.target.distanceTo(selected.position);flight={t:0,duration:T.MathUtils.clamp(.85+span/28,.85,1.7),fromPos:camera.position.clone(),fromTarget:controls.target.clone(),dir:direction,dist};}}
     ring.position.copy(selected.position);ring.position.y+=.02;
+    if(flight&&reduced.matches&&!motionOverride.current){controls.target.copy(selected.position);camera.position.copy(selected.position).addScaledVector(flight.dir,flight.dist);flight=null;}
     if(flight){flight.t=Math.min(1,flight.t+dt/flight.duration);const k=flight.t,e=k*k*k*(k*(k*6-15)+10),arc=Math.sin(Math.PI*e);
      const target=flight.fromTarget.clone().lerp(selected.position,e),end=selected.position.clone().addScaledVector(flight.dir,flight.dist);
      const pos=flight.fromPos.clone().lerp(end,e),away=pos.clone().sub(target).normalize();
      camera.position.copy(pos).addScaledVector(away,flight.dist*.35*arc).add(new T.Vector3(0,flight.dist*.18*arc,0));controls.target.copy(target);if(flight.t>=1)flight=null;}
     else{camera.position.add(selected.position.clone().sub(controls.target));controls.target.copy(selected.position);}
    }
+   if(import.meta.env.DEV)el.dataset.cameraFlight=JSON.stringify({active:!!flight,progress:flight?.t??1,duration:flight?.duration??0,focused,position:camera.position.toArray(),target:controls.target.toArray()});
    lastFocused=focused;enrichment.update(world,dt,reduced.matches&&!motionOverride.current);controls.enableDamping=!reduced.matches||motionOverride.current;controls.update();names.begin();if(!replaying)for(const [id,m]of rats){const rat=world.rats[id];if(!rat||rat.deadAt!==null)continue;const petAt=rat.petAt??((world.care?.cooldowns[id+':pet']??0)-3600000),petting=Date.now()>=petAt&&Date.now()-petAt<15000;if(world.care?.owners[id]||rat.minted||petting)names.show(id,petting?'♡ '+rat.name+' · '+tr('Gentle petting','温柔抚摸'):(rat.caregiver?'◇ ':'')+rat.name+(rat.residenceDays?' · '+rat.residenceDays+'d':''),m.root,camera,petting);}names.end();atmosphere.render(dt,reduced.matches&&!motionOverride.current);
    telemetryFrames++;if(time-telemetryAt>=1000){const fps=telemetryFrames*1000/(time-telemetryAt);const info={fps:Math.round(fps*10)/10,quality:quality.profile.name,rats:rats.size,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,pixelRatio:renderer.getPixelRatio()};el.dataset.performance=JSON.stringify(info);if(performanceLabel)performanceLabel.textContent=`${info.fps} FPS · ${info.quality} · ${info.rats} rats`;telemetryAt=time;telemetryFrames=0;}
 

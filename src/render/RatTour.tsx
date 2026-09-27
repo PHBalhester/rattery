@@ -10,7 +10,7 @@ export default function RatTour(){
  useLanguage(s=>s.language);
  const version=useStore(s=>s.version),focused=useStore(s=>s.focusedId);void version;
  const ids=livingIds(),index=focused?ids.indexOf(focused):-1,rat=focused?getWorld().rats[focused]:undefined;
- const go=(step:number)=>{const list=livingIds();if(!list.length)return;const at=focused?list.indexOf(focused):-1;const next=at<0?(step>0?0:list.length-1):(at+step+list.length)%list.length;useStore.getState().focus(list[next]);};
+ const go=(step:number)=>{const list=livingIds();if(!list.length)return;const at=focused?list.indexOf(focused):-1;const next=at<0?(step>0?0:list.length-1):(at+step+list.length)%list.length;useStore.setState({focusedId:list[next],panel:'rat'});};
  useEffect(()=>{
   const key=(e:KeyboardEvent)=>{const t=e.target as HTMLElement;if(e.metaKey||e.ctrlKey||e.altKey||t.closest('input,select,textarea,[contenteditable],dialog[open]'))return;
    if(e.key==='ArrowRight'){e.preventDefault();go(1);}else if(e.key==='ArrowLeft'){e.preventDefault();go(-1);}};
