@@ -35,3 +35,6 @@ Artifacts are ignored by Git. Run scripts/season-nests-gpu.cjs using Windows Nod
 - Physical phone and ordinary laptop FPS, sustained thermal performance, and real paid-care production smoke test remain separate pending checks.
 - No licensed logo files were introduced.
 
+
+## Follow-up after resident gesture merge
+Rechecked after integrating ui-clarity bfe49af and the reduced-motion fixes: overview 59.3 FPS (p95 16.9 ms), close-up 59.7 FPS (p95 17.0 ms), winner effects 56.4 FPS (p95 33.3 ms). Same RTX 4060 Ti and sample lengths as above. Mobile viewport on desktop measured 59.1 FPS; still not a physical-phone result. Build, static-batch regression, reversible tiers and mascot LOD checks passed. Scene remains development-only; main was not merged.
