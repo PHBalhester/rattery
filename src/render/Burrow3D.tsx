@@ -96,7 +96,7 @@ export default function Burrow3D(){
   const ring=new T.Mesh(new T.RingGeometry(.65,.7,48),new T.MeshBasicMaterial({color:0xe8c36a,side:T.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.visible=false;scene.add(ring);
   const ray=new T.Raycaster();let down=[0,0];const pointerDown=(e:PointerEvent)=>{down=[e.clientX,e.clientY];};
   const pointerUp=(e:PointerEvent)=>{if(useStore.getState().feedStatus==='catchup'||e.button!==0||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;const b=el.getBoundingClientRect();ray.setFromCamera(new T.Vector2((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1),camera);const hit=ray.intersectObjects([...rats.values()].map(m=>m.root),true)[0];let obj:T.Object3D|null=hit?.object??null;while(obj&&!obj.userData.id)obj=obj.parent;useStore.getState().focus(obj?.userData.id??null);};
-  const onControlStart=()=>{overview=false;useStore.getState().focus(null);};
+  const onControlStart=()=>{overview=false;useStore.getState().focus(null);flight=null;};
   renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);controls.addEventListener('start',onControlStart);
   let playArea=0;
   action.current=v=>{if(v==='reset')reset();else {overview=false;if(v==='play'){useStore.getState().focus(null);const p=habitatRoutes[playArea++%habitatRoutes.length][74];controls.target.copy(point(p.x,p.z));camera.position.copy(controls.target).add(new T.Vector3(5,7,8));}else if(v==='nest'){useStore.getState().focus(null);controls.target.copy(nest);camera.position.copy(nest).add(new T.Vector3(5,8,9));}else camera.position.sub(controls.target).multiplyScalar(v==='in'?.8:1.25).clampLength(3,controls.maxDistance).add(controls.target);}controls.update();};
@@ -112,6 +112,7 @@ export default function Burrow3D(){
   applyQuality();let telemetryAt=performance.now(),telemetryFrames=0;
   const onVisibility=()=>{previousTime=performance.now();telemetryAt=previousTime;telemetryFrames=0;quality.resetWindow();};
   document.addEventListener('visibilitychange',onVisibility);
+  let flight:{t:number;duration:number;fromPos:T.Vector3;fromTarget:T.Vector3;dir:T.Vector3;dist:number}|null=null;
   let previousTime=performance.now(),previousDay=getWorld().simDay,wasCatchingUp=false;
   let lastFocused:string|null=null;
   renderer.setAnimationLoop(time=>{
@@ -145,9 +146,17 @@ export default function Burrow3D(){
    ring.visible=!!selected&&!replaying;
    if(selected&&!replaying){
     overview=false;
-    if(focused!==lastFocused){const direction=camera.position.clone().sub(controls.target).normalize();{/* Look down steeply enough that tunnel walls and dome rims never cover the rat. */const flat=Math.hypot(direction.x,direction.z)||1,up=Math.max(direction.y,.8),side=Math.sqrt(1-up*up);direction.set(direction.x/flat*side,up,direction.z/flat*side);}controls.target.copy(selected.position);camera.position.copy(selected.position).addScaledVector(direction,Math.max(3,selected.scale.x*5));}
+    if(focused!==lastFocused){const direction=camera.position.clone().sub(controls.target).normalize();{/* Look down steeply enough that tunnel walls and dome rims never cover the rat. */const flat=Math.hypot(direction.x,direction.z)||1,up=Math.max(direction.y,.8),side=Math.sqrt(1-up*up);direction.set(direction.x/flat*side,up,direction.z/flat*side);}
+     const dist=Math.max(3,selected.scale.x*5);
+     if(reduced.matches&&!motionOverride.current){flight=null;controls.target.copy(selected.position);camera.position.copy(selected.position).addScaledVector(direction,dist);}
+     // Fly between residents: damped travel with a mid-flight pull-back arc, then settle (no teleport).
+     else{const span=controls.target.distanceTo(selected.position);flight={t:0,duration:T.MathUtils.clamp(.85+span/28,.85,1.7),fromPos:camera.position.clone(),fromTarget:controls.target.clone(),dir:direction,dist};}}
     ring.position.copy(selected.position);ring.position.y+=.02;
-    camera.position.add(selected.position.clone().sub(controls.target));controls.target.copy(selected.position);
+    if(flight){flight.t=Math.min(1,flight.t+dt/flight.duration);const k=flight.t,e=k*k*k*(k*(k*6-15)+10),arc=Math.sin(Math.PI*e);
+     const target=flight.fromTarget.clone().lerp(selected.position,e),end=selected.position.clone().addScaledVector(flight.dir,flight.dist);
+     const pos=flight.fromPos.clone().lerp(end,e),away=pos.clone().sub(target).normalize();
+     camera.position.copy(pos).addScaledVector(away,flight.dist*.35*arc).add(new T.Vector3(0,flight.dist*.18*arc,0));controls.target.copy(target);if(flight.t>=1)flight=null;}
+    else{camera.position.add(selected.position.clone().sub(controls.target));controls.target.copy(selected.position);}
    }
    lastFocused=focused;enrichment.update(world,dt,reduced.matches&&!motionOverride.current);controls.enableDamping=!reduced.matches||motionOverride.current;controls.update();names.begin();if(!replaying)for(const [id,m]of rats){const rat=world.rats[id];if(!rat||rat.deadAt!==null)continue;const petAt=rat.petAt??((world.care?.cooldowns[id+':pet']??0)-3600000),petting=Date.now()>=petAt&&Date.now()-petAt<15000;if(world.care?.owners[id]||rat.minted||petting)names.show(id,petting?'♡ '+rat.name+' · '+tr('Gentle petting','温柔抚摸'):(rat.caregiver?'◇ ':'')+rat.name+(rat.residenceDays?' · '+rat.residenceDays+'d':''),m.root,camera,petting);}names.end();atmosphere.render(dt,reduced.matches&&!motionOverride.current);
    telemetryFrames++;if(time-telemetryAt>=1000){const fps=telemetryFrames*1000/(time-telemetryAt);const info={fps:Math.round(fps*10)/10,quality:quality.profile.name,rats:rats.size,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,pixelRatio:renderer.getPixelRatio()};el.dataset.performance=JSON.stringify(info);if(performanceLabel)performanceLabel.textContent=`${info.fps} FPS · ${info.quality} · ${info.rats} rats`;telemetryAt=time;telemetryFrames=0;}
