@@ -1,4 +1,5 @@
 import {NEST_DESIGNS,TIER_NAMES,VISUAL_TIERS,visualTier,useSeasonVisual,type NestId,type VisualEvent} from '../season/visualState';
+import {setTutorialStage} from './tutorialStage';
 import {useEffect,useRef,useState,type CSSProperties,type PointerEvent as ReactPointerEvent,type ReactNode} from 'react';
 
 /** Counts towards `value` with an ease-out, like a scoreboard. Instant under reduced motion. */
@@ -55,6 +56,11 @@ function NestCard({id}:{id:NestId}){
 
 export default function SeasonNestPreview(){
  const state=useSeasonVisual(),[open,setOpen]=useState(true);const winner=NEST_DESIGNS.find(n=>n.id===state.winner);
+ // Let the Season tutorial fly the camera and replay the cosmetic effect it is explaining.
+ useEffect(()=>setTutorialStage(({nest,play})=>{const s=useSeasonVisual.getState();setOpen(true);
+  if(play==='winner'&&nest){s.revealWinner(nest);if(!matchMedia('(prefers-reduced-motion: reduce)').matches)s.focusNest(nest);return;}
+  if(nest!==undefined)s.focusNest(nest);
+  if(nest&&play&&play!=='winner')s.play(nest,play);}),[]);
  return <section className={`nest-preview-controls${open?' is-open':''}`} aria-label="Season scene rehearsal">
   <header className="nest-dock-head">
    <div><span className="nest-preview-eyebrow">Season I · scene study</span><h2>{winner?<><span style={{color:winner.color}}>{winner.company}</span> takes the crown</>:'Three nests. One colony.'}</h2><p>Visual demo · fictional points · no wallet or payments</p></div>
