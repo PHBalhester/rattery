@@ -172,7 +172,7 @@ export default function SeasonTutorial({onClose}:{onClose:()=>void}){
   layout();return()=>cancelAnimationFrame(raf);
  },[step]);
 
- return createPortal(<div className="stut" data-step={step.id}>
+ return createPortal(<div className="stut" data-step={step.id} data-scene={step.cue?.play?'':undefined}>
   <div className="stut-block" aria-hidden="true"/>
   <div ref={spot} className="stut-spot" aria-hidden="true"/>
   <div ref={card} className="stut-card" role="dialog" aria-modal="true" aria-labelledby="stut-title">

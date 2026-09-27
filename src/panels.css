@@ -508,10 +508,12 @@
 /* ---- Season I guided tutorial: a travelling spotlight and a card that flies to each panel ---- */
 .stut{position:fixed;inset:0;z-index:1000;pointer-events:none;font-family:"Segoe UI",Arial,sans-serif;--s-gold:#e8c36a;--s-ink:#f3ecd9;--stut-ease:cubic-bezier(.2,.8,.2,1);--stut-t:.62s;color:var(--s-ink,#f3ecd9)}
 .stut-block{position:fixed;inset:0;pointer-events:auto}
-.stut-spot{position:fixed;border-radius:14px;box-shadow:0 0 0 200vmax rgba(5,6,4,.68);transition:left var(--stut-t) var(--stut-ease),top var(--stut-t) var(--stut-ease),width var(--stut-t) var(--stut-ease),height var(--stut-t) var(--stut-ease);animation:stut-dim .35s ease both}
+.stut-spot{position:fixed;border-radius:14px;box-shadow:0 0 0 200vmax rgba(5,6,4,.68);transition:box-shadow .5s ease,left var(--stut-t) var(--stut-ease),top var(--stut-t) var(--stut-ease),width var(--stut-t) var(--stut-ease),height var(--stut-t) var(--stut-ease);animation:stut-dim .35s ease both}
 .stut-spot::after{content:"";position:absolute;inset:-2px;border-radius:inherit;border:1.5px solid #e8c36a;opacity:0;transition:opacity .3s}
 .stut-spot[data-on]::after{opacity:1;animation:stut-ring 2.2s ease-out infinite}
 @keyframes stut-ring{0%{box-shadow:0 0 0 0 rgba(232,195,106,.55)}70%,100%{box-shadow:0 0 0 12px rgba(232,195,106,0)}}
+/* While an action plays in the scene, dim less so the effect stays readable. */
+.stut[data-scene] .stut-spot{box-shadow:0 0 0 200vmax rgba(5,6,4,.34)}
 @keyframes stut-dim{from{box-shadow:0 0 0 200vmax rgba(5,6,4,0)}}
 .stut-card{position:fixed;left:0;top:0;width:min(372px,calc(100vw - 24px));max-height:calc(100vh - 24px);display:flex;flex-direction:column;pointer-events:auto;border-radius:14px;border:1px solid #e8c36a66;
  background:radial-gradient(120% 50% at 50% 0%,#e8c36a1c,transparent 60%),linear-gradient(180deg,rgba(30,28,21,.97),rgba(16,18,15,.97));box-shadow:0 24px 70px rgba(0,0,0,.6),inset 0 1px 0 #fff1bf22;opacity:0;will-change:transform}
