@@ -657,3 +657,6 @@
  .clear-layout:has(.season-column.has-windows) .panel-deck{top:calc(var(--navigation-bottom,198px) + 104px);height:auto}
  .colony-app.cinema .season-column.has-windows{opacity:1;visibility:visible;pointer-events:auto}
 }
+/* Season scene preview: rail and navigation are hidden, so the windows sit under the top bar. */
+.season-preview-mode .season-column{top:78px;max-height:calc(100% - 78px - 250px)}
+@media(max-width:780px){.season-preview-mode .season-column{top:68px;max-height:none}}
