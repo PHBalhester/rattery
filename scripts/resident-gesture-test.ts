@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {RatModel} from '../src/render/RatModel';
+type Probe={seed:number;gHead:number;gRise:number;gYaw:number;blender:{gesture:(...pose:number[])=>void};idleGesture:(dt:number,time:number,reduced:boolean,activity:number,turn:number,busy:boolean)=>void};
+let last:number[]=[];
+const model=Object.assign(Object.create(RatModel.prototype),{seed:13,gHead:.2,gRise:.5,gYaw:.4,blender:{gesture:(...pose:number[])=>{last=pose;}}}) as Probe;
+model.idleGesture(1/60,1,true,0,0,false);
+assert.deepEqual([model.gHead,model.gRise,model.gYaw],[0,0,0]);
+for(let i=0;i<120;i++)model.idleGesture(1/60,i/60,true,0,1,false);
+assert.deepEqual([model.gHead,model.gRise,model.gYaw],[0,0,0]);
+model.idleGesture(1/60,1,false,1,1,false);assert(last[2]>0,'walking head lead retained');
+console.log('PASS reduced-motion gestures stop immediately and walking head lead remains');

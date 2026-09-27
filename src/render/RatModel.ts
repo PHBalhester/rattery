@@ -255,6 +255,7 @@ export class RatModel {
    * head leads into turns. The schedule is a pure function of id and clock, so every viewer agrees.
    */
   private idleGesture(dt:number,time:number,reduced:boolean,activity:number,turn:number,busy:boolean){
+    if(reduced){this.gHead=0;this.gRise=0;this.gYaw=0;return;}
     let head=0,rise=0,yaw=0;
     if(!reduced&&!busy){
       if(activity<.08){
