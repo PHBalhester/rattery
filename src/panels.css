@@ -497,3 +497,10 @@
 .rat-swap>*:nth-child(2){animation-delay:.05s}.rat-swap>*:nth-child(3){animation-delay:.1s}.rat-swap>*:nth-child(n+4){animation-delay:.14s}
 @media (prefers-reduced-motion:reduce){.rat-tour,.rat-tour-count strong,.rat-swap>*{animation:none!important}.colony-app .dot,.colony-app .feed-label i{animation:none!important}}
 .season-preview-mode .rat-tour{display:none!important}
+/* Keep the mobile tour from stretching over the interactive canvas in cinema mode. */
+@media(max-width:780px){
+ .colony-app.cinema .rat-tour{top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));height:auto}
+ .rat-tour-count{min-width:0;max-width:calc(100vw - 160px)}
+ .rat-tour-count strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .clear-layout .colony-scene .scene-controls button{padding:8px;font-size:11px}
+}
