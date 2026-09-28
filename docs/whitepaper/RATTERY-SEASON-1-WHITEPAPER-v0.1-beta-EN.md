@@ -1,6 +1,6 @@
 # RATTERY Season 1 Whitepaper
 
-Version 0.1 | September 26, 2026
+Version 0.1 | September 28, 2026
 
 ## Overview
 
@@ -8,7 +8,7 @@ RATTERY Season 1 brings weekly competition to an on-chain rat colony on Robinhoo
 
 Gameplay combines player actions, the condition of the colony and movements in the three underlying stocks. A happy colony generates points, a stressed colony removes points, and each company's stock direction changes that recurring effect. A separate weekly stock adjustment is applied before the winner is selected.
 
-Season 1 has a committed opening prize contribution of 1,000 USDC, supplemented by 70% of eligible weekly fee receipts. This describes the approved design and planned automation. The opening contribution is not represented as a verified deposit, and the gameplay, pricing and automated settlement integrations must be completed before paid participation opens. The launch date will be announced separately.
+Season 1 has a committed opening prize contribution of 1,000 USDC, supplemented by 70% of eligible weekly fee receipts. Gameplay opened on Monday, September 28, 2026 at 13:00 Sao Paulo time and closes at the end of Sunday, October 4, 2026, at 00:00 on Monday, October 5. The opening contribution is not represented as a verified deposit. Prize acquisition, distribution and buyback automation remain under implementation for settlement; they are separate from the live gameplay actions.
 
 ## The weekly competition
 
@@ -18,14 +18,14 @@ Each wallet may have one active nest membership. This is a wallet-level rule, no
 
 All times below use America/Sao_Paulo, the time zone for Sao Paulo, Brazil.
 
-| Event | Weekly schedule |
+| Event | Season 1 schedule (2026) |
 | --- | --- |
-| Competition opens | Monday at 13:00 |
-| Nest switching closes | Sunday at 19:00 |
-| Gameplay closes | Monday at 00:00, the midnight following Sunday |
-| Result and payments | Planned for Monday morning after reconciliation |
-| Next competition opens | Monday at 13:00 |
-| Fee measurement window | Monday 00:00 inclusive to the next Monday 00:00 exclusive |
+| Competition opened | Monday, September 28 at 13:00 |
+| Nest switching closes | Sunday, October 4 at 19:00 |
+| Gameplay closes | End of Sunday, October 4: 00:00 on Monday, October 5 |
+| Result and payments | Planned for Monday, October 5 in the morning after reconciliation |
+| Next competition opens | Monday, October 5 at 13:00 |
+| Fee measurement window | September 28 at 00:00 inclusive to October 5 at 00:00 exclusive |
 
 First-time entrants may join until gameplay closes. The five-hour switching restriction applies to wallets changing nests. Payment timing depends on successful reconciliation, pricing and transaction execution; a delay does not reopen the closed competition.
 
@@ -76,7 +76,7 @@ This mechanism runs alongside player actions and the weekly stock adjustment. Th
 
 Colony condition uses average stress across living rats: below 30% is happy; from 30% inclusive to below 45% is neutral; 45% or higher is stressed. A neutral colony produces no recurring point change. Cosmetic point representations are excluded from the living-rat average.
 
-**Configuration before opening.** The launch rules must specify the authoritative ten-minute observations, fractional-point accounting, unavailable intraday prices and event ordering against player actions. These operational settings are not presented here as implemented or tested.
+**Operational status at opening.** Ten-minute colony observations and stock references are recorded by the live service, with half-point accounting and sequential on-chain updates. Missing required observations suspend progression rather than inventing past colony conditions. Player actions follow blockchain transaction order. Prize settlement automation remains separate and is still being completed.
 
 ## Weekly stock adjustment
 
@@ -180,7 +180,7 @@ The reward asset depends on the winning nest. The following contracts were verif
 
 These are Robinhood Stock Tokens providing economic exposure to the underlying companies, not direct ownership of the underlying shares. Recipient eligibility and distribution must meet the issuer's applicable conditions. Token identity alone does not establish an available acquisition or distribution route.
 
-Before opening paid participation, RATTERY will publish the launch timestamp, execution and fee-source addresses, exclusion list, price references, fixed holding thresholds and operational settlement rules. The operational details for colony-state scoring must also be finalized. Asset availability, historical records, funding and end-to-end automation must be verified before launch. Previously completed tests of the earlier rules do not validate the newly added colony scoring mechanism.
+Season 1 opened on September 28, 2026 at 13:00 Sao Paulo time. Gameplay closes at the end of Sunday, October 4, at 00:00 on October 5. Gameplay actions and recurring colony scoring are live. Remaining settlement disclosures and verification include fee-source addresses, the exclusion list, fixed holding thresholds, reward price references, historical records, funding and end-to-end prize automation. These remaining items are not represented as complete by the gameplay launch.
 
 ## Official references
 

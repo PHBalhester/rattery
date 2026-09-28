@@ -76,7 +76,7 @@ for p in soup.find_all('p'):
     kids = [c for c in p.contents if not (isinstance(c, str) and not c.strip())]
     if len(kids) == 1 and getattr(kids[0], 'name', None) == 'code':
         p['class'] = 'wp-formula'
-    if p.get_text().startswith('Configuration before opening.'):
+    if p.get_text().startswith('Operational status at opening.'):
         p['class'] = 'wp-callout'
 
 # Reward assets with nest colour chips and explorer links.
@@ -262,11 +262,11 @@ td.is-mood{{font-weight:600}}td.is-happy{{color:var(--up)}}td.is-neutral{{color:
  <div class="wp-title">{flourish.format(c='')}<h1 id="wp-title">Season&nbsp;<span>I</span></h1>{flourish.format(c=' flip')}</div>
  <p class="wp-sub">Whitepaper</p>
  <div class="wp-chips"><span class="wp-chip is-beta">{html.escape(ver)} · Beta</span><span class="wp-chip">{html.escape(date)}</span><span class="wp-chip">Robinhood Chain · 4663</span></div>
- <p class="wp-status"><b>Season I opened on 28 September 2026 at 13:00 São Paulo time.</b> This page reproduces whitepaper {html.escape(ver.lower())} (beta), published on {html.escape(date)}.</p>
+ <p class="wp-status"><b>Season I opened on Monday, 28 September 2026 at 13:00 and closes at the end of Sunday, 4 October (00:00 on Monday, 5 October), São Paulo time.</b> Whitepaper {html.escape(ver.lower())} (beta), updated on {html.escape(date)}.</p>
 </section>
 <section class="wp-glance" aria-label="At a glance">
  <div><small>Nests</small><strong>3</strong><span>NVIDIA, Apple and Amazon</span></div>
- <div><small>Cadence</small><strong>Weekly</strong><span>Monday 13:00 to Monday 00:00, São Paulo time</span></div>
+ <div><small>Season 1 dates</small><strong>28 Sep / 4 Oct</strong><span>Opened Monday 13:00; closes Sunday night at 00:00 Monday, São Paulo time</span></div>
  <div><small>Opening prize</small><strong>1,000 USDC</strong><span>Committed, plus 70% of eligible weekly fees</span></div>
  <div><small>Prize split</small><strong>80 / 20</strong><span>Winning nest participants / eligible holders</span></div>
 </section>
