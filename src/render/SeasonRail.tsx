@@ -4,7 +4,7 @@ import {useWallet} from '../wallet';
 import {lazy,Suspense,useEffect} from 'react';
 import {create} from 'zustand';
 import {tr,useLanguage} from '../i18n';
-import {SEASON_TUTORIAL_LIVE,SEASON_WINDOWS_LIVE,SEASON_LEADERBOARD_LIVE} from '../copy/season';
+import {SEASON_TUTORIAL_LIVE,SEASON_WINDOWS_LIVE,SEASON_LEADERBOARD_LIVE,WHITEPAPER_URL} from '../copy/season';
 
 // Compile-time gate: when false the tutorial chunk is not emitted at all.
 const TUTORIAL_BUILD=import.meta.env.DEV||SEASON_TUTORIAL_LIVE||import.meta.env.VITE_SEASON_TUTORIAL==='true';
@@ -62,7 +62,7 @@ function SeasonActivities({onAction}:{onAction?:()=>void}){
   <div className="season-resources"><button type="button" className="season-stocks-toggle" aria-haspopup="dialog" onClick={()=>{onAction?.();useStocks.setState({open:true});}}><span aria-hidden="true">↗</span>{tr('Stock watch','股票行情')}<span>NVDA · AAPL · AMZN</span></button>
    <div className="season-actions">
     <button type="button" className={'season-button'+(TUTORIAL_ON?' is-primary':'')} disabled={!TUTORIAL_ON} onClick={()=>{onAction?.();openTutorial();}}><span aria-hidden="true">▶</span>{tr('Tutorial','教程')}</button>
-    <button type="button" className="season-button" disabled><span aria-hidden="true">§</span>{tr('Whitepaper','白皮书')}<small>{tr('Coming soon','即将推出')}</small></button>
+    {WHITEPAPER_URL?<a className="season-button" href={WHITEPAPER_URL} target="_blank" rel="noopener" onClick={()=>onAction?.()}><span aria-hidden="true">§</span>{tr('Whitepaper','白皮书')}<span className="season-button-ext" aria-hidden="true">↗</span></a>:<button type="button" className="season-button" disabled><span aria-hidden="true">§</span>{tr('Whitepaper','白皮书')}<small>{tr('Coming soon','即将推出')}</small></button>}
    </div>
    {BOARD_ON&&<BoardToggle onAction={onAction}/>}
   </div>

@@ -10,6 +10,12 @@ export default defineConfig(({ mode }) => {
   const target = env.RATTERY_API_PROXY;
   return {
     plugins: [react(), {
+      // Production serves public/whitepaper.html at /whitepaper (vercel.json cleanUrls); mirror that locally.
+      name: 'clean-whitepaper-url',
+      configureServer(server: { middlewares: { use(fn: (req: { url?: string }, res: unknown, next: () => void) => void): void } }) {
+        server.middlewares.use((req, _res, next) => { if (req.url === '/whitepaper' || req.url?.startsWith('/whitepaper?')) req.url = req.url.replace('/whitepaper', '/whitepaper.html'); next(); });
+      },
+    }, {
       name: 'staging-noindex',
       transformIndexHtml(html: string) {
         return (process.env.VITE_STAGING ?? env.VITE_STAGING) === 'true'
