@@ -4,7 +4,7 @@ import {NEST_DESIGNS,TIER_NAMES,visualTier,type NestId,type VisualEvent} from '.
 import type {BlenderRatAssets,BlenderRatVisual} from './BlenderRat';
 import {SNAKE_DEN} from '../sim/snake';
 import {makeKit,wovenCourses,wovenStakes,rib,thatch,bedding,fabricTexture,flagCanvas,rnd,shade,type Kit} from './season/craft';
-import {Particles,FloatingText,shieldMaterial} from './season/fx';
+import {Particles,FloatingText,shieldMaterial,groundFxMaterial} from './season/fx';
 import {SeasonSnake} from './season/SeasonSnake';
 
 /*
@@ -26,7 +26,8 @@ type Nest={batch:StaticNestBatch;id:NestId;design:typeof NEST_DESIGNS[number];ro
  flag:{mesh:T.Mesh<T.PlaneGeometry,T.MeshStandardMaterial>;back:T.Mesh;base:Float32Array;map:T.CanvasTexture};droop:number;
  sign:{canvas:HTMLCanvasElement;map:T.CanvasTexture;shown:number;flash:number;board:T.Mesh};
  halo:T.Mesh<T.RingGeometry,T.MeshBasicMaterial>;shield:T.Mesh<T.SphereGeometry,T.ShaderMaterial>;shieldAt:number;
- crown:T.Group;crownAt:number;lantern:T.PointLight;sack:T.Group;sackAt:number;rats:Mascot[];shake:number;hover:number;event:VisualEvent['kind']|null;eventAt:number};
+ crown:T.Group;crownAt:number;lantern:T.PointLight;sack:T.Group;sackAt:number;rats:Mascot[];shake:number;hover:number;event:VisualEvent['kind']|null;eventAt:number;
+ ground:T.Mesh<T.PlaneGeometry,T.ShaderMaterial>;shockAt:number;shockTint:string;pulseAt:number;shieldHitAt:number;shieldBurst:boolean};
 
 const clamp=T.MathUtils.clamp,damp=T.MathUtils.damp;
 const easeOut=(t:number)=>1-(1-t)**3,easeBack=(t:number)=>{const c=1.7;return 1+(c+1)*(t-1)**3+c*(t-1)**2;};
@@ -125,10 +126,12 @@ export class SeasonNests{
   sign.position.set(-3.25,0,2.35);sign.rotation.y=.4;root.add(sign);
   const halo=new T.Mesh(new T.RingGeometry(3.6,3.85,64),new T.MeshBasicMaterial({color:design.color,transparent:true,opacity:0,side:T.DoubleSide,depthWrite:false,blending:T.AdditiveBlending}));halo.rotation.x=-Math.PI/2;halo.position.y=.03;this.geos.push(halo.geometry);this.mats.push(halo.material);root.add(halo);
   const shield=new T.Mesh(new T.SphereGeometry(3.95,48,24,0,Math.PI*2,0,Math.PI/2),shieldMaterial(design.color));shield.material.uniforms.height.value=3.95;shield.visible=false;shield.renderOrder=4;this.geos.push(shield.geometry);this.mats.push(shield.material);shield.position.z=.3;root.add(shield);
+  const ground=new T.Mesh(new T.PlaneGeometry(11,11),groundFxMaterial(design.color));ground.rotation.x=-Math.PI/2;ground.position.set(0,.045,.3);ground.renderOrder=3;ground.visible=false;this.geos.push(ground.geometry);this.mats.push(ground.material);root.add(ground);
   const crown=this.crown(design.color);crown.visible=false;root.add(crown);
   const sack=this.sack(fabric,k);sack.visible=false;root.add(sack);
   const nest:Nest={batch:new StaticNestBatch(root,[mound,straw,pole,knob,...pieces.map(p=>p.obj)]),id:design.id,design,root,pieces,tierEnd,build:tierEnd[0],target:tierEnd[0],tier:0,score:-1,flag:{mesh:flagMesh,back,base:(flagGeo.attributes.position.array as Float32Array).slice(),map:flagMap},droop:0,
-   sign:{canvas:signCanvas,map:signMap,shown:0,flash:0,board},halo,shield,shieldAt:-100,crown,crownAt:-100,lantern,sack,sackAt:-100,rats:[],shake:0,hover:0,event:null,eventAt:-100};
+   sign:{canvas:signCanvas,map:signMap,shown:0,flash:0,board},halo,shield,shieldAt:-100,crown,crownAt:-100,lantern,sack,sackAt:-100,rats:[],shake:0,hover:0,event:null,eventAt:-100,
+   ground,shockAt:-100,shockTint:'#ff5a4a',pulseAt:-100,shieldHitAt:-100,shieldBurst:true};
   this.drawSign(nest,0);return nest;
  }
  private provisions(id:NestId,k:Kit,accent:T.Material,fabric:T.Material){
@@ -283,7 +286,7 @@ export class SeasonNests{
   if(!event){this.serial=0;for(const n of this.nests.values())n.event=null;return;}if(event.serial===this.serial)return;this.serial=event.serial;
   const n=this.nests.get(event.nest)!;if(event.kind!=='attack'){n.event=event.kind;n.eventAt=this.time;}
   const front=n.root.localToWorld(new T.Vector3(0,FLOOR+.8,2.5));
-  if(event.kind==='shield'){n.shieldAt=this.time;}
+  if(event.kind==='shield'){n.shieldAt=this.time;n.shieldBurst=false;}
   if(event.kind==='feed'){n.sackAt=this.time;if(this.reduced)this.text.show('+20',n.design.color,front);}
   if(event.kind==='attack'){
    const blocked=this.time-n.shieldAt<3.6;
@@ -291,12 +294,24 @@ export class SeasonNests{
    this.snakeTarget=n.id;this.struck=false;this.deferred=null;this.snake.attack(n.root.localToWorld(new T.Vector3(0,0,3.4)),blocked);this.pendingBlocked=blocked;
   }
  }
- private pendingBlocked=false;private struck=true;private deferred:number|null=null;
+ private pendingBlocked=false;private struck=true;private deferred:number|null=null;private hitStopAt=-100;private quake=0;private quakeOffset=new T.Vector3();
  private impact(){
   const n=this.snakeTarget?this.nests.get(this.snakeTarget):undefined;if(!n)return;this.struck=true;if(this.deferred!==null){const d=this.deferred;this.deferred=null;this.setScore(n.id,d);}const front=n.root.localToWorld(new T.Vector3(0,FLOOR+.9,2.6));
-  if(this.pendingBlocked){n.shieldAt=Math.max(n.shieldAt,this.time-1);(n.shield.material.uniforms.hit as {value:number}).value=1;this.particles.burst(front,18,3.2,new T.Color(n.design.color),.6,.16,77,{white:.5,gravity:.5});this.text.show('Blocked',n.design.color,front);return;}
-  n.shake=1;n.event='attack';n.eventAt=this.time;this.text.show('-40','#ff7a6b',front);
-  this.particles.burst(front,22,2.6,new T.Color('#d8b46a'),1.1,.08,91,{up:.9,gravity:4.5});this.particles.burst(front,8,1.6,new T.Color('#ff7a6b'),.5,.2,93,{gravity:0});
+  const color=new T.Color(n.design.color);n.shockAt=this.time;
+  if(this.pendingBlocked){
+   // Deflected: a ripple runs over the dome from the strike point, sparks glance off, the snake recoils.
+   n.shieldAt=Math.max(n.shieldAt,this.time-1);n.shieldHitAt=this.time;n.shockTint=n.design.color;
+   const su=n.shield.material.uniforms as Record<string,{value:any}>;su.hit.value=1;su.hitPos.value.copy(n.shield.worldToLocal(this.snake.headWorld.clone().setY(1.1)));
+   this.particles.burst(front,18,4.6,color,.6,.08,77,{white:.4,gravity:.8,up:.3});this.particles.burst(front,5,2.4,new T.Color('#ffffff'),.25,.1,78,{gravity:0});
+   this.quake=Math.max(this.quake,.4);this.text.show('Blocked',n.design.color,front,1.35);return;
+  }
+  // Direct hit: a short hit-stop sells the weight, then shockwave, debris, straw and a red flash.
+  n.shockTint='#ff5a4a';this.hitStopAt=this.time;this.quake=1;n.shake=1;n.event='attack';n.eventAt=this.time;n.sign.flash=.9;
+  this.text.show('-40','#ff7a6b',front,1.7);
+  this.particles.burst(front,34,3.4,new T.Color('#c9a468'),1.2,.09,91,{up:1.1,gravity:5});
+  this.particles.burst(front,14,2.6,new T.Color('#e8cf8e'),1.5,.07,92,{up:1.4,gravity:3,drag:2});
+  this.particles.burst(front,16,2.2,new T.Color('#ff6a55'),.55,.2,93,{gravity:0,white:.25});
+  this.particles.burst(n.root.localToWorld(new T.Vector3(0,.15,2.6)),20,3.8,new T.Color('#a88c62'),.8,.1,94,{spread:.15,gravity:.5,drag:2.5});
  }
  reveal(winner:NestId|null,serial:number){if(serial===this.revealSerial)return;this.revealSerial=serial;this.winner=winner;this.revealAt=this.time;this.fireworks=[];
   for(const n of this.nests.values())n.crownAt=n.id===winner?this.time:-100;
@@ -327,8 +342,20 @@ export class SeasonNests{
    n.halo.material.opacity=Math.max(n.hover*.45,winnerGlow,eventGlow);n.halo.material.color.set(this.winner===n.id?'#f2c14e':n.event==='attack'&&eventGlow>0?'#ff7a6b':n.design.color);
    n.halo.scale.setScalar(1+n.hover*.03+(reduced?0:eventGlow*.06*Math.sin(this.time*8)));
    // Shield rise / hold / dissolve.
+   // A shield that will block an incoming strike stays up until the snake lands, then lingers and burns away.
+   if(this.snake.busy&&this.snakeTarget===n.id&&this.pendingBlocked&&!this.struck)n.shieldAt=Math.max(n.shieldAt,this.time-2.4);
    const sa=this.time-n.shieldAt,su=n.shield.material.uniforms as Record<string,{value:number}>;n.shield.visible=sa<3.8;
-   if(n.shield.visible){su.time.value=this.time;su.rise.value=reduced?1:easeOut(clamp(sa/.55,0,1));su.fade.value=reduced?1:1-clamp((sa-3.1)/.7,0,1);su.hit.value=Math.max(0,su.hit.value-dt*2.5);}
+   if(n.shield.visible){su.time.value=this.time;su.rise.value=reduced?1:easeOut(clamp((sa-.18)/.55,0,1));su.fade.value=reduced?1:1-clamp((sa-3.1)/.7,0,1);su.hit.value=Math.max(0,su.hit.value-dt*2.5);su.hitAge.value=this.time-n.shieldHitAt;
+    // Anticipation: sparks spiral up the rune circle while the dome rises; at the end the dome burns away into motes.
+    if(!reduced&&sa>.12&&sa<.85)for(let k=0;k<2;k++){const ang=sa*13+k*Math.PI,r=3.75;const p=n.root.localToWorld(new T.Vector3(Math.cos(ang)*r,.2+sa*2.2,Math.sin(ang)*r+.3));this.particles.spawn(p,new T.Vector3(-Math.sin(ang)*1.2,1.6,Math.cos(ang)*1.2),new T.Color(n.design.color).lerp(new T.Color('#ffffff'),.35),.6,.1,1.8,-.4);}
+    if(!reduced&&!n.shieldBurst&&sa>3.1){n.shieldBurst=true;this.particles.burst(n.root.localToWorld(new T.Vector3(0,1.8,.3)),36,2.2,new T.Color(n.design.color),1.3,.1,401,{up:.8,gravity:-.6,drag:1.6,white:.3});}}
+   // Ground decal: shield rune, attack warning, shockwave and feed glow.
+   const gu=n.ground.material.uniforms as Record<string,{value:any}>;gu.time.value=this.time;
+   gu.runeDraw.value=clamp(sa/.35,0,1);gu.rune.value=reduced||sa>=3.8?0:sa<.35?1:sa<3.1?.45+.15*Math.sin(this.time*4):.6*(1-clamp((sa-3.1)/.7,0,1));
+   gu.warn.value=reduced?0:damp(gu.warn.value,this.snake.busy&&this.snakeTarget===n.id&&!this.struck?1:0,5,dt);
+   const sk=(this.time-n.shockAt)/.9;gu.shockR.value=easeOut(clamp(sk,0,1))*.97;gu.shockA.value=reduced||sk>=1||sk<0?0:(1-sk)*(n.shockTint==='#ff5a4a'?1.3:.8);gu.shockColor.value.set(n.shockTint);
+   const pk=(this.time-n.pulseAt)/1.2;gu.pulse.value=reduced||pk>=1||pk<0?0:Math.sin(pk*Math.PI);
+   n.ground.visible=gu.rune.value>.001||gu.warn.value>.01||gu.shockA.value>.001||gu.pulse.value>.001;
    // Feed delivery: parachute sack sways down, lands with a puff, rats rush to it.
    this.updateSack(n,dt);
    // Shake after a hit (trauma², decays).
@@ -340,12 +367,17 @@ export class SeasonNests{
    n.lantern.intensity=level===0&&n.build>=n.tierEnd[1]+8?1.1+Math.sin(this.time*7.3)*.08:0;
    this.updateRats(n,dt,camera);
   }
-  this.snake.update(reduced?0:dt);if(reduced&&this.snake.busy)this.snake.cancel();
+  const stop=this.time-this.hitStopAt<.1,sdt=stop?dt*.05:dt;
+  this.snake.update(reduced?0:sdt);if(reduced&&this.snake.busy)this.snake.cancel();
+  if(this.snake.busy&&!reduced&&this.frame%2===0){const h=this.snake.headWorld;if(h.y>-.3&&h.y<.7)this.particles.spawn(h.clone().setY(.08),new T.Vector3((rnd(this.frame)-.5)*.8,.35+rnd(this.frame+3)*.3,(rnd(this.frame+7)-.5)*.8),new T.Color('#b9a27a'),.8,.1,3,-.15);}
+  // Whole-diorama quake after a hit (trauma², decays); applied as an offset so the base transform is kept.
+  this.root.position.sub(this.quakeOffset);this.quake=Math.max(0,this.quake-dt*2.4);const q=reduced?0:this.quake*this.quake;
+  this.quakeOffset.set(Math.sin(this.time*47)*.09*q,Math.sin(this.time*59)*.05*q,Math.cos(this.time*41)*.09*q);this.root.position.add(this.quakeOffset);
   // Fireworks: rockets with a spark trail, then a peony burst in the company colour with a white core.
   for(const f of this.fireworks){const age=this.time-f.at;if(age<0||f.fired||reduced)continue;const color=new T.Color(NEST_DESIGNS.find(d=>d.id===this.winner)?.color??'#fff');
    if(age<.7){const y=easeOut(age/.7)*f.h;if(this.frame%2===0)this.particles.spawn(new T.Vector3(f.x,y,f.z),new T.Vector3((rnd(f.seed+age*60)-.5)*.3,-.4,(rnd(f.seed+age*90)-.5)*.3),new T.Color('#ffd9a0'),.4,.07,2,1);}
    else{f.fired=true;const at=new T.Vector3(f.x,f.h,f.z);this.particles.burst(at,30,4.6,color,1.8,.16,f.seed,{white:.3,gravity:1.4,drag:1.3});this.particles.burst(at,6,1.1,new T.Color('#fff6d8'),.7,.26,f.seed+9,{gravity:.3});}}
-  this.alive=this.particles.update(dt,this.time);this.text.update(dt);
+  this.alive=this.particles.update(sdt,this.time);this.text.update(dt);
  }
  private animatePiece(n:Nest,p:Piece,f:number,growing:boolean){
   const o=p.obj;o.visible=f>.001;if(!o.visible){p.landed=false;return;}
@@ -370,11 +402,12 @@ export class SeasonNests{
  private updateSack(n:Nest,dt:number){
   const a=this.time-n.sackAt,s=n.sack;s.visible=a<4.2&&!this.reduced;if(!s.visible)return;
   const land=new T.Vector3(-.95,PORCH,2.55),chute=s.getObjectByName('chute')!;
-  if(a<1.6){const e=easeOut(a/1.6);s.position.set(land.x+Math.sin(a*3)*.35*(1-e),land.y+6*(1-e),land.z);s.rotation.z=Math.sin(a*3.2)*.18*(1-e);chute.scale.set(1,1,1);}
+  if(a<1.6){const e=easeOut(a/1.6);s.position.set(land.x+Math.sin(a*3)*.35*(1-e),land.y+6*(1-e),land.z);s.rotation.z=Math.sin(a*3.2)*.18*(1-e);chute.scale.set(1,1,1);s.scale.setScalar(1);
+   if(this.frame%2===0)this.particles.spawn(n.root.localToWorld(s.position.clone().add(new T.Vector3(0,.7,0))),new T.Vector3((rnd(this.frame)-.5)*.4,-.2,(rnd(this.frame+5)-.5)*.4),new T.Color(n.design.color).lerp(new T.Color('#fff4c8'),.5),.7,.07,1.5,.3);}
   else{s.position.copy(land);s.rotation.z=0;const k=clamp((a-1.6)/.35,0,1);chute.scale.set(1+k*.3,Math.max(.01,1-k),1+k*.3);chute.visible=k<1;
-   if(a-dt<1.6){this.particles.burst(n.root.localToWorld(land.clone()),10,1.4,new T.Color('#d9c393'),.8,.07,211,{up:.5,gravity:2.5,drag:3});this.text.show('+20',n.design.color,n.root.localToWorld(land.clone().add(new T.Vector3(0,.8,0))));
+   if(a-dt<1.6){n.pulseAt=this.time;n.shockAt=this.time;n.shockTint=n.design.color;this.particles.burst(n.root.localToWorld(land.clone()),14,1.6,new T.Color('#d9c393'),.8,.07,211,{up:.5,gravity:2.5,drag:3});this.particles.burst(n.root.localToWorld(land.clone().add(new T.Vector3(0,.2,0))),22,2.4,new T.Color('#ffe08a'),.9,.08,212,{up:1.2,gravity:3,white:.4});this.text.show('+20',n.design.color,n.root.localToWorld(land.clone().add(new T.Vector3(0,.8,0))),1.35);
     n.rats.forEach((m,i)=>{if(m.behaviour==='flee'||m.behaviour==='hide')return;this.goTo(m,new T.Vector2(land.x+(i?.45:-.45),land.z+.25),i?'sniff':'carry',1.25);m.dur=1.8;});}
-   const shrink=clamp((a-3.4)/.8,0,1);s.scale.setScalar(Math.max(.001,1-shrink));}
+   const shrink=clamp((a-3.4)/.8,0,1),b=a-1.6,sq=b<.45?Math.sin(b/.45*Math.PI*2)*.28*(1-b/.45):0;s.scale.set((1+sq)*Math.max(.001,1-shrink),(1-sq)*Math.max(.001,1-shrink),(1+sq)*Math.max(.001,1-shrink));}
  }
  private roofTop(n:Nest){const h=STYLE[n.id].dome;return n.build>=n.tierEnd[2]+3?DOME_Y+h+.95:n.build>=n.tierEnd[0]+8?DOME_Y+h+.35:FLOOR+1.2;}
  /** Development aid: run the scene clock forward without rendering (screenshots on slow machines). */

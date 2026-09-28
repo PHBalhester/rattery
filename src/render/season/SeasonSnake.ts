@@ -54,13 +54,13 @@ export class SeasonSnake{
   this.route=path;this.routeLength=path.getLength();this.approach=out.getLength();this.strikeDir.copy(dir);
   this.trail=[];for(let i=0;i<=40;i++)this.trail.push(d.clone().setY(-1.2-LENGTH*(1-i/40)));
   this.t=0;this.active=true;this.impacted=false;this.root.visible=true;this.blocked=blocked;
-  this.total=.9+Math.max(1.6,this.approach/6)+1.05+Math.max(1.8,(this.routeLength-this.approach)/6.5);
+  this.total=.6+Math.max(1.1,this.approach/12)+1.05+Math.max(1.5,(this.routeLength-this.approach)/8);
  }
  private blocked=false;
  update(dt:number){
   if(!this.active||!this.route)return;
-  this.t+=dt;const travelOut=Math.max(1.6,this.approach/6),travelBack=Math.max(1.8,(this.routeLength-this.approach)/6.5);
-  const tE=.9,tA=tE+travelOut,tS=tA+1.05,t=this.t;
+  this.t+=dt;const travelOut=Math.max(1.1,this.approach/12),travelBack=Math.max(1.5,(this.routeLength-this.approach)/8);
+  const tE=.6,tA=tE+travelOut,tS=tA+1.05,t=this.t;
   let s:number,lunge=0,rear=0,jaw=.08;
   if(t<tE){s=ease(t/tE)*1.7;}
   else if(t<tA){s=1.7+(this.approach-1.7)*ease((t-tE)/travelOut);}
