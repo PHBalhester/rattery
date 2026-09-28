@@ -1,7 +1,7 @@
 import {lazy,Suspense,useEffect} from 'react';
 import {create} from 'zustand';
 import {tr,useLanguage} from '../i18n';
-import {SEASON_TUTORIAL_LIVE,SEASON_WINDOWS_LIVE} from '../copy/season';
+import {SEASON_TUTORIAL_LIVE,SEASON_WINDOWS_LIVE,SEASON_LEADERBOARD_LIVE} from '../copy/season';
 
 // Compile-time gate: when false the tutorial chunk is not emitted at all.
 const TUTORIAL_BUILD=import.meta.env.DEV||SEASON_TUTORIAL_LIVE||import.meta.env.VITE_SEASON_TUTORIAL==='true';
@@ -16,6 +16,27 @@ const openTutorial=(start?:string)=>useTutorial.setState({open:true,start});
 const WINDOWS_BUILD=import.meta.env.DEV||SEASON_WINDOWS_LIVE||import.meta.env.VITE_SEASON_TUTORIAL==='true';
 const WINDOWS_ON=WINDOWS_BUILD&&(SEASON_WINDOWS_LIVE||['season-tutorial','season-preview'].some(k=>new URLSearchParams(location.search).has(k)));
 const SeasonWindows=WINDOWS_BUILD?lazy(()=>import('./SeasonWindows')):null;
+
+// Top-burner leaderboard: hidden until toggled. Live once /api/burners is deployed (SEASON_LEADERBOARD_LIVE);
+// before that, review builds show it with ?burners, ?season-tutorial or ?season-preview (DEMO rows if the API is absent).
+const BOARD_BUILD=import.meta.env.DEV||SEASON_LEADERBOARD_LIVE||import.meta.env.VITE_SEASON_TUTORIAL==='true';
+const BOARD_ON=BOARD_BUILD&&(SEASON_LEADERBOARD_LIVE||['burners','season-tutorial','season-preview'].some(k=>new URLSearchParams(location.search).has(k)));
+const BurnLeaderboard=BOARD_BUILD?lazy(()=>import('./BurnLeaderboard')):null;
+const useBoard=create<{open:boolean}>(()=>({open:false}));
+const toggleBoard=()=>useBoard.setState(s=>({open:!s.open}));
+
+function BoardToggle({compact=false}:{compact?:boolean}){
+ const open=useBoard(s=>s.open);
+ return <button type="button" className={compact?'season-nav-button burn-nav-toggle':'season-board-toggle'} aria-expanded={open} aria-controls="burn-board" onClick={toggleBoard}>
+  <span aria-hidden="true" className="burn-flame">🔥</span>{tr('Top burners','销毁排行')}{!compact&&<span aria-hidden="true" className="burn-chevron">›</span>}</button>;
+}
+function BoardHost(){
+ const open=useBoard(s=>s.open);
+ // The resident tour sits at the top centre; step it aside while the leaderboard is open.
+ useEffect(()=>{document.documentElement.classList.toggle('burn-open',open);return()=>document.documentElement.classList.remove('burn-open');},[open]);
+ if(!BurnLeaderboard||!open)return null;
+ return <div id="burn-board" className="burn-board-host"><Suspense fallback={null}><BurnLeaderboard allowDemo={!SEASON_LEADERBOARD_LIVE} onClose={()=>{useBoard.setState({open:false});Array.from(document.querySelectorAll<HTMLElement>('.season-board-toggle,.burn-nav-toggle')).find(b=>b.offsetParent!==null)?.focus();}}/></Suspense></div>;
+}
 
 function TutorialHost(){
  const {open,start}=useTutorial();
@@ -39,7 +60,7 @@ function Flourish({flip=false}:{flip?:boolean}){
 /** Announcement only until the explicit release. The tutorial is compiled in only when TUTORIAL_ON. */
 export default function SeasonRail(){
  useLanguage(s=>s.language);
- return <div className={`season-column${WINDOWS_ON?' has-windows':''}`}><aside className="season-rail floating-panel" aria-labelledby="season-title">
+ return <><div className={`season-column${WINDOWS_ON?' has-windows':''}`}><aside className="season-rail floating-panel" aria-labelledby="season-title">
   <span className="season-corner tl" aria-hidden="true"/><span className="season-corner tr" aria-hidden="true"/><span className="season-corner bl" aria-hidden="true"/><span className="season-corner br" aria-hidden="true"/>
   <span className="season-kicker">{tr('RATTERY · Colony games','RATTERY · 群落赛事')}</span>
   <div className="season-title-row"><Flourish/><h2 id="season-title" lang="en">Season&nbsp;<span>I</span></h2><Flourish flip/></div>
@@ -49,12 +70,13 @@ export default function SeasonRail(){
    {TUTORIAL_ON?<button type="button" className="season-button is-primary" onClick={()=>openTutorial()}><span aria-hidden="true">▶</span>{tr('Tutorial','教程')}</button>:<button type="button" className="season-button" disabled><span aria-hidden="true">▶</span>{tr('Tutorial','教程')}<small>{tr('Coming soon','即将推出')}</small></button>}
    <button type="button" className="season-button" disabled><span aria-hidden="true">§</span>{tr('Whitepaper','白皮书')}<small>{tr('Coming soon','即将推出')}</small></button>
   </div>
+  {BOARD_ON&&<BoardToggle/>}
   {TUTORIAL_ON&&<TutorialHost/>}
- </aside>{WINDOWS_ON&&<WindowsHost/>}</div>;
+ </aside>{WINDOWS_ON&&<WindowsHost/>}</div>{BOARD_ON&&<BoardHost/>}</>;
 }
 
 /** Mobile has the same locked release state as desktop. */
 export function SeasonNavButton(){
  useLanguage(s=>s.language);
- return TUTORIAL_ON?<button type="button" className="season-nav-button" onClick={()=>openTutorial()}>✦ Season I · {tr('Tutorial','教程')}</button>:<button type="button" className="season-nav-button" disabled>✦ Season I · {tr('Coming soon','即将推出')}</button>;
+ return <>{BOARD_ON&&<BoardToggle compact/>}{TUTORIAL_ON?<button type="button" className="season-nav-button" onClick={()=>openTutorial()}>✦ Season I · {tr('Tutorial','教程')}</button>:<button type="button" className="season-nav-button" disabled>✦ Season I · {tr('Coming soon','即将推出')}</button>}</>;
 }

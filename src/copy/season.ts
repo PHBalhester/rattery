@@ -9,3 +9,5 @@ export const SEASON_TUTORIAL_LIVE = false;
 // Stock and Weekly Prize windows. Keep false until the real price and fee feeds publish through
 // publishSeasonFeed (src/render/seasonFeed.ts); review builds show them with labelled demo data.
 export const SEASON_WINDOWS_LIVE = false;
+// Top-burner leaderboard. Flip after the observer's /burners route and /api/burners are deployed.
+export const SEASON_LEADERBOARD_LIVE = false;

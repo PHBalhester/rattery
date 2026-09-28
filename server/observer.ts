@@ -20,19 +20,42 @@ export async function readObservation(pool:Pool,runId='rattery-staging-round1'){
   return {protocol:1,runId,colonyId:runId.startsWith('rattery-production-')?'rattery-production-v1':'rattery-staging-market-v1',world:{...world,memorial:Object.fromEntries(Object.entries(world.memorial??{}).map(([id,record])=>[id,{...record,caregiver:!!_care?.owners[id],residenceDays:tiers.get(_care?.owners[id]??'')??0}])),rats:Object.fromEntries(Object.entries(world.rats).map(([id,rat])=>[id,{...rat,minted:!!_care?.owners[id],caregiver:!!_care?.owners[id],residenceDays:tiers.get(_care?.owners[id]??'')??0,petAt:(_care?.cooldowns[id+':pet']??0)-3600000}]))},revision:Number(row.revision),tick:Number(row.simulation_tick),at:Number(row.simulation_at),version:row.engine_version,market:market?{chainId:market.chain_id,token:market.token,block:Number(market.last_block),at:Number(market.last_timestamp),halted:market.halted}:null,trades,paymentsEnabled:runId.startsWith('rattery-production-')};
  }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{c.release();}
 }
+export const BURNER_LIMIT=50;
+/** Public leaderboard of confirmed burns recorded by the ledger. Read-only; no account or payment data. */
+export async function readBurners(pool:Pool,limit=BURNER_LIMIT){
+ if(!Number.isInteger(limit)||limit<1||limit>100)throw Error('Invalid limit');
+ const c=await pool.connect();
+ try{await c.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+  const market=(await c.query('SELECT chain_id,token FROM trade_stream WHERE id=1')).rows[0];
+  const total=(await c.query("SELECT count(*)::int AS burns,count(DISTINCT lower(raw->>'from'))::int AS wallets,coalesce(sum((raw->>'units')::numeric),0)::text AS units,min(block_number)::text AS first_block,max(block_number)::text AS last_block FROM colony_burns")).rows[0];
+  const rows=(await c.query("SELECT lower(raw->>'from') AS wallet,sum((raw->>'units')::numeric)::text AS units,count(*)::int AS burns FROM colony_burns GROUP BY 1 ORDER BY sum((raw->>'units')::numeric) DESC,1 ASC LIMIT $1",[limit])).rows;
+  await c.query('COMMIT');
+  const digits=(v:unknown)=>typeof v==='string'&&/^[0-9]{1,78}$/.test(v)?v:'0';
+  return {protocol:1,kind:'burners',chainId:Number(market?.chain_id)||null,token:typeof market?.token==='string'?market.token.toLowerCase():null,at:Date.now(),
+   totalUnits:digits(total?.units),burns:Number(total?.burns)||0,wallets:Number(total?.wallets)||0,firstBlock:total?.first_block?Number(total.first_block):null,lastBlock:total?.last_block?Number(total.last_block):null,
+   // Nest membership starts with Season I; until then every row has nest:null.
+   leaders:rows.filter(r=>/^0x[0-9a-f]{40}$/.test(r.wallet)).map(r=>({wallet:r.wallet as string,units:digits(r.units),burns:Number(r.burns)||0,nest:null}))};
+ }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{c.release();}
+}
 /** Dedicated read-only service. Authenticated proxy requests share one bounded cache. */
-export function observerServer(read:()=>Promise<unknown>,secret:string,clock=Date.now){
+export function observerServer(read:()=>Promise<unknown>,secret:string,clock=Date.now,readBurnersRoute?:()=>Promise<unknown>){
  if(!/^[a-f0-9]{64}$/.test(secret))throw Error('Observer credential required');
  const expected=Buffer.from('Bearer '+secret);let cache='',expires=0,inflight:Promise<string>|undefined,window=0,hits=0;
+ let burnCache='',burnExpires=0,burnInflight:Promise<string>|undefined;
  const server=createServer(async(req,res)=>{
   res.setHeader('Content-Type','application/json');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Cache-Control','no-store');res.setHeader('Content-Security-Policy',"default-src 'none'; frame-ancestors 'none'");
   const send=(code:number,value:string)=>{res.writeHead(code);res.end(value);};
   if(req.url==='/health'&&req.method==='GET')return send(200,'{"ok":true}');
-  if(req.url!=='/snapshot')return send(404,'{"error":"Not found"}');
+  const burners=req.url==='/burners'&&!!readBurnersRoute;
+  if(req.url!=='/snapshot'&&!burners)return send(404,'{"error":"Not found"}');
   if(req.method!=='GET'){res.setHeader('Allow','GET');return send(405,'{"error":"GET required"}');}
   const auth=Buffer.from(req.headers.authorization??'');if(auth.length!==expected.length||!timingSafeEqual(auth,expected))return send(401,'{"error":"Unauthorized"}');
   if(req.headers['content-length']&&req.headers['content-length']!=='0'||req.headers['transfer-encoding'])return send(400,'{"error":"Body not allowed"}');
   const now=clock(),minute=Math.floor(now/60000);if(window!==minute){window=minute;hits=0;}if(++hits>1200){res.setHeader('Retry-After','60');return send(429,'{"error":"Rate limit"}');}
+  if(burners){
+   try{if(!burnCache||burnExpires<=now){burnInflight??=readBurnersRoute!().then(data=>{const text=JSON.stringify(data);if(Buffer.byteLength(text)>65536)throw Error('Leaderboard size');burnCache=text;burnExpires=clock()+30000;return text;}).finally(()=>{burnInflight=undefined;});await burnInflight;}send(200,burnCache);}catch{send(503,'{"error":"Leaderboard unavailable"}');}
+   return;
+  }
   try{if(!cache||expires<=now){inflight??=read().then(data=>{const text=JSON.stringify(data);if(Buffer.byteLength(text)>OBSERVER_LIMIT)throw Error('Snapshot size');cache=text;expires=clock()+500;return text;}).finally(()=>{inflight=undefined;});await inflight;}send(200,cache);}catch{send(503,'{"error":"Observation unavailable"}');}
  });
  server.requestTimeout=5000;server.headersTimeout=5000;server.timeout=5000;server.maxHeadersCount=30;return server;
