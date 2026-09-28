@@ -7,7 +7,9 @@ import "./panels.css";
 
 // NOTE: StrictMode double-invokes effects in dev. The engine guards against
 // double-start (see store.startEngine), so the simulation runs once.
-if(localCareLab&&new URLSearchParams(location.search).get('view')==='care-lab'){
+if(new URLSearchParams(location.search).get('view')==='season-setup'){
+ void import('./render/SeasonSetup').then(({default:SeasonSetup})=>createRoot(document.getElementById('root')!).render(<SeasonSetup/>));
+}else if(localCareLab&&new URLSearchParams(location.search).get('view')==='care-lab'){
  void import('./render/CareLab').then(({default:CareLab})=>createRoot(document.getElementById('root')!).render(<CareLab/>));
 }else if(new URLSearchParams(location.search).get('view')==='snake-studio'){
   void import('./render/snakeStudio').then(m=>m.showSnakeStudio(document.getElementById('root')!));

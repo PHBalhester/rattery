@@ -1,0 +1,15 @@
+import {mkdirSync,readFileSync,writeFileSync,existsSync,chmodSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {Wallet,ContractFactory,id,keccak256} from 'ethers';
+const secretDir='/home/phbal/Rattery/.tools/season1-launch';mkdirSync(secretDir,{recursive:true,mode:0o700});
+const keyFile=secretDir+'/quote-signer.json';if(!existsSync(keyFile))writeFileSync(keyFile,JSON.stringify({privateKey:Wallet.createRandom().privateKey}),{mode:0o600});chmodSync(keyFile,0o600);
+const signer=new Wallet(JSON.parse(readFileSync(keyFile,'utf8')).privateKey);
+const compiled=JSON.parse(execFileSync('/home/phbal/.svm/0.8.24/solc-0.8.24',['--base-path','.','--include-path','node_modules','--optimize','--via-ir','--evm-version','paris','--combined-json','abi,bin','contracts/SeasonActions.sol'],{encoding:'utf8',maxBuffer:4000000}));
+const artifact=compiled.contracts['contracts/SeasonActions.sol:SeasonActions'];
+const opening='2026-09-28T16:00:00Z',closing='2026-10-05T03:00:00Z';
+const args=['0xc322305e79337300b59ff48389f8c9a1d9e0de76',signer.address,id('RATTERY-SEASON-1-2026-09-28'),Date.parse(opening)/1000,Date.parse(closing)/1000,true];
+const tx=await new ContractFactory(artifact.abi,artifact.bin).getDeployTransaction(...args);
+const plan={version:1,chainId:4663,operator:'0xd40ed0214353b746fd567fa4a57409d1b5709988',quoteSigner:signer.address,opening,closing,args,sourceHash:keccak256(Buffer.from(readFileSync('contracts/SeasonActions.sol'))),transaction:{data:tx.data,value:'0x0'},dataHash:keccak256(tx.data!)};
+mkdirSync('public/season',{recursive:true});writeFileSync('public/season/season1-deploy.json',JSON.stringify(plan,null,2));
+writeFileSync(secretDir+'/artifact.json',JSON.stringify(artifact));
+console.log(JSON.stringify({operator:plan.operator,quoteSigner:plan.quoteSigner,opening,closing,dataHash:plan.dataHash,bytecodeBytes:(tx.data!.length-2)/2}));

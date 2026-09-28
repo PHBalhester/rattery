@@ -173,3 +173,13 @@ export async function mainnetBurnRequest(owner:string,amount:bigint,send=false){
  if(!send)return p.request({method:'eth_call',params:[{to:PAYMENT_TOKEN,data:'0x70a08231'+owner.slice(2).padStart(64,'0')},'latest']});
  return p.request({method:'eth_sendTransaction',params:[{from:owner,...call,chainId:'0x1237'}]});
 }
+
+/** Explicit Season transaction, reviewed by the connected wallet. Does not alter the legacy care path. */
+export async function seasonTransactionRequest(owner:string,tx:{to?:string;data:string;value?:string},send=false){
+ const w=useWallet.getState(),p=activeProvider,current=generation;
+ if(!p||w.account!==owner.toLowerCase()||w.chainId!=='0x1237'||!/^0x[0-9a-f]*$/i.test(tx.data)||tx.to&&!/^0x[0-9a-f]{40}$/i.test(tx.to)||tx.value&&tx.value!=='0x0')throw Error('Connect the correct wallet on Robinhood Chain');
+ const accounts=account(await p.request({method:'eth_accounts'}));
+ const network=chain(await p.request({method:'eth_chainId'}));
+ if(accounts!==owner.toLowerCase()||network!=='0x1237'||current!==generation)throw Error('Wallet changed');
+ return p.request({method:send?'eth_sendTransaction':'eth_estimateGas',params:[{from:owner,...tx,value:'0x0'}]});
+}
