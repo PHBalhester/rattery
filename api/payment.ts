@@ -2,7 +2,7 @@
 import type {IncomingMessage,ServerResponse} from 'node:http';
 import {isIP} from 'node:net';
 import {body} from '../server/http.js';
-const operations=new Set(['auth/challenge','auth/verify','auth/session','auth/logout','care/overview','care/reserve','care/begin','care/submitted','care/finalize','care/cancel']);
+const operations=new Set(['auth/challenge','auth/verify','auth/session','auth/logout','care/overview','care/reserve','care/begin','care/submitted','care/finalize','care/cancel','season/overview','season/quote','season/finalize']);
 export default async function handler(req:IncomingMessage,res:ServerResponse){
  res.setHeader('Cache-Control','no-store');res.setHeader('Content-Type','application/json');res.setHeader('X-Content-Type-Options','nosniff');
  const fail=(status:number)=>{res.statusCode=status;res.end(JSON.stringify({error:'Payment service unavailable'}));};

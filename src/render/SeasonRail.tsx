@@ -1,3 +1,5 @@
+import {useSeason,refreshSeason} from '../seasonState';
+import {useWallet} from '../wallet';
 import {lazy,Suspense,useEffect} from 'react';
 import {create} from 'zustand';
 import {tr,useLanguage} from '../i18n';
@@ -22,6 +24,8 @@ const SeasonWindows=WINDOWS_BUILD?lazy(()=>import('./SeasonWindows')):null;
 const BOARD_BUILD=import.meta.env.DEV||SEASON_LEADERBOARD_LIVE||import.meta.env.VITE_SEASON_TUTORIAL==='true';
 const BOARD_ON=BOARD_BUILD&&(SEASON_LEADERBOARD_LIVE||['burners','season-tutorial','season-preview'].some(k=>new URLSearchParams(location.search).has(k)));
 const BurnLeaderboard=BOARD_BUILD?lazy(()=>import('./BurnLeaderboard')):null;
+const SeasonAction=lazy(()=>import('./SeasonAction'));
+function ActionsHost(){const account=useWallet(s=>s.account);useEffect(()=>{void refreshSeason();const t=setInterval(()=>void refreshSeason(),15000);return()=>clearInterval(t);},[account]);return <Suspense fallback={null}><SeasonAction/></Suspense>;} 
 const StockPopup=lazy(()=>import('./StockPopup'));
 const useStocks=create<{open:boolean}>(()=>({open:false}));
 const closeStocks=()=>useStocks.setState({open:false});
@@ -44,10 +48,11 @@ const GAMEPLAY_ACTIONS=[
 
 /** One action group for the desktop banner and the mobile Season sheet. Gameplay is not live yet. */
 function SeasonActivities({onAction}:{onAction?:()=>void}){
+ const {snapshot,available}=useSeason();const live=available&&snapshot?.phase==='open';
  return <div className="season-activity-area">
   <section className="season-gameplay" aria-label={tr('Season I nest actions','第一赛季巢穴操作')}>
-   <div className="season-gameplay-heading"><h3>{tr('Nest actions','巢穴操作')}</h3><span>{tr('Coming soon','即将推出')}</span></div>
-   <div className="season-gameplay-grid">{GAMEPLAY_ACTIONS.map(a=><button key={a.id} type="button" className={'season-gameplay-action is-'+a.id} disabled title={tr('Available when Season I opens','第一赛季开启后可用')}>
+   <div className="season-gameplay-heading"><h3>{tr('Nest actions','巢穴操作')}</h3><span>{live?tr('Open','进行中'):snapshot?.phase==='scheduled'?tr('Opens at 13:00 São Paulo','圣保罗13:00开启'):tr('Not open','尚未开启')}</span></div>
+   <div className="season-gameplay-grid">{GAMEPLAY_ACTIONS.map((a,index)=><button key={a.id} type="button" className={'season-gameplay-action is-'+a.id} disabled={!live} onClick={()=>{onAction?.();useSeason.setState({action:index});}} title={tr('Available when Season I opens','第一赛季开启后可用')}>
     <span className="season-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d={a.path}/></svg></span>
     <strong>{tr(a.label[0],a.label[1])}</strong><span className="season-action-hint">{tr(a.hint[0],a.hint[1])}</span>
    </button>)}</div>
@@ -84,6 +89,7 @@ function WindowsHost(){
  return SeasonWindows?<Suspense fallback={null}><SeasonWindows/></Suspense>:null;
 }
 
+function SeasonStatus(){const {snapshot,available}=useSeason();return <>{available&&snapshot?.phase==='open'?tr('Season open','赛季进行中'):snapshot?.phase==='scheduled'?tr('Today · 13:00 São Paulo','今天 · 圣保罗13:00'):snapshot?.phase==='closed'?tr('Season closed','赛季已结束'):tr('Preparing Season I','正在准备第一赛季')}</>;}
 function Flourish({flip=false}:{flip?:boolean}){
  return <svg className={`season-flourish${flip?' is-flipped':''}`} viewBox="0 0 64 16" aria-hidden="true"><path d="M2 8h38" /><path d="M40 8c6 0 8-6 13-6 4 0 6 3 6 6s-2 6-6 6c-3 0-5-2-5-4" /><path d="M44 8l4-4 4 4-4 4z" className="gem" /><circle cx="6" cy="8" r="1.6" className="gem" /></svg>;
 }
@@ -97,11 +103,11 @@ export default function SeasonRail(){
   <span className="season-kicker">{tr('RATTERY · Colony games','RATTERY · 群落赛事')}</span>
   <div className="season-title-row"><Flourish/><h2 id="season-title" lang="en">Season&nbsp;<span>I</span></h2><Flourish flip/></div>
   <p className="season-sub">{tr('A new chapter for the colony','群落的新篇章')}</p>
-  <span className="season-status"><i aria-hidden="true"/>{tr('Coming soon','即将推出')}</span>
+  <span className="season-status"><i aria-hidden="true"/><SeasonStatus/></span>
   </header>
   <SeasonActivities/>
   {TUTORIAL_ON&&<TutorialHost/>}
- </aside>{WINDOWS_ON&&<WindowsHost/>}</div>{BOARD_ON&&<BoardHost/>}<StocksHost/></>;
+ </aside>{WINDOWS_ON&&<WindowsHost/>}</div>{BOARD_ON&&<BoardHost/>}<StocksHost/><ActionsHost/></>;
 }
 
 /** Season content for the mobile dock's Season sheet: same gates and actions as the desktop card. */
@@ -111,7 +117,7 @@ export function SeasonSheetBody({onAction}:{onAction:()=>void}){
   <header className="season-banner">
   <span className="season-kicker">{tr('RATTERY · Colony games','RATTERY · 群落赛事')}</span>
   <div className="season-title-row"><Flourish/><h2 lang="en">Season&nbsp;<span>I</span></h2><Flourish flip/></div>
-  <span className="season-status"><i aria-hidden="true"/>{tr('Coming soon','即将推出')}</span>
+  <span className="season-status"><i aria-hidden="true"/><SeasonStatus/></span>
   </header>
   <SeasonActivities onAction={onAction}/>
  </div>;
