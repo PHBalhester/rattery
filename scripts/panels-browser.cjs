@@ -15,6 +15,7 @@ const path=require('node:path');
   if(width<780){assert(!await panel.isVisible());await p.getByRole('button',{name:'Show info',exact:true}).click();}
   assert.equal(await p.getByRole('meter').count(),6);
   const box=await panel.boundingBox();assert(box&&box.x>=0&&box.x+box.width<=width+1,'Condition panel out of viewport');
+  if(width<780){const nav=await p.locator('.colony-navigation').boundingBox();assert(box.y>=nav.y+nav.height,'Navigation must not cover the panel tabs');}
   assert(await p.locator('.chip-trade').isVisible());
   assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Page overflows horizontally');
   await p.screenshot({path:path.join(outputDir,`panels-${width}.png`)});
@@ -38,16 +39,16 @@ const path=require('node:path');
   await p.getByRole('button',{name:'Show info',exact:true}).click();await panel.waitFor({state:'visible'});
   const seasonButtons=p.locator('.season-rail .season-actions button');
   assert.equal(await seasonButtons.count(),2);
-  for(const b of await seasonButtons.all())assert(await b.isDisabled());
-  assert(await p.locator('.season-nav-button').isDisabled());
+  assert(await seasonButtons.nth(0).isEnabled());assert(await seasonButtons.nth(1).isDisabled());
+  assert(await p.locator('.season-nav-button:not(.burn-nav-toggle)').isEnabled());
   assert.equal(await p.locator('.season-tutorial, .season-rail a').count(),0);
   assert((await p.locator('.season-rail').textContent()).includes('Coming soon'));
   await p.getByRole('button',{name:'Language / 语言'}).click();
   assert((await p.locator('.season-rail').textContent()).includes('即将推出'));
-  assert(await p.locator('.season-nav-button').isDisabled());
-  await p.screenshot({path:path.join(outputDir,`season-locked-${width}.png`)});
+  assert(await p.locator('.season-nav-button:not(.burn-nav-toggle)').isEnabled());
+  await p.screenshot({path:path.join(outputDir,`season-released-${width}.png`)});
   const telemetry=await p.locator('.burrow-host').getAttribute('data-performance');
-  assert.deepEqual(errors,[]);console.log('PASS panels/locked Season EN+ZH',width,height,telemetry);
+  assert.deepEqual(errors,[]);console.log('PASS panels/released tutorial EN+ZH',width,height,telemetry);
   await p.close();
  }}finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});
