@@ -32,7 +32,7 @@ export class BlenderRatAssets{
   if(sources.length!==3){sources.forEach(g=>disposeScene(g.scene));throw Error('Could not load rat assets');}
   try{return new BlenderRatAssets(sources);}catch(e){sources.forEach(g=>disposeScene(g.scene));throw e;}
  }
- create(id:string,bucket?:number){return new BlenderRatVisual(this.sources[0],this.levels,id,bucket);}
+ create(id:string,bucket?:number,visualTint?:string){return new BlenderRatVisual(this.sources[0],this.levels,id,bucket,visualTint);}
  dispose(){this.sources.forEach(g=>disposeScene(g.scene));}
 }
 export class BlenderRatVisual{
@@ -47,14 +47,16 @@ export class BlenderRatVisual{
  private rest=new Map<string,T.Quaternion>();
 
  qualityLevel=0;
+ /** Cosmetic detail floor; normal residents retain the default. */
+ minimumLod=0;
  private lod=-1;private elapsed=0;private phase=0;private bones=new Map<string,T.Bone>();
  private meshes:T.SkinnedMesh[]=[];
  private materials:T.Material[]=[];
  private crystalGeometry?:T.BufferGeometry;
- constructor(gltf:GLTF,private levels:Map<string,T.BufferGeometry>[],id:string,bucket?:number){
+ constructor(gltf:GLTF,private levels:Map<string,T.BufferGeometry>[],id:string,bucket?:number,visualTint?:string){
   this.model=clone(gltf.scene);this.model.scale.setScalar(.8);this.root.add(this.model);this.root.userData.blenderRat=true;
 
-  const coat=coatFor(id,bucket);this.phase=identity(id)/4294967295*Math.PI*2;
+  const originalCoat=coatFor(id,bucket),coat=visualTint?{...originalCoat,color:visualTint,belly:'#f1e7d0',pattern:'solid' as const}:originalCoat;this.phase=identity(id)/4294967295*Math.PI*2;
   this.model.traverse(o=>{if(o instanceof T.Bone){this.bones.set(o.name,o);this.rest.set(o.name,o.quaternion.clone());this.restPositions.set(o.name,o.position.clone());}});
 
   this.tailCollision=new TailCollision(this.bones);
@@ -127,7 +129,7 @@ export class BlenderRatVisual{
   this.model.position.y=wheel?.09:-.02;
   const profile=qualityProfiles[this.qualityLevel];
   // Keep close-up detail within the GPU budget. All LODs retain anatomy and joints.
-  const level=Math.max(distance<12?0:distance<26?1:2,profile.minLod);
+  const level=Math.max(distance<12?0:distance<26?1:2,profile.minLod,Math.min(2,Math.max(0,Math.floor(this.minimumLod))));
   if(level!==this.lod){for(const o of this.meshes){o.geometry=this.levels[level].get(o.name)!;o.castShadow=level===0&&o.name!=='Fine_ivory_fibres';}this.lod=level;this.root.userData.lod=level;}
   for(const mesh of this.meshes)if(mesh.name==='Fine_ivory_fibres')mesh.visible=profile.furDistance>0&&distance<profile.furDistance;
   if(reset)this.elapsed=0;else if(!reduced)this.elapsed+=dt;
@@ -164,6 +166,10 @@ export class BlenderRatVisual{
   const side=new T.Vector3(0,0,1).transformDirection(this.model.matrixWorld),up=new T.Vector3(0,1,0).transformDirection(this.model.matrixWorld);
   pose('spine',rise,side);pose('head',headPitch-rise*.6,side);pose('head',headYaw,up);
  }
+ /** World position just in front of the snout, for props carried in the mouth (preview mascots only). */
+ mouth(out:T.Vector3){const head=this.bones.get('head');if(!head)return this.root.getWorldPosition(out);head.getWorldPosition(out);
+  const forward=new T.Vector3(1,0,0).transformDirection(this.model.matrixWorld),scale=this.root.getWorldScale(new T.Vector3()).x;
+  return out.addScaledVector(forward,.34*scale).add(new T.Vector3(0,-.05*scale,0));}
  naturalDiagnostics(){return this.naturalMotion.diagnostics();}
  diagnostics(){return this.motor.diagnostics();}
  dispose(){this.crystalGeometry?.dispose();const skeletons=new Set<T.Skeleton>();this.model.traverse(o=>{if(o instanceof T.SkinnedMesh)skeletons.add(o.skeleton);});skeletons.forEach(s=>s.dispose());this.materials.forEach(m=>m.dispose());this.root.removeFromParent();this.root.clear();}

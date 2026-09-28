@@ -1,3 +1,4 @@
+import SeasonLiveSummary from './SeasonLiveSummary';
 import {useSeason,refreshSeason} from '../seasonState';
 import {useWallet} from '../wallet';
 import {lazy,Suspense,useEffect} from 'react';
@@ -57,6 +58,7 @@ function SeasonActivities({onAction}:{onAction?:()=>void}){
     <strong>{tr(a.label[0],a.label[1])}</strong><span className="season-action-hint">{tr(a.hint[0],a.hint[1])}</span>
    </button>)}</div>
   </section>
+  <SeasonLiveSummary/>
   <div className="season-resources"><button type="button" className="season-stocks-toggle" aria-haspopup="dialog" onClick={()=>{onAction?.();useStocks.setState({open:true});}}><span aria-hidden="true">↗</span>{tr('Stock watch','股票行情')}<span>NVDA · AAPL · AMZN</span></button>
    <div className="season-actions">
     <button type="button" className={'season-button'+(TUTORIAL_ON?' is-primary':'')} disabled={!TUTORIAL_ON} onClick={()=>{onAction?.();openTutorial();}}><span aria-hidden="true">▶</span>{tr('Tutorial','教程')}</button>
@@ -122,3 +124,4 @@ export function SeasonSheetBody({onAction}:{onAction:()=>void}){
   <SeasonActivities onAction={onAction}/>
  </div>;
 }
+

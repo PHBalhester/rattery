@@ -1,3 +1,5 @@
+import type {SeasonNests} from './SeasonNests';
+import type {useSeasonVisual} from '../season/visualState';
 import {SnakeDen} from './SnakeDen';
 import {AdaptiveQuality} from './AdaptiveQuality';
 import {addCourtyard} from './Courtyard';
@@ -37,6 +39,7 @@ export default function Burrow3D(){
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const onMotionChange=()=>setReducedMotion(reduced.matches&&!motionOverride.current);onMotionChange();reduced.addEventListener('change',onMotionChange);
   setMotionStatus('Carregando animação…');
+  const seasonPreview=true;
   let overview=true;
   const reset=()=>{useStore.getState().focus(null);overview=true;fitOverview();};
   scene.add(new T.HemisphereLight(0xd4dfe8,0x33241c,1.25));const sun=new T.DirectionalLight(0xffe4bc,3);sun.position.set(5,22,8);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.00025;sun.shadow.normalBias=.04;Object.assign(sun.shadow.camera,{left:-30,right:30,top:25,bottom:-25});scene.add(sun);
@@ -45,7 +48,7 @@ export default function Burrow3D(){
   const W=CONFIG.colony.burrowWidth,H=CONFIG.colony.burrowHeight;
   // Fit the full floor at the current aspect ratio, including its near corners.
   function fitOverview(){
-   const direction=new T.Vector3(26,32,37).normalize();
+   const direction=(seasonPreview?new T.Vector3(0,44,-32):new T.Vector3(26,32,37)).normalize();
    camera.position.copy(direction);camera.lookAt(0,0,0);camera.updateMatrixWorld();
    const inverse=camera.quaternion.clone().invert();
    const tanY=Math.tan(T.MathUtils.degToRad(camera.fov/2)),tanX=tanY*camera.aspect;
@@ -54,6 +57,7 @@ export default function Burrow3D(){
     const p=new T.Vector3(x,y,z).applyQuaternion(inverse);
     distance=Math.max(distance,p.z+Math.max(Math.abs(p.x)/tanX,Math.abs(p.y)/tanY)*1.12);
    }
+   if(seasonPreview)distance*=1.02;
    controls.maxDistance=Math.max(95,distance*1.5);camera.far=Math.max(250,distance*3);
    camera.position.copy(direction.multiplyScalar(distance));controls.target.set(0,0,0);camera.updateProjectionMatrix();controls.update();
   }
@@ -87,16 +91,23 @@ export default function Burrow3D(){
   const snakeDen=new SnakeDen(scene);
   const assets=new RatAssets(),rats=new Map<string,RatModel>(),deathPoses=new Map<string,{at:number;y:number}>();
   let blenderRats:BlenderRatAssets|undefined;
+  let seasonScene:SeasonNests|undefined,seasonState:typeof useSeasonVisual|undefined,previewFocus:string|null|undefined;let seasonTween:{t:number;fromPos:T.Vector3;fromTarget:T.Vector3;toPos:T.Vector3;toTarget:T.Vector3}|null=null;
+  if(seasonPreview)void Promise.all([import('./SeasonNests'),import('../season/visualState')]).then(([visual,state])=>{
+   if(disposed)return;seasonScene=new visual.SeasonNests(scene,W,H);seasonState=state.useSeasonVisual;
+   if(import.meta.env.DEV){(window as unknown as {__seasonScene?:unknown;__seasonStore?:unknown}).__seasonScene=seasonScene;(window as unknown as {__seasonStore?:unknown}).__seasonStore=state.useSeasonVisual;(window as unknown as {__seasonCam?:unknown}).__seasonCam={camera,controls,stop:()=>{seasonTween=null;}};(window as unknown as {__seasonAdvance?:(s:number)=>void}).__seasonAdvance=seconds=>{const st=state.useSeasonVisual.getState();seasonScene?.play(st.event);for(const id of ['NVDA','AAPL','AMZN'] as const)seasonScene?.setScore(id,st.scores[id]);seasonScene?.reveal(st.winner,st.reveal);seasonScene?.advance(seconds,false,quality.level,camera);if(seasonTween){camera.position.copy(seasonTween.toPos);controls.target.copy(seasonTween.toTarget);controls.update();seasonTween=null;}};
+   }
+   if(blenderRats)seasonScene.attachRats(blenderRats);
+  }).catch(e=>console.error('Season visual preview unavailable',e));
   BlenderRatAssets.load().then(loaded=>{
     if(disposed){loaded.dispose();return;}blenderRats=loaded;
-    for(const rat of rats.values())rat.attachBlender(loaded);
+    for(const rat of rats.values())rat.attachBlender(loaded);seasonScene?.attachRats(loaded);
     el.dataset.rats='blender';el.dataset.motionRevision='GAIT-12';setMotionStatus('Movimentos naturais · 12');
     if(new URLSearchParams(location.search).has('inspect-motion')){const first=Object.values(getWorld().rats).find(r=>r.deadAt===null);if(first)useStore.getState().focus(first.id);}
   }).catch(error=>{if(!disposed){el.dataset.rats='fallback';setMotionStatus('Modelo de reserva · animação nova indisponível');console.warn('Rattery: falha ao carregar movimento Blender',error);}});
   const ring=new T.Mesh(new T.RingGeometry(.65,.7,48),new T.MeshBasicMaterial({color:0xe8c36a,side:T.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.visible=false;scene.add(ring);
   const ray=new T.Raycaster();let down=[0,0];const pointerDown=(e:PointerEvent)=>{down=[e.clientX,e.clientY];};
   const pointerUp=(e:PointerEvent)=>{if(useStore.getState().feedStatus==='catchup'||e.button!==0||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;const b=el.getBoundingClientRect();ray.setFromCamera(new T.Vector2((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1),camera);const hit=ray.intersectObjects([...rats.values()].map(m=>m.root),true)[0];let obj:T.Object3D|null=hit?.object??null;while(obj&&!obj.userData.id)obj=obj.parent;useStore.getState().focus(obj?.userData.id??null);};
-  const onControlStart=()=>{overview=false;useStore.getState().focus(null);flight=null;};
+  const onControlStart=()=>{overview=false;useStore.getState().focus(null);seasonTween=null;flight=null;};
   renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);controls.addEventListener('start',onControlStart);
   let playArea=0;
   action.current=v=>{flight=null;if(v==='reset')reset();else {overview=false;if(v==='play'){useStore.getState().focus(null);const p=habitatRoutes[playArea++%habitatRoutes.length][74];controls.target.copy(point(p.x,p.z));camera.position.copy(controls.target).add(new T.Vector3(5,7,8));}else if(v==='nest'){useStore.getState().focus(null);controls.target.copy(nest);camera.position.copy(nest).add(new T.Vector3(5,8,9));}else camera.position.sub(controls.target).multiplyScalar(v==='in'?.8:1.25).clampLength(3,controls.maxDistance).add(controls.target);}controls.update();};
@@ -160,14 +171,19 @@ export default function Burrow3D(){
     else{camera.position.add(selected.position.clone().sub(controls.target));controls.target.copy(selected.position);}
    }
    if(import.meta.env.DEV)el.dataset.cameraFlight=JSON.stringify({active:!!flight,progress:flight?.t??1,duration:flight?.duration??0,focused,position:camera.position.toArray(),target:controls.target.toArray()});
-   lastFocused=focused;enrichment.update(world,dt,reduced.matches&&!motionOverride.current);controls.enableDamping=!reduced.matches||motionOverride.current;controls.update();names.begin();if(!replaying)for(const [id,m]of rats){const rat=world.rats[id];if(!rat||rat.deadAt!==null)continue;const petAt=rat.petAt??((world.care?.cooldowns[id+':pet']??0)-3600000),petting=Date.now()>=petAt&&Date.now()-petAt<15000;if(world.care?.owners[id]||rat.minted||petting)names.show(id,petting?'♡ '+rat.name+' · '+tr('Gentle petting','温柔抚摸'):(rat.caregiver?'◇ ':'')+rat.name+(rat.residenceDays?' · '+rat.residenceDays+'d':''),m.root,camera,petting);}names.end();atmosphere.render(dt,reduced.matches&&!motionOverride.current);
+   lastFocused=focused;enrichment.update(world,dt,reduced.matches&&!motionOverride.current);controls.enableDamping=!reduced.matches||motionOverride.current;controls.update();names.begin();if(!replaying)for(const [id,m]of rats){const rat=world.rats[id];if(!rat||rat.deadAt!==null)continue;const petAt=rat.petAt??((world.care?.cooldowns[id+':pet']??0)-3600000),petting=Date.now()>=petAt&&Date.now()-petAt<15000;if(world.care?.owners[id]||rat.minted||petting)names.show(id,petting?'♡ '+rat.name+' · '+tr('Gentle petting','温柔抚摸'):(rat.caregiver?'◇ ':'')+rat.name+(rat.residenceDays?' · '+rat.residenceDays+'d':''),m.root,camera,petting);}names.end();
+   if(seasonScene&&seasonState){const state=seasonState.getState(),still=reduced.matches&&!motionOverride.current;if(previewFocus!==state.focus){previewFocus=state.focus;let toTarget:T.Vector3,toPos:T.Vector3;if(state.focus){overview=false;useStore.getState().focus(null);const crowning=state.winner===state.focus;toTarget=seasonScene.anchor(state.focus).add(new T.Vector3(0,crowning?3.2:2.8,-1.8));toPos=toTarget.clone().add(crowning?new T.Vector3(2.5,6.5,-15.5):new T.Vector3(1.5,7,-14));}else{const keepPos=camera.position.clone(),keepTarget=controls.target.clone();overview=true;fitOverview();toPos=camera.position.clone();toTarget=controls.target.clone();camera.position.copy(keepPos);controls.target.copy(keepTarget);}if(still){camera.position.copy(toPos);controls.target.copy(toTarget);controls.update();seasonTween=null;}else seasonTween={t:0,fromPos:camera.position.clone(),fromTarget:controls.target.clone(),toPos,toTarget};}if(seasonTween){seasonTween.t=Math.min(1,seasonTween.t+dt/1.3);const e=seasonTween.t<.5?4*seasonTween.t**3:1-(-2*seasonTween.t+2)**3/2;camera.position.lerpVectors(seasonTween.fromPos,seasonTween.toPos,e);controls.target.lerpVectors(seasonTween.fromTarget,seasonTween.toTarget,e);if(seasonTween.t>=1)seasonTween=null;}seasonScene.play(state.event);for(const id of ['NVDA','AAPL','AMZN'] as const){seasonScene.setScore(id,state.scores[id]);seasonScene.setShieldUntil(id,state.shieldUntil[id]);}seasonScene.setHover(state.hover);seasonScene.reveal(state.winner,state.reveal);seasonScene.update(dt,reduced.matches&&!motionOverride.current,quality.level,camera);if(import.meta.env.DEV)el.dataset.seasonPreview=JSON.stringify(seasonScene.diagnostics());else el.dataset.seasonNests='live';}
+   // Count the entire preview frame, including postprocessing, instead of only the final screen quad.
+   if(seasonPreview){renderer.info.autoReset=false;renderer.info.reset();}
+   atmosphere.render(dt,reduced.matches&&!motionOverride.current);
    telemetryFrames++;if(time-telemetryAt>=1000){const fps=telemetryFrames*1000/(time-telemetryAt);const info={fps:Math.round(fps*10)/10,quality:quality.profile.name,rats:rats.size,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,pixelRatio:renderer.getPixelRatio()};el.dataset.performance=JSON.stringify(info);if(performanceLabel)performanceLabel.textContent=`${info.fps} FPS · ${info.quality} · ${info.rats} rats`;telemetryAt=time;telemetryFrames=0;}
 
   });
-  return()=>{atmosphere.dispose();document.removeEventListener('visibilitychange',onVisibility);performanceLabel?.remove();disposeCourtyard();names.dispose();disposed=true;reduced.removeEventListener('change',onMotionChange);renderer.domElement.removeEventListener('webglcontextlost',contextLost);observer.disconnect();renderer.setAnimationLoop(null);controls.removeEventListener('start',onControlStart);controls.dispose();renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);for(const m of rats.values())m.dispose();rats.clear();blenderRats?.dispose();assets.dispose();const gs=new Set<T.BufferGeometry>(),ms=new Set<T.Material>();scene.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.LineSegments){gs.add(o.geometry);(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>ms.add(m));}});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());rats.clear();sun.shadow.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();action.current=()=>{};};
+  return()=>{seasonScene?.dispose();atmosphere.dispose();document.removeEventListener('visibilitychange',onVisibility);performanceLabel?.remove();disposeCourtyard();names.dispose();disposed=true;reduced.removeEventListener('change',onMotionChange);renderer.domElement.removeEventListener('webglcontextlost',contextLost);observer.disconnect();renderer.setAnimationLoop(null);controls.removeEventListener('start',onControlStart);controls.dispose();renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);for(const m of rats.values())m.dispose();rats.clear();blenderRats?.dispose();assets.dispose();const gs=new Set<T.BufferGeometry>(),ms=new Set<T.Material>();scene.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.LineSegments){gs.add(o.geometry);(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>ms.add(m));}});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());rats.clear();sun.shadow.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();action.current=()=>{};};
  },[]);
  return <><div className={`burrow-host${catchingUp ? ' is-catching-up' : ''}`} ref={host} aria-label="Interactive 3D colony" />{error&&<p className="render-error">3D unavailable. Enable WebGL to view the colony.</p>}<CatchupOverlay /><div className="scene-controls"><span className="motion-version" role="status">{motionStatus.includes('12')?tr('Natural motion · 12','自然动作 · 12'):motionStatus.includes('reserva')?tr('Fallback model','备用模型'):tr('Loading animation…','正在加载动画…')}{reducedMotion?tr(' · reduced motion',' · 减少动态效果'):''}</span>{reducedMotion&&<button onClick={()=>{motionOverride.current=true;setReducedMotion(false);}}>{tr("Enable animation","启用动画")}</button>}<button onClick={()=>action.current('in')} aria-label="Zoom in">+</button><button onClick={()=>action.current('out')} aria-label="Zoom out">−</button><button onClick={()=>action.current('nest')}>{tr("Nest","巢穴")}</button><button onClick={()=>action.current('play')}>{tr("Play areas","活动区")}</button><button onClick={()=>action.current('reset')}>{tr("Overview","总览")}</button><button onClick={()=>{const first=Object.values(getWorld().rats).find(r=>r.deadAt===null);if(first)useStore.getState().focus(first.id);}}>{tr("Follow a rat","跟随大鼠")}</button></div></>;
 }
+
 
 
 

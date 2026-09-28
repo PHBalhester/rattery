@@ -1,3 +1,4 @@
+import {SeasonEvents} from './season-events.js';
 import {Contract,JsonRpcProvider,Wallet,keccak256,id} from 'ethers';
 import type {Pool} from 'pg';
 import {StagingAuth} from './auth.js';
@@ -10,10 +11,10 @@ export const SEASON_ID=id('RATTERY-SEASON-1-2026-09-28');
 export const SEASON_ABI=['function token() view returns(address)','function quoteSigner() view returns(address)','function operator() view returns(address)','function season() view returns(bytes32)','function opensAt() view returns(uint64)','function closesAt() view returns(uint64)','function honorEntryQuote() view returns(bool)','function paused() view returns(bool)','function colonySlot() view returns(uint32)','function members(address) view returns(uint256 id,uint8 nest)','function nonces(address) view returns(uint256)','function contributions(uint256) view returns(uint256)','function nests(uint8) view returns(uint256 score,uint256 gross,uint64 lastProduction,uint64 shieldUntil,uint64 shieldReady,uint64 attackReady,uint8 halfPoint)','function applyColonyPoints(uint32 slot,int8[3] deltas)'];
 export const serial=(v:unknown)=>JSON.parse(JSON.stringify(v,(_,x)=>typeof x==='bigint'?x.toString():x));
 export class SeasonService{
- readonly provider:JsonRpcProvider;readonly signer:Wallet;readonly router:Contract;readonly config:SeasonBurnConfig;
+ readonly events:SeasonEvents;readonly provider:JsonRpcProvider;readonly signer:Wallet;readonly router:Contract;readonly config:SeasonBurnConfig;
  constructor(readonly pool:Pool,readonly auth:StagingAuth,readonly read:ReadRPC,readonly routerAddress:string,readonly runtimeHash:string,rpcURL:string,key:string,readonly clock=Date.now){
   if(!/^0x[0-9a-fA-F]{40}$/.test(routerAddress)||!/^0x[0-9a-fA-F]{64}$/.test(runtimeHash))throw Error('Season configuration required');
-  this.provider=new JsonRpcProvider(rpcURL,4663,{staticNetwork:true});this.signer=new Wallet(key,this.provider);this.router=new Contract(routerAddress,SEASON_ABI,this.provider);
+  this.events=new SeasonEvents(read,routerAddress,clock);this.provider=new JsonRpcProvider(rpcURL,4663,{staticNetwork:true});this.signer=new Wallet(key,this.provider);this.router=new Contract(routerAddress,SEASON_ABI,this.provider);
   this.config={chainId:4663,router:routerAddress,token:'0xc322305e79337300b59ff48389f8c9a1d9e0de76',quoteSigner:this.signer.address};
  }
  async initialize(){
@@ -28,7 +29,7 @@ export class SeasonService{
   const [paused,slot,...rows]=await Promise.all([this.router.paused(),this.router.colonySlot(),...[1,2,3].map(n=>this.router.nests(n))]);
   const expected=Math.floor((Math.min(now,SEASON_CLOSE)-SEASON_OPEN)/600),phase=now<SEASON_OPEN?'scheduled':now>=SEASON_CLOSE?'closed':paused?'paused':Number(slot)!==expected?'updating':'open';
   const member=wallet?await this.router.members(wallet):null;
-  return {protocol:1,phase,serverAt:now*1000,opensAt:SEASON_OPEN*1000,closesAt:SEASON_CLOSE*1000,switchClosesAt:(SEASON_CLOSE-18000)*1000,config:this.config,runtimeHash:this.runtimeHash,wallet,
+  return {protocol:1,events:await this.events.get(),phase,serverAt:now*1000,opensAt:SEASON_OPEN*1000,closesAt:SEASON_CLOSE*1000,switchClosesAt:(SEASON_CLOSE-18000)*1000,config:this.config,runtimeHash:this.runtimeHash,wallet,
    member:member?{id:String(member.id),nest:Number(member.nest),contribution:String(await this.router.contributions(member.id))}:null,
    nests:rows.map((n,i)=>({id:i+1,ticker:['NVDA','AAPL','AMZN'][i],score:String(n.score),halfPoint:Number(n.halfPoint),gross:String(n.gross),shieldUntil:Number(n.shieldUntil)*1000,shieldReady:Number(n.shieldReady)*1000,attackReady:Number(n.attackReady)*1000})),colonySlot:Number(slot)};
  }
