@@ -14,6 +14,7 @@ import AmbientAudio from "./render/AmbientAudio";
 import Count from "./render/Count";
 import RatTour from "./render/RatTour";
 import SeasonRail,{SeasonNavButton} from "./render/SeasonRail";
+import MobileDock from "./render/MobileDock";
 import { SITE, ponsUrl } from "./config";
 import { truncateCA } from "./copy/pons";
 
@@ -154,6 +155,7 @@ export default function App() {
 
         <div ref={tapeRef} className="tape-wrap floating-panel trade-panel"><TradeTape /><footer className="colony-footer"><div className="footer-disclaimer"><TokenBurn /><span className="experiment-label">{tr("RATTERY · A digital colony experiment.","RATTERY · 数字群落实验。")}</span><span>{tr("Simulated behavior, not scientific measurements.","行为为模拟，并非科学测量结果。")}</span>{staging&&<span className="footer-staging">{shared?tr("STAGING · Shared observation · No real payments","测试环境 · 共享观察 · 无真实支付"):tr("STAGING · Demo only · No real payments","测试环境 · 仅演示 · 无真实支付")}</span>}</div><nav aria-label={tr("Project links","项目链接")}><a href={SITE.x} target="_blank" rel="noopener noreferrer">X / Twitter</a><a href={SITE.github} target="_blank" rel="noopener noreferrer">GitHub</a></nav></footer></div>
       </main>
+      <MobileDock />
     </div>
   );
 }

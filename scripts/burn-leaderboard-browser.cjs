@@ -19,11 +19,13 @@ const assert=require('node:assert/strict');
    assert.equal(await p.locator('.burn-board').count(),0,'Leaderboard remains closed until requested');
    await p.route('**/api/burners',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(board)}));
    await p.goto(base+'?burners');
-   const toggle=p.locator(width<780?'.burn-nav-toggle':'.season-board-toggle');await toggle.waitFor();
+   // Phones reach the leaderboard through the dock's Season sheet.
+   if(width<780)await p.locator('.dock-tab.is-season').click();
+   const toggle=p.locator(width<780?'.dock-sheet .season-board-toggle':'.season-rail .season-board-toggle');await toggle.waitFor();
    assert.equal(await p.locator('.burn-board').count(),0,'Hidden until toggled');
-   assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+   if(width>=780)assert.equal(await toggle.getAttribute('aria-expanded'),'false');
    await toggle.click();await p.locator('.burn-row[data-rank="3"]').waitFor();
-   assert.equal(await toggle.getAttribute('aria-expanded'),'true');
+   if(width>=780)assert.equal(await toggle.getAttribute('aria-expanded'),'true');
    assert.deepEqual((await p.locator('.burn-share').allTextContents()).map(s=>s.trim()),['50.00%','25.00%','<0.01%']);
    assert.deepEqual((await p.locator('.burn-who a').allTextContents()),['0xaaaa…aaaa','0xbbbb…bbbb','0xcccc…cccc']);
    assert.equal(await p.locator('.burn-nest.is-none').count(),3,'No nests before Season I');
@@ -31,7 +33,7 @@ const assert=require('node:assert/strict');
    assert.equal(await p.locator('.burn-who a').first().getAttribute('rel'),'noopener noreferrer');
    const box=await p.locator('.burn-board').boundingBox();assert(box&&box.x>=0&&box.x+box.width<=width+1,'Panel inside viewport');
    await p.keyboard.press('Escape');await p.locator('.burn-board').waitFor({state:'detached'});
-   assert.equal(await p.evaluate(()=>document.activeElement?.classList.contains('season-board-toggle')||document.activeElement?.classList.contains('burn-nav-toggle')),true,'Focus returns to the toggle');
+   assert.equal(await p.evaluate(()=>document.activeElement?.classList.contains('season-board-toggle')||document.activeElement?.classList.contains('burn-nav-toggle')||document.activeElement?.classList.contains('dock-tab')),true,'Focus returns to the toggle');
    assert.deepEqual(errors,[]);console.log('PASS burn leaderboard',width,height);await p.close();
   }
  }finally{await browser.close();}

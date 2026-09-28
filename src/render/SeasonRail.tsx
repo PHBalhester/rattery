@@ -35,7 +35,7 @@ function BoardHost(){
  // The resident tour sits at the top centre; step it aside while the leaderboard is open.
  useEffect(()=>{document.documentElement.classList.toggle('burn-open',open);return()=>document.documentElement.classList.remove('burn-open');},[open]);
  if(!BurnLeaderboard||!open)return null;
- return <div id="burn-board" className="burn-board-host"><Suspense fallback={null}><BurnLeaderboard allowDemo={!SEASON_LEADERBOARD_LIVE} onClose={()=>{useBoard.setState({open:false});Array.from(document.querySelectorAll<HTMLElement>('.season-board-toggle,.burn-nav-toggle')).find(b=>b.offsetParent!==null)?.focus();}}/></Suspense></div>;
+ return <div id="burn-board" className="burn-board-host"><Suspense fallback={null}><BurnLeaderboard allowDemo={!SEASON_LEADERBOARD_LIVE} onClose={()=>{useBoard.setState({open:false});Array.from(document.querySelectorAll<HTMLElement>('.season-board-toggle,.burn-nav-toggle,.dock-tab.is-season')).find(b=>b.offsetParent!==null)?.focus();}}/></Suspense></div>;
 }
 
 function TutorialHost(){
@@ -79,4 +79,18 @@ export default function SeasonRail(){
 export function SeasonNavButton(){
  useLanguage(s=>s.language);
  return <>{BOARD_ON&&<BoardToggle compact/>}{TUTORIAL_ON?<button type="button" className="season-nav-button" onClick={()=>openTutorial()}>✦ Season I · {tr('Tutorial','教程')}</button>:<button type="button" className="season-nav-button" disabled>✦ Season I · {tr('Coming soon','即将推出')}</button>}</>;
+}
+/** Season content for the mobile dock's Season sheet: same gates and actions as the desktop card. */
+export function SeasonSheetBody({onAction}:{onAction:()=>void}){
+ useLanguage(s=>s.language);
+ return <div className="dock-season">
+  <span className="season-kicker">{tr('RATTERY · Colony games','RATTERY · 群落赛事')}</span>
+  <div className="season-title-row"><Flourish/><h2 lang="en">Season&nbsp;<span>I</span></h2><Flourish flip/></div>
+  <span className="season-status"><i aria-hidden="true"/>{tr('Coming soon','即将推出')}</span>
+  <div className="dock-season-actions">
+   {TUTORIAL_ON?<button type="button" className="season-button is-primary" onClick={()=>{onAction();openTutorial();}}><span aria-hidden="true">▶</span>{tr('Tutorial','教程')}</button>:<button type="button" className="season-button" disabled><span aria-hidden="true">▶</span>{tr('Tutorial','教程')}<small>{tr('Coming soon','即将推出')}</small></button>}
+   <button type="button" className="season-button" disabled><span aria-hidden="true">§</span>{tr('Whitepaper','白皮书')}<small>{tr('Coming soon','即将推出')}</small></button>
+   {BOARD_ON&&<button type="button" className="season-board-toggle" onClick={()=>{onAction();useBoard.setState({open:true});}}><span aria-hidden="true" className="burn-flame">🔥</span>{tr('Top burners','销毁排行')}<span aria-hidden="true" className="burn-chevron">›</span></button>}
+  </div>
+ </div>;
 }
