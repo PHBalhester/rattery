@@ -18,6 +18,15 @@ export default function WalletConnection(){
  failed:['Could not verify the connection. Unlock your wallet and try again.','无法验证连接，请解锁钱包后重试。']
  };
  const close=()=>useWallet.setState({open:false});
+ // A successful sign-in finishes the flow: show the verified state briefly, then close the panel.
+ // Only the transition to authenticated closes it, so reopening the panel later to sign out keeps it open.
+ const wasAuthenticated=useRef(w.authenticated);
+ useEffect(()=>{
+  const before=wasAuthenticated.current;wasAuthenticated.current=w.authenticated;
+  if(before||!w.authenticated||!w.open)return;
+  const t=window.setTimeout(()=>{if(useWallet.getState().authenticated)close();},matchMedia('(prefers-reduced-motion: reduce)').matches?300:1200);
+  return()=>window.clearTimeout(t);
+ },[w.authenticated,w.open]);
  return <><button className="chip wallet-trigger" onClick={()=>useWallet.setState({open:true})} aria-haspopup="dialog">{w.account?w.account.slice(0,6)+'…'+w.account.slice(-4):tr('Wallet','钱包')}</button>
  <dialog ref={dialog} className="wallet-dialog" aria-labelledby="wallet-title" onCancel={close} onClose={close}>
  <header><span>RATTERY</span><button className="chip" onClick={close} aria-label={tr('Close wallet panel','关闭钱包面板')}>×</button></header>
