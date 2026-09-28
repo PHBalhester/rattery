@@ -47,3 +47,11 @@ Keep the development-only 3D nest artwork separate. Weekly closing score adjustm
 - First scheduled checkpoint at 13:10 confirmed: `0x076a1b6fa60f4b1922b03c7d6124a343e9018d071182ccee8dfe6e0d75cd0845`. Stored observation: 67 living residents, stress 0.3913625531 (neutral), half-point deltas [0,0,0]. Persisted confirmed=true and onchain colonySlot=1.
 - Public-site checks passed for nests, scores, four actions, prize panel, stock prices, mobile-width layout, no demo globals and no page exceptions. Hardware GPU test: RTX 4060 Ti. One production sample with 67 residents was approximately 40 FPS at balanced quality; the earlier 60 FPS integration sample had four demo residents and is not equivalent. Physical phone/laptop performance is still unverified.
 - The earlier development-only-art note above is superseded by this explicit release. Winner fireworks still require an authoritative final winner; do not trigger based solely on the current leader.
+
+## Transaction guidance fix
+
+Production source `25f7be0`; Vercel `rattery-ngle5mgrd-pedrohbalhester-2682s-projects.vercel.app`; Railway `8ca0e8cd-c61c-446a-b7dc-e067e4836d5a`.
+
+The reported transaction `0xa681a5ec61287db2f0a9f30f7bcb6fcb21f9e5d8cc66e27f95e423880663c3f6` reverted (status 0, no logs). Read-only replay at its block returned ERC20InsufficientBalance: approximately 74,191.9911 RATTERY available versus 154,954.2078 needed. This was not a closed Season. No action burn persisted; gas was spent.
+
+Quotes now include wallet balance and allowance. The UI checks funding again before approval or execution, simulates the transaction before opening the send request, highlights the next step gold and completed steps green, polls submitted receipts automatically, and recovers saved reverted attempts. Pending/confirming/reverted are explicit backend outcomes instead of generic "Season unavailable" errors. Tests cover these outcomes against test PostgreSQL and a browser with mocked wallet sends; the public page's open status and actual gold styling were verified after deployment. The user’s reverted transaction was inspected read-only; no retry was sent on their behalf. A successful paid Season action still needs a funded player's wallet confirmation.
