@@ -13,7 +13,7 @@ import WalletConnection from "./render/WalletConnection";
 import AmbientAudio from "./render/AmbientAudio";
 import Count from "./render/Count";
 import RatTour from "./render/RatTour";
-import SeasonRail,{SeasonNavButton} from "./render/SeasonRail";
+import SeasonRail from "./render/SeasonRail";
 import MobileDock from "./render/MobileDock";
 import { SITE, ponsUrl } from "./config";
 import { truncateCA } from "./copy/pons";
@@ -117,7 +117,6 @@ export default function App() {
           <button aria-expanded={!cinema&&panel==="residents"} aria-controls="residents-panel" onClick={()=>openPanel("residents")}>{tr("Meet the rats","认识大鼠")}</button>
           <button aria-expanded={!cinema&&panel!=="residents"} aria-controls="condition-panel" onClick={()=>openPanel("colony")}>{tr("Colony status","群落状态")} · {known?(alerts.length ? alerts.length+" "+tr("alerts","项警报") : tr("No alerts","无警报")):tr("Connecting…","连接中…")}</button>
           <WelcomeTour />
-          <SeasonNavButton />
           <div className="colony-summary" aria-label={tr("Colony population","群落数量")}>
             <span>{known ? <Count value={living.length}/> : <b>—</b>} {tr("alive","存活")}</span>
             <span aria-hidden="true">/</span>

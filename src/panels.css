@@ -731,3 +731,34 @@
  .burn-board-host{bottom:calc(var(--dock-h) + 12px)!important}
 }
 @media (prefers-reduced-motion:reduce){.dock-indicator,.dock-icon{transition:none!important}.dock-sheet,.dock-sheet *,.dock-backdrop,.dock-dot{animation:none!important}}
+
+/* Season actions stay together directly below the banner, on both layouts. */
+.season-banner{width:100%;text-align:center}
+.season-activity-area{width:100%;margin-top:16px;text-align:left}
+.season-gameplay{padding-top:14px;border-top:1px solid #e8c36a2b}
+.season-gameplay-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.season-gameplay-heading h3{margin:0;color:#f3ecd9;font:600 13px/1.3 "Segoe UI",Arial,sans-serif}
+.season-gameplay-heading>span{color:#cdb98a;font:500 10px/1.3 "Segoe UI",Arial,sans-serif}
+.season-gameplay-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.season-gameplay-action{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;min-height:102px;padding:12px 10px;border:1px solid #e8c36a32;border-radius:10px;background:linear-gradient(145deg,#e8c36a12,#ffffff03);color:#e8ddc5;text-align:left;cursor:default}
+.season-gameplay-action:disabled{opacity:1}
+.season-action-icon{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#e8c36a12;color:#d9bd7b}
+.season-action-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.season-gameplay-action.is-feed .season-action-icon{color:#9fc9a3;background:#82b88715}
+.season-gameplay-action.is-shield .season-action-icon{color:#a6c5de;background:#8fb8e815}
+.season-gameplay-action.is-attack .season-action-icon{color:#dfab91;background:#df957815}
+.season-gameplay-action strong{font:600 13px/1.25 "Segoe UI",Arial,sans-serif}
+.season-action-hint{font:400 11px/1.4 "Segoe UI",Arial,sans-serif;color:#b6b0a1}
+.season-resources{margin-top:14px;padding-top:12px;border-top:1px solid #ffffff12}
+.season-resources .season-actions{margin-top:0!important}
+.season-resources .season-button{min-height:44px}
+.season-resources .season-button.is-primary{background:#e8c36a14;color:#f3d58a;box-shadow:none;border-color:#e8c36a66}
+.season-resources .season-board-toggle{margin-top:8px;font-family:"Segoe UI",Arial,sans-serif;font-size:12px}
+@media(max-width:780px){
+ .dock-season{gap:0}
+ .dock-season .season-activity-area{margin-top:12px}
+ .dock-season .season-gameplay-action{min-height:92px;padding:10px 12px}
+ .dock-season .season-action-hint{font-size:11.5px}
+ .dock-season .season-resources{margin-top:12px;padding-top:10px}
+ .dock-season .season-resources .season-button{min-height:46px}
+}

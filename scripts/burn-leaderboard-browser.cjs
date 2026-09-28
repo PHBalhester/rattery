@@ -15,7 +15,7 @@ const assert=require('node:assert/strict');
    await p.addInitScript(()=>{try{localStorage.setItem('rattery:welcome-explainer:v2','done');localStorage.setItem('rattery:panels','open');}catch{}});
    // Released toggle is available by default; the panel still starts closed.
    await p.goto(base);await p.locator('.wallet-trigger').waitFor();
-   assert.equal(await p.locator('.season-board-toggle,.burn-nav-toggle').count(),2,'Released leaderboard toggles appear on the default page');
+   assert.equal(await p.locator('.season-board-toggle,.burn-nav-toggle').count(),1,'Released leaderboard toggles appear on the default page');
    assert.equal(await p.locator('.burn-board').count(),0,'Leaderboard remains closed until requested');
    await p.route('**/api/burners',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(board)}));
    await p.goto(base+'?burners');

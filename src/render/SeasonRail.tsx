@@ -25,10 +25,37 @@ const BurnLeaderboard=BOARD_BUILD?lazy(()=>import('./BurnLeaderboard')):null;
 const useBoard=create<{open:boolean}>(()=>({open:false}));
 const toggleBoard=()=>useBoard.setState(s=>({open:!s.open}));
 
-function BoardToggle({compact=false}:{compact?:boolean}){
+function BoardToggle({onAction}:{onAction?:()=>void}){
  const open=useBoard(s=>s.open);
- return <button type="button" className={compact?'season-nav-button burn-nav-toggle':'season-board-toggle'} aria-expanded={open} aria-controls="burn-board" onClick={toggleBoard}>
-  <span aria-hidden="true" className="burn-flame">🔥</span>{tr('Top burners','销毁排行')}{!compact&&<span aria-hidden="true" className="burn-chevron">›</span>}</button>;
+ return <button type="button" className="season-board-toggle" aria-expanded={open} aria-controls="burn-board" onClick={()=>{onAction?.();toggleBoard();}}>
+  <span aria-hidden="true" className="burn-flame">🔥</span>{tr('Top burners','销毁排行')}<span aria-hidden="true" className="burn-chevron">›</span></button>;
+}
+
+const GAMEPLAY_ACTIONS=[
+ {id:'join',label:['Join a nest','加入巢穴'],hint:['Choose your team','选择你的队伍'],path:'M3 11l9-8 9 8M5 10v11h14V10M9 21v-7h6v7'},
+ {id:'feed',label:['Feed','喂养'],hint:['Grow your nest’s score','增加巢穴积分'],path:'M4 13h16a8 8 0 0 1-16 0ZM8 9V5m4 4V3m4 6V5'},
+ {id:'shield',label:['Shield','护盾'],hint:['Block a rival attack','抵挡对手攻击'],path:'M12 3l8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Zm-4 9 3 3 5-6'},
+ {id:'attack',label:['Attack','攻击'],hint:['Send a snake to a rival','向对手放出蛇'],path:'M4 18c3 0 3-4 6-4s3 4 6 4 3-6 0-8-6-1-6-4 3-3 6-2M17 4h3m-1-1 1 1-1 1'},
+] as const;
+
+/** One action group for the desktop banner and the mobile Season sheet. Gameplay is not live yet. */
+function SeasonActivities({onAction}:{onAction?:()=>void}){
+ return <div className="season-activity-area">
+  <section className="season-gameplay" aria-label={tr('Season I nest actions','第一赛季巢穴操作')}>
+   <div className="season-gameplay-heading"><h3>{tr('Nest actions','巢穴操作')}</h3><span>{tr('Coming soon','即将推出')}</span></div>
+   <div className="season-gameplay-grid">{GAMEPLAY_ACTIONS.map(a=><button key={a.id} type="button" className={'season-gameplay-action is-'+a.id} disabled title={tr('Available when Season I opens','第一赛季开启后可用')}>
+    <span className="season-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d={a.path}/></svg></span>
+    <strong>{tr(a.label[0],a.label[1])}</strong><span className="season-action-hint">{tr(a.hint[0],a.hint[1])}</span>
+   </button>)}</div>
+  </section>
+  <div className="season-resources">
+   <div className="season-actions">
+    <button type="button" className={'season-button'+(TUTORIAL_ON?' is-primary':'')} disabled={!TUTORIAL_ON} onClick={()=>{onAction?.();openTutorial();}}><span aria-hidden="true">▶</span>{tr('Tutorial','教程')}</button>
+    <button type="button" className="season-button" disabled><span aria-hidden="true">§</span>{tr('Whitepaper','白皮书')}<small>{tr('Coming soon','即将推出')}</small></button>
+   </div>
+   {BOARD_ON&&<BoardToggle onAction={onAction}/>}
+  </div>
+ </div>;
 }
 function BoardHost(){
  const open=useBoard(s=>s.open);
@@ -62,35 +89,26 @@ export default function SeasonRail(){
  useLanguage(s=>s.language);
  return <><div className={`season-column${WINDOWS_ON?' has-windows':''}`}><aside className="season-rail floating-panel" aria-labelledby="season-title">
   <span className="season-corner tl" aria-hidden="true"/><span className="season-corner tr" aria-hidden="true"/><span className="season-corner bl" aria-hidden="true"/><span className="season-corner br" aria-hidden="true"/>
+  <header className="season-banner">
   <span className="season-kicker">{tr('RATTERY · Colony games','RATTERY · 群落赛事')}</span>
   <div className="season-title-row"><Flourish/><h2 id="season-title" lang="en">Season&nbsp;<span>I</span></h2><Flourish flip/></div>
   <p className="season-sub">{tr('A new chapter for the colony','群落的新篇章')}</p>
   <span className="season-status"><i aria-hidden="true"/>{tr('Coming soon','即将推出')}</span>
-  <div className="season-actions">
-   {TUTORIAL_ON?<button type="button" className="season-button is-primary" onClick={()=>openTutorial()}><span aria-hidden="true">▶</span>{tr('Tutorial','教程')}</button>:<button type="button" className="season-button" disabled><span aria-hidden="true">▶</span>{tr('Tutorial','教程')}<small>{tr('Coming soon','即将推出')}</small></button>}
-   <button type="button" className="season-button" disabled><span aria-hidden="true">§</span>{tr('Whitepaper','白皮书')}<small>{tr('Coming soon','即将推出')}</small></button>
-  </div>
-  {BOARD_ON&&<BoardToggle/>}
+  </header>
+  <SeasonActivities/>
   {TUTORIAL_ON&&<TutorialHost/>}
  </aside>{WINDOWS_ON&&<WindowsHost/>}</div>{BOARD_ON&&<BoardHost/>}</>;
 }
 
-/** Mobile has the same locked release state as desktop. */
-export function SeasonNavButton(){
- useLanguage(s=>s.language);
- return <>{BOARD_ON&&<BoardToggle compact/>}{TUTORIAL_ON?<button type="button" className="season-nav-button" onClick={()=>openTutorial()}>✦ Season I · {tr('Tutorial','教程')}</button>:<button type="button" className="season-nav-button" disabled>✦ Season I · {tr('Coming soon','即将推出')}</button>}</>;
-}
 /** Season content for the mobile dock's Season sheet: same gates and actions as the desktop card. */
 export function SeasonSheetBody({onAction}:{onAction:()=>void}){
  useLanguage(s=>s.language);
  return <div className="dock-season">
+  <header className="season-banner">
   <span className="season-kicker">{tr('RATTERY · Colony games','RATTERY · 群落赛事')}</span>
   <div className="season-title-row"><Flourish/><h2 lang="en">Season&nbsp;<span>I</span></h2><Flourish flip/></div>
   <span className="season-status"><i aria-hidden="true"/>{tr('Coming soon','即将推出')}</span>
-  <div className="dock-season-actions">
-   {TUTORIAL_ON?<button type="button" className="season-button is-primary" onClick={()=>{onAction();openTutorial();}}><span aria-hidden="true">▶</span>{tr('Tutorial','教程')}</button>:<button type="button" className="season-button" disabled><span aria-hidden="true">▶</span>{tr('Tutorial','教程')}<small>{tr('Coming soon','即将推出')}</small></button>}
-   <button type="button" className="season-button" disabled><span aria-hidden="true">§</span>{tr('Whitepaper','白皮书')}<small>{tr('Coming soon','即将推出')}</small></button>
-   {BOARD_ON&&<button type="button" className="season-board-toggle" onClick={()=>{onAction();useBoard.setState({open:true});}}><span aria-hidden="true" className="burn-flame">🔥</span>{tr('Top burners','销毁排行')}<span aria-hidden="true" className="burn-chevron">›</span></button>}
-  </div>
+  </header>
+  <SeasonActivities onAction={onAction}/>
  </div>;
 }
