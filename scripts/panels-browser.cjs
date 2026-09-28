@@ -12,16 +12,16 @@ const path=require('node:path');
   await p.getByRole('button',{name:'Explore the colony',exact:false}).click();
   await p.waitForSelector('.burrow-host[data-rats="blender"]');
   const panel=p.locator('.condition-panel');
-  if(width<780){assert(!await panel.isVisible());await p.getByRole('button',{name:'Show info',exact:true}).click();}
+  if(width<780){assert(!await panel.isVisible());await p.locator('.dock-tab.is-colony').click();}
   assert.equal(await p.getByRole('meter').count(),6);
   const box=await panel.boundingBox();assert(box&&box.x>=0&&box.x+box.width<=width+1,'Condition panel out of viewport');
   if(width<780){const nav=await p.locator('.colony-navigation').boundingBox();assert(box.y>=nav.y+nav.height,'Navigation must not cover the panel tabs');}
-  assert(await p.locator('.chip-trade').isVisible());
+  assert(await p.locator(width<780?'.dock-tab.is-trade':'.chip-trade').isVisible());
   assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Page overflows horizontally');
   await p.screenshot({path:path.join(outputDir,`panels-${width}.png`)});
   await p.getByRole('button',{name:'Rat',exact:true}).click();
   assert(await p.getByText('Meet a resident',{exact:true}).isVisible());
-  if(width<780){await p.getByRole('button',{name:'Meet the rats',exact:true}).click();await p.locator('.production-residents button').first().click();}
+  if(width<780){await p.locator('.dock-tab.is-rats').click();await p.locator('.production-residents button').first().click();}
   else await p.getByRole('button',{name:'Follow a rat',exact:true}).click();
   await p.getByText('Individual observation',{exact:true}).waitFor();
   assert(await p.getByText('Demo mode · fictional tokens',{exact:true}).count());
@@ -34,9 +34,10 @@ const path=require('node:path');
   await p.getByRole('button',{name:'Colony',exact:true}).click();
   await p.getByText('Space and social life',{exact:true}).click();
   assert(await p.getByText('Cohesion',{exact:true}).isVisible());
-  await p.getByRole('button',{name:'Hide info',exact:true}).click();
-  await panel.waitFor({state:'hidden'});assert(await p.locator('.chip-trade').isVisible());
-  await p.getByRole('button',{name:'Show info',exact:true}).click();await panel.waitFor({state:'visible'});
+  // Phones close and reopen panels from the dock; larger screens use Hide info / Show info.
+  if(width<780)await p.locator('.dock-tab.is-colony').click();else await p.getByRole('button',{name:'Hide info',exact:true}).click();
+  await panel.waitFor({state:'hidden'});assert(await p.locator(width<780?'.dock-tab.is-trade':'.chip-trade').isVisible());
+  if(width<780)await p.locator('.dock-tab.is-colony').click();else await p.getByRole('button',{name:'Show info',exact:true}).click();await panel.waitFor({state:'visible'});
   const seasonButtons=p.locator('.season-rail .season-actions button');
   assert.equal(await seasonButtons.count(),2);
   assert(await seasonButtons.nth(0).isEnabled());assert(await seasonButtons.nth(1).isDisabled());

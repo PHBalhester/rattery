@@ -25,7 +25,7 @@ function Split({parts}:{parts:[number,string,string][]}){return <div className="
 function Formula({children}:{children:ReactNode}){return <div className="stut-formula">{children}</div>;}
 
 const STEPS:Step[]=[
- {id:'intro',chapter:['Welcome','欢迎'],title:['Three nests. One week. One winner.','三个巢穴，一周，一位赢家。'],targets:['.season-rail','.season-nav-button'],cue:{nest:null},body:()=><>
+ {id:'intro',chapter:['Welcome','欢迎'],title:['Three nests. One week. One winner.','三个巢穴，一周，一位赢家。'],targets:['.season-rail','.season-nav-button','.dock-tab.is-season'],cue:{nest:null},body:()=><>
   <p>{tr('Season I turns the colony into a weekly competition on Robinhood Chain. You join the nest of NVIDIA, Apple or Amazon, burn RATTERY to act, and the winning nest shares a prize paid in that company\'s Stock Token.','第一赛季把群落变成Robinhood Chain上的每周竞赛。你加入NVIDIA、Apple或Amazon的巢穴，销毁RATTERY进行操作，获胜巢穴将分享以该公司Stock Token支付的奖金。')}</p>
   <Nests/>
   <p>{tr('Holders get a separate share, even without playing.','持有者即使不参赛，也可获得单独的一份奖励。')}</p>
@@ -33,7 +33,7 @@ const STEPS:Step[]=[
  {id:'nests',chapter:['The nests','巢穴'],title:['Each nest is home to a resident couple','每个巢穴都住着一对居民'],targets:['.nest-preview-cards'],cue:{nest:null},body:()=><>
   <p>{tr('Points build the nest. Players can feed their own nest, protect it with a shield or attack a rival nest.','积分让巢穴成长。玩家可以喂养自己的巢穴、用护盾保护它，或攻击对手巢穴。')}</p>
   <List items={[tr('Snake attacks and point losses never kill resident rats.','蛇的攻击和积分损失永远不会杀死居民大鼠。'),tr('Permanent residents keep their identities and protection.','永久居民保留其身份与保护。'),tr('One active nest membership per wallet.','每个钱包只能有一个有效的巢穴成员资格。')]}/></>},
- {id:'clock',chapter:['The weekly clock','每周时间表'],title:['Every week is a new competition','每周都是一场新的竞赛'],targets:['.season-prize-clock','.season-status','.season-rail','.season-nav-button'],body:()=><>
+ {id:'clock',chapter:['The weekly clock','每周时间表'],title:['Every week is a new competition','每周都是一场新的竞赛'],targets:['.season-prize-clock','.season-status','.season-rail','.season-nav-button','.dock-tab.is-season'],body:()=><>
   <p>{tr('This line of the Weekly Prize window counts down to the close and shows the entry price right now.','每周奖金窗口的这一行显示距结束的倒计时以及当前入场价。')}</p>
   <ol className="stut-timeline">
    <li><b>{tr('Mon 13:00','周一 13:00')}</b><span>{tr('Competition opens','竞赛开启')}</span></li>
@@ -46,7 +46,7 @@ const STEPS:Step[]=[
   <p>{tr('Entry gives your nest 100 points and you 100 contribution units, at any time. Joining later costs more but buys nothing extra.','无论何时加入，入场都会为巢穴带来100积分，并为你带来100贡献单位。越晚加入价格越高，但不会得到额外收益。')}</p>
   <Rows head={[tr('Time left','剩余时间'),tr('Entry','入场费')]} rows={[[tr('More than 72 h','超过72小时'),'USD 10'],[tr('72 to 36 h','72至36小时'),'USD 15'],[tr('36 to 12 h','36至12小时'),'USD 20'],[tr('Final 12 h','最后12小时'),'USD 30']]}/>
   <Note>{tr('Switching nests means paying the current entry again. Points you produced stay with the old nest, and that membership\'s reward rights are lost for good.','更换巢穴需要再次支付当前入场费。你产生的积分留在原巢穴，该成员资格的奖励权利将永久失去。')}</Note></>},
- {id:'burn',chapter:['Paying','支付'],title:['Priced in dollars, paid by burning RATTERY','以美元定价，通过销毁RATTERY支付'],targets:['.chip-trade','.ca-chip'],body:()=><>
+ {id:'burn',chapter:['Paying','支付'],title:['Priced in dollars, paid by burning RATTERY','以美元定价，通过销毁RATTERY支付'],targets:['.chip-trade','.ca-chip','.dock-tab.is-trade'],body:()=><>
   <p>{tr('Every action has a fixed USD price. The RATTERY amount comes from the live pool price and is shown exactly before you confirm. A quote lasts 60 seconds.','每项操作都有固定的美元价格。RATTERY数量根据实时池价格计算，并在确认前精确显示。报价有效期为60秒。')}</p>
   <List items={[tr('Entries, feeds, shields and attacks all burn RATTERY. Burned tokens are not prize money.','入场、喂养、护盾和攻击都会销毁RATTERY。被销毁的代币不属于奖金。'),tr('A rejected or expired action burns nothing. A failed transaction can still cost network gas.','被拒绝或过期的操作不会销毁任何代币，但失败的交易仍可能产生网络费用。'),tr('If the price feed is stale, new quotes pause.','价格数据过时时，暂停新的报价。')]}/></>},
  {id:'feed',chapter:['Actions · 1 of 3','操作 · 1/3'],title:['Feed: grow your nest','喂养：让巢穴成长'],targets:['.nest-card[data-nest="NVDA"] [aria-label="Feed +20"]','.nest-card[data-nest="NVDA"]'],cue:{nest:'NVDA',play:'feed'},body:()=><>
@@ -77,11 +77,11 @@ const STEPS:Step[]=[
   <div className="stut-pair"><span className="up">+2% → <b>+20</b></span><span className="down">−2% → <b>−20</b></span></div>
   <p>{tr('Applied once at settlement, from the Friday close before the week to the Friday close within it. It is not multiplied by score or players, and it has no cap.','在结算时一次性计入，按本周前一个周五收盘价到本周周五收盘价计算。不按积分或人数放大，也没有上限。')}</p>
   <Note>{tr('The Week column shows this bonus so far. Final scores never go below zero.','“本周”列显示目前的调整。最终积分不会低于零。')}</Note></>},
- {id:'winner',chapter:['Winning','获胜'],title:['Highest score wins','最高分获胜'],targets:['.nest-preview-cards','.season-rail','.season-nav-button'],cue:{nest:'NVDA',play:'winner'},body:()=><>
+ {id:'winner',chapter:['Winning','获胜'],title:['Highest score wins','最高分获胜'],targets:['.nest-preview-cards','.season-rail','.season-nav-button','.dock-tab.is-season'],cue:{nest:'NVDA',play:'winner'},body:()=><>
   <p>{tr('If nests tie, the order is:','如果出现平局，依次比较：')}</p>
   <ol className="stut-steps"><li>{tr('Most points produced by entries and feeds.','入场和喂养产生的积分最多者。')}</li><li>{tr('The nest that reached that total first on chain.','在链上最先达到该总数的巢穴。')}</li><li>{tr('Season I priority: NVIDIA, Apple, Amazon.','第一赛季优先顺序：NVIDIA、Apple、Amazon。')}</li></ol>
   <Note>{tr('The crown shown here is a scene demo, not a prediction.','此处的王冠仅为场景演示，并非预测。')}</Note></>},
- {id:'pot',chapter:['Rewards','奖励'],title:['Where the prize comes from','奖金来源'],targets:['.season-prize','.season-rail','.season-nav-button'],body:()=><>
+ {id:'pot',chapter:['Rewards','奖励'],title:['Where the prize comes from','奖金来源'],targets:['.season-prize','.season-rail','.season-nav-button','.dock-tab.is-season'],body:()=><>
   <p>{tr('Season I opens with a committed 1,000 USDC, plus 70% of the weekly ETH fees the project receives.','第一赛季以承诺的1,000 USDC开启，另加项目每周收到的ETH手续费的70%。')}</p>
   <Split parts={[[70,tr('Prizes','奖金'),'#e8c36a'],[15,tr('Buyback & burn','回购销毁'),'#ef7a5a'],[15,tr('Team & infra','团队与基础设施'),'#7f8d86']]}/>
   <p>{tr('Prize money is then split:','奖金再分配为：')}</p>
@@ -91,12 +91,12 @@ const STEPS:Step[]=[
   <Formula><span>{tr('Weight','权重')}</span><i>=</i><span>{tr('your contribution','你的贡献')}</span><i>×</i><span>(1 + {tr('holder bonus','持有奖励')} + {tr('burner bonus','销毁奖励')})</span></Formula>
   <p>{tr('The 80% pool is shared in proportion to each winning member\'s weight.','80%的奖池按每位获胜成员的权重比例分配。')}</p>
   <List items={[tr('Only entry and feeding create contribution. Shields and attacks do not.','只有入场和喂养产生贡献，护盾和攻击不产生。'),tr('A losing membership gets no active prize, but the wallet may still earn as a holder.','失败方的成员资格没有主动奖金，但钱包仍可能作为持有者获得奖励。'),tr('No per-wallet cap: large contributions can win large shares.','每个钱包没有上限：大额贡献可能获得大额份额。')]}/></>},
- {id:'hold',chapter:['Rewards','奖励'],title:['Just holding counts too','仅持有也有奖励'],targets:['.chip-trade','.ca-chip'],body:()=><>
+ {id:'hold',chapter:['Rewards','奖励'],title:['Just holding counts too','仅持有也有奖励'],targets:['.chip-trade','.ca-chip','.dock-tab.is-trade'],body:()=><>
   <p>{tr('The 20% holder pool follows your time-weighted average RATTERY balance from Monday 13:00 to the next Monday 00:00. Minimum average: USD 25, fixed in RATTERY when the season opens. LP positions do not count.','20%的持有者奖池按你从周一13:00到下周一00:00的时间加权平均RATTERY余额分配。最低平均余额：25美元，于赛季开启时换算为固定RATTERY数量。流动性池仓位不计入。')}</p>
   <Rows head={[tr('Held above USD 100 at opening','开赛时持有超过100美元'),tr('Bonus','奖励')]} rows={[[tr('7 days','7天'),'+2%'],[tr('14 days','14天'),'+3%'],[tr('30 days','30天'),'+5%']]}/>
   <p>{tr('Burned 1,000,000+ RATTERY before Season I? You start with +5%, growing one point per qualifying season up to +15%.','在第一赛季前已销毁1,000,000以上RATTERY？初始奖励+5%，每个达标赛季增加一个百分点，最高+15%。')}</p>
   <Note>{tr('Bonuses add up to +20% and only boost the winning players\' weight, not nest points or the holder pool.','奖励合计最高+20%，只提升获胜玩家的权重，不影响巢穴积分或持有者奖池。')}</Note></>},
- {id:'rats',chapter:['The colony','群落'],title:['Healthy rats protect your score','健康的大鼠守护你的积分'],targets:['.rat-tour','.colony-navigation'],body:()=><>
+ {id:'rats',chapter:['The colony','群落'],title:['Healthy rats protect your score','健康的大鼠守护你的积分'],targets:['.rat-tour','.dock-tab.is-rats','.colony-navigation'],body:()=><>
   <p>{tr('Colony stress moves every nest\'s points every 10 minutes. Meet the residents, step through them with Previous and Next, and watch Colony status for alerts.','群落压力每10分钟影响所有巢穴的积分。认识居民，用“上一个/下一个”逐一查看，并关注群落状态中的警报。')}</p></>},
  {id:'fine',chapter:['Before you play','参与之前'],title:['Know the fine print','了解细则'],body:()=><>
   <List items={[tr('Paid play opens only after pricing, gameplay and automated settlement are ready. The launch date is announced separately.','只有在定价、玩法和自动结算准备就绪后才会开放付费参与。上线日期另行公布。'),tr('Stock Tokens give economic exposure to the company, not ownership of its shares. Issuer conditions apply.','Stock Token提供公司的经济敞口，并非股票所有权。须符合发行方条件。'),tr('Every burn is permanent. Only spend what you are comfortable losing.','每次销毁都是永久的。请只投入你能承受损失的金额。'),tr('This guide explains the rules. It is not financial advice.','本指南仅解释规则，并非投资建议。')]}/></>},

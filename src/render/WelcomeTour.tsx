@@ -8,6 +8,7 @@ export default function WelcomeTour(){
  const [open,setOpen]=useState(firstVisit);
  const dialog=useRef<HTMLDialogElement>(null),help=useRef<HTMLButtonElement>(null);
  useEffect(()=>{const node=dialog.current;if(open&&node&&!node.open)node.showModal();return()=>node?.close();},[open]);
+ useEffect(()=>{const show=()=>setOpen(true);window.addEventListener('rattery:welcome',show);return()=>window.removeEventListener('rattery:welcome',show);},[]);
  function dismiss(){try{localStorage.setItem(KEY,'done');}catch{/* Optional browser preference. */}dialog.current?.close();setOpen(false);help.current?.focus();}
  return <><button ref={help} type="button" className="tour-help" onClick={()=>setOpen(true)}>{tr('How it works','如何运作')}</button>{open&&<dialog ref={dialog} className="welcome-tour colony-explainer" aria-labelledby="tour-title" onCancel={e=>{e.preventDefault();dismiss();}}>
  <div className="tour-heading"><span>RATTERY / {tr('THE BASICS','基础介绍')}</span><button type="button" aria-label={tr('Close guide','关闭指南')} onClick={dismiss}>×</button></div>

@@ -730,3 +730,77 @@
 .burn-board-host{z-index:9}
 @media(min-width:781px){.burn-open .rat-tour{opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}}
 .season-preview-mode .burn-board-host{top:78px}
+
+/* ---- Mobile dock: bottom navigation for phones (780 px and below) ---- */
+.mobile-dock,.dock-sheet,.dock-backdrop{display:none}
+@media(max-width:780px){
+ .colony-app{--dock-h:calc(62px + env(safe-area-inset-bottom,0px))}
+ /* Top: brand, live dot, language and wallet only. Panels, Season, Trade and More live in the dock. */
+ .clear-layout .topbar .chip-accent,.clear-layout .topbar .chip-trade,.colony-app.cinema .topbar .chip-trade,.clear-layout .topbar .ca-chip,.clear-layout .topbar .chip-static{display:none!important}
+ .clear-layout .topbar .wallet-trigger{display:inline-flex!important}
+ .clear-layout .topbar .feed-label{display:inline-flex!important;font-size:0;gap:0;padding:0 4px}
+ .clear-layout .topbar .feed-label i{width:9px;height:9px}
+ .clear-layout .colony-navigation>button,.clear-layout .colony-navigation .tour-help,.clear-layout .colony-navigation .season-nav-button,.clear-layout .colony-navigation .burn-nav-toggle{display:none!important}
+ .clear-layout .colony-navigation{top:66px}
+ /* Bottom: the trade ticker rides just above the dock; the footer text moves into More. */
+ .colony-app .trade-panel,.colony-app.cinema .trade-panel{bottom:calc(var(--dock-h) + 6px)!important;height:38px!important;min-height:0!important;border-radius:12px}
+ .colony-app .trade-panel .tape{height:36px!important}
+ .colony-app.cinema .trade-panel{opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+ .colony-app .trade-panel .colony-footer{display:none!important}
+ .colony-app.cinema .colony-scene .scene-controls{bottom:calc(var(--bottom-chrome,150px) + 6px)!important}
+ .colony-app.cinema .rat-tour,.clear-layout .rat-tour{bottom:calc(var(--bottom-chrome,150px) + 62px)!important}
+ .mobile-dock{position:fixed;z-index:60;left:8px;right:8px;bottom:calc(6px + env(safe-area-inset-bottom,0px));height:62px;display:grid;grid-template-columns:repeat(5,1fr);align-items:stretch;padding:5px;border-radius:20px;
+  background:linear-gradient(180deg,rgba(30,32,27,.92),rgba(14,16,14,.96));border:1px solid rgba(255,244,214,.12);box-shadow:0 16px 40px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3)}
+ .dock-indicator{position:absolute;top:5px;bottom:5px;left:5px;width:calc((100% - 10px)/5);border-radius:15px;background:linear-gradient(180deg,rgba(214,233,214,.16),rgba(214,233,214,.06));border:1px solid rgba(214,233,214,.22);
+  transform:translateX(calc(var(--tab,0)*100%));transition:transform .5s cubic-bezier(.34,1.45,.64,1),opacity .25s,background .3s,border-color .3s;pointer-events:none}
+ .mobile-dock[data-active=none] .dock-indicator{opacity:0;transform:translateX(calc(2*100%)) scale(.6)}
+ .mobile-dock[data-active=season] .dock-indicator{background:linear-gradient(180deg,#e8c36a2e,#e8c36a0c);border-color:#e8c36a66}
+ .dock-tab{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;padding:0;border:0;border-radius:15px;background:none;color:#aab4ae;font:600 10.5px/1 "Segoe UI",Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:color .25s}
+ .dock-icon{position:relative;display:grid;place-items:center;width:26px;height:26px;transition:transform .35s cubic-bezier(.34,1.6,.64,1)}
+ .dock-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+ .dock-tab[aria-pressed=true]{color:#f3f6f1}
+ .dock-tab[aria-pressed=true] .dock-icon{transform:translateY(-2px) scale(1.08)}
+ .dock-tab:active .dock-icon{transform:scale(.86)}
+ .dock-tab.is-season{color:#d9bf7f}
+ .dock-tab.is-season[aria-pressed=true]{color:var(--s-gold-hi)}
+ .dock-tab.is-season svg{stroke:var(--s-gold)}
+ .dock-dot{position:absolute;top:1px;right:0;width:6px;height:6px;border-radius:50%;background:var(--s-gold);box-shadow:0 0 0 0 rgba(232,195,106,.6);animation:dock-dot 2.2s ease-out infinite}
+ @keyframes dock-dot{0%{box-shadow:0 0 0 0 rgba(232,195,106,.6)}70%,100%{box-shadow:0 0 0 6px rgba(232,195,106,0)}}
+ .dock-label{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .dock-backdrop{display:block;position:fixed;inset:0;z-index:55;background:rgba(4,5,4,.42);animation:dock-fade .25s ease both}
+ @keyframes dock-fade{from{opacity:0}}
+ .dock-sheet{display:block;position:fixed;z-index:58;left:8px;right:8px;bottom:calc(var(--dock-h) + 12px);max-height:min(72vh,620px);overflow:auto;padding:22px 18px 18px;border-radius:20px;outline:none;color:var(--s-ink);
+  background:radial-gradient(120% 50% at 50% 0%,#e8c36a18,transparent 60%),linear-gradient(180deg,rgba(30,28,21,.98),rgba(16,18,15,.98));border:1px solid #e8c36a44;box-shadow:0 24px 60px rgba(0,0,0,.6);
+  animation:dock-up .5s cubic-bezier(.22,1.2,.36,1) both}
+ @keyframes dock-up{from{opacity:0;transform:translateY(24px) scale(.97)}}
+ .dock-sheet>*:not(.dock-grabber):not(.dock-close)>*{animation:dock-item .45s cubic-bezier(.2,.8,.2,1) both}
+ .dock-sheet>*>*:nth-child(2){animation-delay:.04s}.dock-sheet>*>*:nth-child(3){animation-delay:.08s}.dock-sheet>*>*:nth-child(n+4){animation-delay:.12s}
+ @keyframes dock-item{from{opacity:0;transform:translateY(8px)}}
+ .dock-grabber{position:absolute;top:8px;left:50%;width:38px;height:4px;margin-left:-19px;border-radius:2px;background:#ffffff2a}
+ .dock-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:10px;border:1px solid #ffffff22;background:none;color:inherit;font-size:18px}
+ .dock-season{display:grid;justify-items:center;gap:8px;text-align:center}
+ .dock-season h2{margin:0;font:700 34px/1 "Cinzel Decorative","Fraunces",Georgia,serif;background:linear-gradient(180deg,var(--s-gold-hi) 0%,var(--s-gold) 45%,var(--s-gold-lo) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #3a2a0e) drop-shadow(0 0 14px #e8c36a40)}
+ .dock-season h2 span{font-size:1.18em}
+ .dock-season-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin-top:8px}
+ .dock-season-actions .season-board-toggle{grid-column:1/-1;margin-top:0;min-height:46px}
+ .dock-season-actions .season-button{min-height:48px;flex-wrap:wrap}
+ .dock-season-actions .season-button small{flex-basis:100%;background:none}
+ .dock-kicker{display:block;font:600 10px/1.4 "IBM Plex Mono",monospace;letter-spacing:.2em;text-transform:uppercase;color:#cdb98a}
+ .dock-trade h2{margin:6px 0 6px;font:600 24px/1.15 "Fraunces",Georgia,serif;color:#fff6dc}
+ .dock-trade p{margin:0 0 12px;font-size:13.5px;line-height:1.5;color:#ddd6c3}
+ .dock-cta{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;border-radius:14px;background:#d6e9d6;color:#142019;font:700 15px "Segoe UI",Arial,sans-serif;text-decoration:none;box-shadow:0 8px 24px rgba(214,233,214,.18);transition:transform .15s}
+ .dock-cta:active{transform:scale(.98)}
+ .dock-ca{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;width:100%;margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid #ffffff1c;background:#ffffff08;color:inherit;text-align:left}
+ .dock-ca small{grid-column:1;font:600 9.5px "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:#a9a18c}
+ .dock-ca code{grid-column:1;font:500 11.5px "IBM Plex Mono",monospace;color:#f3ecd9;word-break:break-all}
+ .dock-ca b{grid-column:2;grid-row:1/3;padding:8px 12px;border-radius:9px;background:#e8c36a1f;border:1px solid #e8c36a55;color:var(--s-gold);font:700 12px "Segoe UI",Arial,sans-serif}
+ .dock-burn{margin-top:10px;font-size:12px;color:#cfc7b0}
+ .dock-note{margin:10px 0 0!important;font-size:11.5px!important;line-height:1.5;color:#958d78!important}
+ .dock-more{display:grid;gap:6px}
+ .dock-row{display:flex;align-items:center;gap:12px;min-height:50px;padding:0 14px;border-radius:12px;border:1px solid #ffffff14;background:#ffffff06;color:#f3ecd9;font:600 14px "Segoe UI",Arial,sans-serif;text-decoration:none;text-align:left}
+ .dock-row span{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#ffffff0e;font:700 12px "IBM Plex Mono",monospace}
+ .dock-row i{margin-left:auto;font-style:normal;color:#a9a18c}
+ .burn-board-host{bottom:calc(var(--dock-h) + 12px)!important}
+}
+@media (prefers-reduced-motion:reduce){.dock-indicator,.dock-icon{transition:none!important}.dock-sheet,.dock-sheet *,.dock-backdrop,.dock-dot{animation:none!important}}
+.season-preview-mode .mobile-dock,.season-preview-mode .dock-sheet,.season-preview-mode .dock-backdrop{display:none!important}

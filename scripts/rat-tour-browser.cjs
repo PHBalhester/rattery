@@ -20,6 +20,7 @@ const out=path.resolve(__dirname,'../test-results/browser');fs.mkdirSync(out,{re
  const mobile=[];
  for(const [width,height] of [[390,844],[360,740]]){
  await p.setViewportSize({width,height});if(await p.getByRole('button',{name:'Hide info',exact:true}).isVisible())await p.getByRole('button',{name:'Hide info',exact:true}).click();
+ const openTab=p.locator('.dock-tab.is-colony[aria-pressed="true"],.dock-tab.is-rats[aria-pressed="true"]');if(await openTab.count())await openTab.first().click();
  await p.locator('.rat-tour').waitFor();const tour=await p.locator('.rat-tour').boundingBox(),controls=await p.locator('.scene-controls').boundingBox();
  assert(tour.height<80,'Tour must not cover canvas');assert(tour.y+tour.height<controls.y,'Tour overlaps controls');
  assert(tour.x>=0&&tour.x+tour.width<=width);assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
