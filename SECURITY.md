@@ -6,7 +6,7 @@ Never include seed phrases, private keys, RPC credentials, session tokens or per
 
 ## Reporting
 
-Private vulnerability reporting is not currently enabled on this repository. Until a private channel is established, open an issue requesting a confidential reporting channel without including vulnerability details, exploit steps or credentials. Do not publish a vulnerability report in that issue.
+Use [GitHub private vulnerability reporting](https://github.com/PHBalhester/rattery/security/advisories/new) to report a suspected vulnerability confidentially. Do not include vulnerability details, exploit steps or credentials in public issues.
 
 Provide affected versions, impact and a minimal redacted reproduction through an agreed private channel. Use local fixtures; do not test destructively against public services or other wallets.
 
