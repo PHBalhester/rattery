@@ -28,7 +28,7 @@ const out=path.resolve(__dirname,'../test-results/browser');fs.mkdirSync(out,{re
  await p.getByRole('button',{name:'Next rat',exact:true}).click();await p.waitForTimeout(1800);
  await p.screenshot({path:path.join(out,'rat-tour-mobile-'+width+'.png')});
  mobile.push({width,height,tour,controls});
- await p.getByRole('button',{name:'Show info',exact:true}).click();assert(!await p.locator('.rat-tour').isVisible());
+ await p.locator('.dock-tab.is-colony').click();assert(!await p.locator('.rat-tour').isVisible());
  }
  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'rat-tour-gpu-results.json'),JSON.stringify({gpu,flights,mobile,errors},null,2));console.log(JSON.stringify({gpu,flights,mobile}));await ctx.close();
  for(const [label,width,height] of [['desktop',1440,1000],['mobile',390,844]]){

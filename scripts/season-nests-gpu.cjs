@@ -29,6 +29,14 @@ const out=path.resolve(__dirname,'../test-results/browser');fs.mkdirSync(out,{re
  await p.screenshot({path:path.join(out,'season-gpu-overview.png')});
  await p.getByRole('button',{name:'View nest',exact:true}).first().click();await p.waitForTimeout(2000);
  await sample('desktop-closeup',12);
+ await p.getByRole('button',{name:'Attack FX',exact:true}).first().click();
+ await sample('desktop-direct-attack',8);
+ await p.getByRole('button',{name:'Shield FX',exact:true}).first().click();
+ await p.waitForTimeout(300);
+ await p.getByRole('button',{name:'Attack FX',exact:true}).first().click();
+ await sample('desktop-shield-block',8);
+ await p.getByRole('button',{name:'Feed +20',exact:true}).first().click();
+ await sample('desktop-feed',5);
  await p.screenshot({path:path.join(out,'season-gpu-closeup.png')});
  await p.getByRole('button',{name:'Reveal winner',exact:true}).first().click();
  await sample('desktop-winner-effects',8);
@@ -50,6 +58,9 @@ const out=path.resolve(__dirname,'../test-results/browser');fs.mkdirSync(out,{re
  await v.evaluate(()=>{for(const id of ['NVDA','AAPL','AMZN'])window.__seasonStore.getState().setScore(id,4000)});
  await v.waitForTimeout(8500);
  await v.getByRole('button',{name:'View nest',exact:true}).first().click();await v.waitForTimeout(2000);
+ await v.getByRole('button',{name:'Attack FX',exact:true}).first().click();await v.waitForTimeout(8000);
+ await v.getByRole('button',{name:'Shield FX',exact:true}).first().click();await v.waitForTimeout(300);
+ await v.getByRole('button',{name:'Attack FX',exact:true}).first().click();await v.waitForTimeout(8000);
  await v.getByRole('button',{name:'Feed +20',exact:true}).first().click();await v.waitForTimeout(4000);
  await v.getByRole('button',{name:'Reveal winner',exact:true}).first().click();await v.waitForTimeout(6500);
  const video=v.video();await record.close();await video.saveAs(path.join(out,'season-nests-rtx4060ti.webm'));
