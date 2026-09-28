@@ -22,6 +22,10 @@ const SeasonWindows=WINDOWS_BUILD?lazy(()=>import('./SeasonWindows')):null;
 const BOARD_BUILD=import.meta.env.DEV||SEASON_LEADERBOARD_LIVE||import.meta.env.VITE_SEASON_TUTORIAL==='true';
 const BOARD_ON=BOARD_BUILD&&(SEASON_LEADERBOARD_LIVE||['burners','season-tutorial','season-preview'].some(k=>new URLSearchParams(location.search).has(k)));
 const BurnLeaderboard=BOARD_BUILD?lazy(()=>import('./BurnLeaderboard')):null;
+const StockPopup=lazy(()=>import('./StockPopup'));
+const useStocks=create<{open:boolean}>(()=>({open:false}));
+const closeStocks=()=>useStocks.setState({open:false});
+function StocksHost(){const open=useStocks(s=>s.open);return open?<Suspense fallback={null}><StockPopup onClose={closeStocks}/></Suspense>:null;}
 const useBoard=create<{open:boolean}>(()=>({open:false}));
 const toggleBoard=()=>useBoard.setState(s=>({open:!s.open}));
 
@@ -48,7 +52,7 @@ function SeasonActivities({onAction}:{onAction?:()=>void}){
     <strong>{tr(a.label[0],a.label[1])}</strong><span className="season-action-hint">{tr(a.hint[0],a.hint[1])}</span>
    </button>)}</div>
   </section>
-  <div className="season-resources">
+  <div className="season-resources"><button type="button" className="season-stocks-toggle" aria-haspopup="dialog" onClick={()=>{onAction?.();useStocks.setState({open:true});}}><span aria-hidden="true">↗</span>{tr('Stock watch','股票行情')}<span>NVDA · AAPL · AMZN</span></button>
    <div className="season-actions">
     <button type="button" className={'season-button'+(TUTORIAL_ON?' is-primary':'')} disabled={!TUTORIAL_ON} onClick={()=>{onAction?.();openTutorial();}}><span aria-hidden="true">▶</span>{tr('Tutorial','教程')}</button>
     <button type="button" className="season-button" disabled><span aria-hidden="true">§</span>{tr('Whitepaper','白皮书')}<small>{tr('Coming soon','即将推出')}</small></button>
@@ -97,7 +101,7 @@ export default function SeasonRail(){
   </header>
   <SeasonActivities/>
   {TUTORIAL_ON&&<TutorialHost/>}
- </aside>{WINDOWS_ON&&<WindowsHost/>}</div>{BOARD_ON&&<BoardHost/>}</>;
+ </aside>{WINDOWS_ON&&<WindowsHost/>}</div>{BOARD_ON&&<BoardHost/>}<StocksHost/></>;
 }
 
 /** Season content for the mobile dock's Season sheet: same gates and actions as the desktop card. */
