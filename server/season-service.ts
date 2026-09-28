@@ -1,5 +1,5 @@
 import {SeasonEvents} from './season-events.js';
-import {Contract,JsonRpcProvider,Wallet,keccak256,id} from 'ethers';
+import {Contract,JsonRpcProvider,Wallet,keccak256,id,Interface} from 'ethers';
 import type {Pool} from 'pg';
 import {StagingAuth} from './auth.js';
 import {ratteryQuotePrice,usdBurnUnits} from './season-price.js';
@@ -10,6 +10,7 @@ export const SEASON_OPEN=Date.parse('2026-09-28T16:00:00Z')/1000,SEASON_CLOSE=Da
 export const SEASON_ID=id('RATTERY-SEASON-1-2026-09-28');
 export const SEASON_ABI=['function token() view returns(address)','function quoteSigner() view returns(address)','function operator() view returns(address)','function season() view returns(bytes32)','function opensAt() view returns(uint64)','function closesAt() view returns(uint64)','function honorEntryQuote() view returns(bool)','function paused() view returns(bool)','function colonySlot() view returns(uint32)','function members(address) view returns(uint256 id,uint8 nest)','function nonces(address) view returns(uint256)','function contributions(uint256) view returns(uint256)','function nests(uint8) view returns(uint256 score,uint256 gross,uint64 lastProduction,uint64 shieldUntil,uint64 shieldReady,uint64 attackReady,uint8 halfPoint)','function applyColonyPoints(uint32 slot,int8[3] deltas)'];
 export const serial=(v:unknown)=>JSON.parse(JSON.stringify(v,(_,x)=>typeof x==='bigint'?x.toString():x));
+const tokenABI=new Interface(['function balanceOf(address) view returns(uint256)','function allowance(address,address) view returns(uint256)']);
 export class SeasonService{
  readonly events:SeasonEvents;readonly provider:JsonRpcProvider;readonly signer:Wallet;readonly router:Contract;readonly config:SeasonBurnConfig;
  constructor(readonly pool:Pool,readonly auth:StagingAuth,readonly read:ReadRPC,readonly routerAddress:string,readonly runtimeHash:string,rpcURL:string,key:string,readonly clock=Date.now){
@@ -33,6 +34,7 @@ export class SeasonService{
    member:member?{id:String(member.id),nest:Number(member.nest),contribution:String(await this.router.contributions(member.id))}:null,
    nests:rows.map((n,i)=>({id:i+1,ticker:['NVDA','AAPL','AMZN'][i],score:String(n.score),halfPoint:Number(n.halfPoint),gross:String(n.gross),shieldUntil:Number(n.shieldUntil)*1000,shieldReady:Number(n.shieldReady)*1000,attackReady:Number(n.attackReady)*1000})),colonySlot:Number(slot)};
  }
+ async funding(wallet:string,tag='latest'){const call=async(name:string,args:string[])=>tokenABI.decodeFunctionResult(name,await this.read('eth_call',[{to:this.config.token,data:tokenABI.encodeFunctionData(name,args)},tag]))[0] as bigint;const [balance,allowance]=await Promise.all([call('balanceOf',[wallet]),call('allowance',[wallet,this.routerAddress])]);return {balance:String(balance),allowance:String(allowance)};}
  async quote(session:string,kind:number,nest:number){
   const wallet=await this.auth.wallet(session);if(!Number.isInteger(kind)||kind<0||kind>3||!Number.isInteger(nest)||nest<1||nest>3)throw Error('Invalid action');
   const state=await this.overview(session),now=Math.floor(state.serverAt/1000);if(state.phase!=='open')throw Error('Season not open');
@@ -43,13 +45,23 @@ export class SeasonService{
   const price=await ratteryQuotePrice(this.read,this.clock),q:SeasonQuote={season:SEASON_ID,wallet,nonce:await this.router.nonces(wallet),membership:BigInt(member.id),kind,nest,amount:usdBurnUnits(BigInt(cents),price.usdWad),usdCents:BigInt(cents),issuedAt:BigInt(now),expiresAt:BigInt(expires)};
   const signature=await this.signer.signTypedData(seasonQuoteDomain(this.config),SEASON_QUOTE_TYPES,q),hash=seasonQuoteHash(this.config,q);
   await this.pool.query('INSERT INTO season_quotes(quote_hash,wallet,nonce,quote,signature,price) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING',[hash,wallet,String(q.nonce),serial(q),signature,serial(price)]);
-  return {config:this.config,quote:serial(q),signature,quoteHash:hash,runtimeHash:this.runtimeHash,price:serial(price)};
+  return {config:this.config,quote:serial(q),signature,quoteHash:hash,runtimeHash:this.runtimeHash,price:serial(price),funding:await this.funding(wallet)};
  }
  async finalize(session:string,quoteHash:string,hash:string){
   const wallet=await this.auth.wallet(session);if(!/^0x[0-9a-fA-F]{64}$/.test(quoteHash)||!/^0x[0-9a-fA-F]{64}$/.test(hash))throw Error('Invalid receipt');
   const row=(await this.pool.query('SELECT * FROM season_quotes WHERE quote_hash=$1 AND wallet=$2',[quoteHash,wallet])).rows[0];if(!row)throw Error('Unknown quote');
   const q={...row.quote};for(const k of ['nonce','membership','amount','usdCents','issuedAt','expiresAt'])q[k]=BigInt(q[k]);
-  const receipt=await verifySeasonBurn(this.read,hash,{config:this.config,quote:q,signature:row.signature,routerCodeHash:this.runtimeHash});
+  let receipt;
+  try{receipt=await verifySeasonBurn(this.read,hash,{config:this.config,quote:q,signature:row.signature,routerCodeHash:this.runtimeHash});}
+  catch(error){const message=(error as Error).message;
+   if(message==='Season burn pending'||message==='Season burn not confirmed')return {confirmed:false,status:message==='Season burn pending'?'pending':'confirming'};
+   if(message==='Season action reverted'){
+    const failed=await this.read('eth_getTransactionReceipt',[hash]),block=await this.read('eth_getBlockByNumber',[failed.blockNumber,false]),funding=await this.funding(wallet,failed.blockNumber);
+    const reason=BigInt(funding.balance)<q.amount?'INSUFFICIENT_RATTERY':BigInt(funding.allowance)<q.amount?'APPROVAL_REQUIRED':BigInt(block.timestamp)>=q.expiresAt?'QUOTE_EXPIRED':'REVERTED';
+    return {confirmed:false,status:'reverted',reason,...funding,required:String(q.amount)};
+   }
+   throw error;
+  }
   await this.pool.query('INSERT INTO season_actions(event_key,tx_hash,wallet,block_number,block_hash,receipt) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(event_key) DO NOTHING',[receipt.key,receipt.hash,wallet,receipt.block,receipt.blockHash,receipt]);return {confirmed:true,receipt};
  }
 }

@@ -68,7 +68,7 @@ export function stagingHandler(auth:StagingAuth,service:Persistence|null,clientI
    if(req.url==='/care/reserve')return send(200,await service!.reserve(session,data.requestId,data.ratId,data.action,data.name));
    if(req.url==='/care/finalize')return send(200,await service!.finalize(session,data.id,data.hash));
    return send(404,{error:'Not found'});
-  }catch(e){const message=(e as Error).message;send(message==='Body too large'?413:message==='Unauthorized'?401:400,{error:'Request rejected',code:publicCareError(message)});}
+  }catch(e){const message=(e as Error).message;const seasonCodes:Record<string,string>={'Unauthorized':'AUTH_REQUIRED','Season not open':'NOT_OPEN','Action unavailable':'ACTION_UNAVAILABLE','Cooldown active':'COOLDOWN','Score update pending; try again shortly':'CHECKPOINT_PENDING','Unknown quote':'UNKNOWN_QUOTE'};send(message==='Body too large'?413:message==='Unauthorized'?401:400,{error:'Request rejected',code:req.url?.startsWith('/season/')?(seasonCodes[message]??'SERVICE_UNAVAILABLE'):publicCareError(message)});}
  };
 }
 export function stagingServer(auth:StagingAuth,service:Persistence|null){

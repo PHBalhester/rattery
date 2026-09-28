@@ -181,5 +181,16 @@ export async function seasonTransactionRequest(owner:string,tx:{to?:string;data:
  const accounts=account(await p.request({method:'eth_accounts'}));
  const network=chain(await p.request({method:'eth_chainId'}));
  if(accounts!==owner.toLowerCase()||network!=='0x1237'||current!==generation)throw Error('Wallet changed');
- return p.request({method:send?'eth_sendTransaction':'eth_estimateGas',params:[{from:owner,...tx,value:'0x0'}]});
+ const call={from:owner,...tx,value:'0x0'};
+ if(!send)return p.request({method:'eth_estimateGas',params:[call]});
+ const estimated=await p.request({method:'eth_estimateGas',params:[call]});if(typeof estimated!=='string'||!/^0x[0-9a-f]+$/i.test(estimated))throw Error('Could not simulate the transaction');
+ if(current!==generation||useWallet.getState().account!==owner.toLowerCase())throw Error('Wallet changed');
+ return p.request({method:'eth_sendTransaction',params:[{...call,gas:'0x'+((BigInt(estimated)*120n+99n)/100n).toString(16)}]});
+}
+/** Read-only funding check through the currently connected wallet. Never sends a transaction. */
+export async function seasonWalletFunding(owner:string,router:string){
+ const p=activeProvider,current=generation,w=useWallet.getState();if(!p||w.account!==owner.toLowerCase()||w.chainId!=='0x1237'||!/^0x[0-9a-f]{40}$/i.test(router))throw Error('Connect the correct wallet on Robinhood Chain');
+ const {Interface}=await import('ethers');const abi=new Interface(['function balanceOf(address) view returns(uint256)','function allowance(address,address) view returns(uint256)']);
+ const read=async(name:string,args:string[])=>abi.decodeFunctionResult(name,await p.request({method:'eth_call',params:[{to:PAYMENT_TOKEN,data:abi.encodeFunctionData(name,args)},'latest']}) as string)[0] as bigint;
+ const [balance,allowance]=await Promise.all([read('balanceOf',[owner]),read('allowance',[owner,router])]);if(current!==generation)throw Error('Wallet changed');return {balance:String(balance),allowance:String(allowance)};
 }
