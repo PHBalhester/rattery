@@ -3,7 +3,7 @@ const {chromium}=require('./lib/browser-runtime.cjs');
 const assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true});
- const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const page=await browser.newPage();page.setDefaultTimeout(Number(process.env.RATTERY_TIMEOUT||30000));const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{
   window.calls=[];window.mode='ok';window.handlers={};
   const provider={request:async({method})=>{
@@ -20,7 +20,7 @@ const assert=require('node:assert/strict');
   window.ethereum=provider;
   window.addEventListener('eip6963:requestProvider',()=>window.dispatchEvent(new CustomEvent('eip6963:announceProvider',{detail:{info:{uuid:'12345678-1234-1234-1234-123456789012',name:'Test Wallet'},provider}})));
  });
- await page.goto((process.env.RATTERY_TEST_URL||'http://localhost:5173/'));await page.locator('.wallet-trigger').waitFor();if(await page.locator('.welcome-tour').isVisible())await page.getByRole('button',{name:'Skip',exact:true}).click();
+ await page.goto((process.env.RATTERY_TEST_URL||'http://localhost:5173/'));await page.locator('.wallet-trigger').waitFor();if(await page.locator('.welcome-tour').isVisible())await page.getByRole('button',{name:'Close guide',exact:true}).click();
  assert.deepEqual(await page.evaluate(()=>window.calls),[]);
  await page.locator('.wallet-trigger').click();
  await page.getByRole('button',{name:'Test Wallet',exact:true}).click();
@@ -31,7 +31,7 @@ const assert=require('node:assert/strict');
  await page.getByText('Wallet account or network changed. Reconnect to continue.',{exact:true}).waitFor();
  await page.evaluate(()=>window.mode='reject');
  await page.getByRole('button',{name:'Test Wallet',exact:true}).click();
- await page.getByText('Connection declined. No signature or transaction was requested.',{exact:true}).waitFor();
+ await page.getByText('Wallet request declined. No transaction was sent.',{exact:true}).waitFor();
  await page.evaluate(()=>window.mode='invalid');
  await page.getByRole('button',{name:'Test Wallet',exact:true}).click();
  await page.getByText('Could not verify the connection. Unlock your wallet and try again.',{exact:true}).waitFor();
@@ -48,7 +48,7 @@ const assert=require('node:assert/strict');
  await page.keyboard.press('Escape');await page.getByRole('button',{name:'Language / 语言'}).click();
  await page.locator('.wallet-trigger').click();await page.getByRole('heading',{name:'连接您的钱包'}).waitFor();
  assert.equal(errors.length,0,errors.join('; '));
- const clean=await browser.newPage();await clean.goto((process.env.RATTERY_TEST_URL||'http://localhost:5173/'));await clean.locator('.wallet-trigger').waitFor();if(await clean.locator('.welcome-tour').isVisible())await clean.getByRole('button',{name:'Skip',exact:true}).click();await clean.locator('.wallet-trigger').click();
+ const clean=await browser.newPage();clean.setDefaultTimeout(Number(process.env.RATTERY_TIMEOUT||30000));await clean.goto((process.env.RATTERY_TEST_URL||'http://localhost:5173/'));await clean.locator('.wallet-trigger').waitFor();if(await clean.locator('.welcome-tour').isVisible())await clean.getByRole('button',{name:'Close guide',exact:true}).click();await clean.locator('.wallet-trigger').click();
  await clean.getByText(/No compatible browser wallet detected/).waitFor();
  console.log('PASS: no automatic RPC, provider discovery/deduplication, connect, read-only RPC allowlist, account/network invalidation, rejection, malformed response, Escape, mobile overflow, Chinese and no-wallet fallback.');
  await browser.close();
