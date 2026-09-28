@@ -276,7 +276,7 @@
 .tape-legend{margin-left:14px;font-size:11px;color:var(--panel-muted);white-space:nowrap}.tape-legend b{font-weight:600;margin-left:6px}.tape-legend .buy{color:var(--buy)}.tape-legend .sell{color:var(--sell)}
 
 @media(max-width:780px){
- .clear-layout .panel-deck{top:auto;bottom:var(--bottom-chrome,150px);height:min(58vh,560px)}
+ .clear-layout .panel-deck{top:auto;bottom:var(--bottom-chrome,150px);height:min(58vh,560px,calc(100dvh - var(--navigation-bottom,198px) - var(--bottom-chrome,150px)))}
  .clear-layout .panel-deck .colony-panel{border-radius:14px 14px 10px 10px}
  .clear-layout .topbar .chip-trade{min-height:34px;padding:6px 10px}
  .tape-legend{display:none}

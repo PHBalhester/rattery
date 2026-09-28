@@ -1,5 +1,5 @@
 // Top-burner leaderboard UI: hidden until toggled, real API data rendered with exact shares,
-// nest column empty before Season I, Escape closes and returns focus, locked on the default page.
+// nest column empty before Season I, Escape closes and returns focus, released toggle on the default page.
 // Run against the dev server: RATTERY_TEST_URL=http://127.0.0.1:5173/ node scripts/burn-leaderboard-browser.cjs
 const {chromium}=require('./lib/browser-runtime.cjs');
 const assert=require('node:assert/strict');
@@ -13,9 +13,10 @@ const assert=require('node:assert/strict');
    const p=await browser.newPage({viewport:{width,height}});p.setDefaultTimeout(Number(process.env.RATTERY_TIMEOUT||30000));const errors=[];
    p.on('pageerror',e=>errors.push(e.message));
    await p.addInitScript(()=>{try{localStorage.setItem('rattery:welcome-explainer:v2','done');localStorage.setItem('rattery:panels','open');}catch{}});
-   // Locked on the default page before release
+   // Released toggle is available by default; the panel still starts closed.
    await p.goto(base);await p.locator('.wallet-trigger').waitFor();
-   assert.equal(await p.locator('.season-board-toggle,.burn-nav-toggle').count(),0,'Leaderboard toggle must not appear on the default page');
+   assert.equal(await p.locator('.season-board-toggle,.burn-nav-toggle').count(),2,'Released leaderboard toggles appear on the default page');
+   assert.equal(await p.locator('.burn-board').count(),0,'Leaderboard remains closed until requested');
    await p.route('**/api/burners',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(board)}));
    await p.goto(base+'?burners');
    const toggle=p.locator(width<780?'.burn-nav-toggle':'.season-board-toggle');await toggle.waitFor();
