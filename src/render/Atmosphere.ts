@@ -6,12 +6,10 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
-import {HorizontalTiltShiftShader} from 'three/addons/shaders/HorizontalTiltShiftShader.js';
-import {VerticalTiltShiftShader} from 'three/addons/shaders/VerticalTiltShiftShader.js';
 
 /**
  * Rendering-only "miniature diorama" look: image-based light, contact shadows
- * (GTAO), tilt-shift focus, soft bloom, vignette/grain, a table under the tray
+ * (GTAO), soft bloom, vignette/grain, a table under the tray
  * and drifting dust. Never reads or writes simulation state.
  */
 const Finish={
@@ -62,9 +60,9 @@ export function enrichHabitatMaterials(root:T.Object3D){
 
 export type AtmosphereLevel=0|1|2|3;
 export class Atmosphere{
- private composer:EffectComposer;private gtao:GTAOPass;private tiltH:ShaderPass;private tiltV:ShaderPass;private bloom:UnrealBloomPass;private finish:ShaderPass;
+ private composer:EffectComposer;private gtao:GTAOPass;private bloom:UnrealBloomPass;private finish:ShaderPass;
  private env:T.WebGLRenderTarget;private table:T.Mesh;private dust:T.Points;private dustBase:Float32Array;private disposables:{dispose():void}[]=[];
- private level:AtmosphereLevel=0;private time=0;private focusY=.5;
+ private level:AtmosphereLevel=0;private time=0;
  constructor(private renderer:T.WebGLRenderer,private scene:T.Scene,private camera:T.PerspectiveCamera,private target:T.Vector3){
   const pmrem=new T.PMREMGenerator(renderer);const room=new RoomEnvironment();this.env=pmrem.fromScene(room,.04);room.dispose();pmrem.dispose();
   scene.environment=this.env.texture;scene.environmentIntensity=.28;renderer.toneMappingExposure=.92;
@@ -80,23 +78,16 @@ export class Atmosphere{
 
   this.composer=new EffectComposer(renderer);this.composer.addPass(new RenderPass(scene,camera));
   this.gtao=new GTAOPass(scene,camera,1,1);this.gtao.updateGtaoMaterial({radius:.55,distanceExponent:1.4,thickness:1.2,scale:1.1,samples:12});this.gtao.blendIntensity=.85;this.composer.addPass(this.gtao);
-  this.tiltH=new ShaderPass(HorizontalTiltShiftShader);this.tiltV=new ShaderPass(VerticalTiltShiftShader);this.composer.addPass(this.tiltH);this.composer.addPass(this.tiltV);
   this.bloom=new UnrealBloomPass(new T.Vector2(1,1),.14,.5,.97);this.composer.addPass(this.bloom);
   this.composer.addPass(new OutputPass());
   this.finish=new ShaderPass(Finish);this.composer.addPass(this.finish);
  }
  setSize(w:number,h:number){if(!w||!h)return;// Hidden or collapsed host: keep the last valid targets.
- this.composer.setPixelRatio(this.renderer.getPixelRatio());this.composer.setSize(w,h);this.tiltH.uniforms.h.value=1/(w||1);this.tiltV.uniforms.v.value=1/(h||1);}
- /** 0 high: everything · 1 balanced: no GTAO · 2 economy: tilt-shift only, no dust · 3 minimal: plain render. */
- setLevel(level:number){this.level=Math.max(0,Math.min(3,level)) as AtmosphereLevel;this.gtao.enabled=this.level===0;this.bloom.enabled=this.level<=1;this.dust.visible=this.level<=1;this.tiltH.enabled=this.tiltV.enabled=this.level<=2;this.finish.enabled=this.level<=2;}
+ this.composer.setPixelRatio(this.renderer.getPixelRatio());this.composer.setSize(w,h);}
+ /** 0 high: everything · 1 balanced: no GTAO · 2 economy: finish only, no dust · 3 minimal: plain render. */
+ setLevel(level:number){this.level=Math.max(0,Math.min(3,level)) as AtmosphereLevel;this.gtao.enabled=this.level===0;this.bloom.enabled=this.level<=1;this.dust.visible=this.level<=1;this.finish.enabled=this.level<=2;}
  render(dt:number,reduced:boolean){
   if(!reduced)this.time+=dt;
-  // Focus band follows the orbit target on screen; blur widens as the camera pulls back (miniature look).
-  const p=this.target.clone().project(this.camera);this.focusY=T.MathUtils.lerp(this.focusY,T.MathUtils.clamp(p.y*.5+.5,.15,.85),Math.min(1,dt*6)||1);
-  this.tiltH.uniforms.r.value=this.focusY;this.tiltV.uniforms.r.value=this.focusY;
-  const far=T.MathUtils.smoothstep(this.camera.position.distanceTo(this.target),10,55);
-  const w=this.renderer.domElement.width,h=this.renderer.domElement.height;
-  const blur=2.6*far;this.tiltH.uniforms.h.value=blur/(w||1);this.tiltV.uniforms.v.value=blur/(h||1);const on=blur>.05&&this.level<=2;this.tiltH.enabled=this.tiltV.enabled=on;
   this.finish.uniforms.time.value=this.time;
   if(!reduced&&this.dust.visible){const a=this.dust.geometry.attributes.position as T.BufferAttribute,arr=a.array as Float32Array;for(let i=0;i<arr.length;i+=3){const k=i*.37;arr[i]=this.dustBase[i]+Math.sin(this.time*.11+k)*1.3;arr[i+1]=this.dustBase[i+1]+Math.sin(this.time*.07+k*1.7)*.6;arr[i+2]=this.dustBase[i+2]+Math.cos(this.time*.09+k)*1.1;}a.needsUpdate=true;}
   if(this.level===3){this.renderer.render(this.scene,this.camera);return;}
