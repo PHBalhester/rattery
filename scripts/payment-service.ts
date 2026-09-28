@@ -1,3 +1,5 @@
+import {SeasonService} from '../server/season-service.js';
+import {startSeasonWorker} from '../server/season-worker.js';
 import {createServer} from 'node:http';
 import {timingSafeEqual} from 'node:crypto';
 import {isIP} from 'node:net';
@@ -15,7 +17,9 @@ async function main(){
  const pool=new Pool({connectionString:url.href,ssl:{rejectUnauthorized:true,ca},max:6,connectionTimeoutMillis:5000,statement_timeout:15000,idle_in_transaction_session_timeout:20000});pool.on('error',()=>{});
  const auth=new StagingAuth(pool,'https://rattery.tech',Date.now,4663),service=new Persistence(pool,auth,'0xc322305e79337300b59ff48389f8c9a1d9e0de76',18,readOnlyRPC(process.env.RATTERY_RPC??''));
  await pool.query('SELECT id FROM colony_state WHERE id=1');
- const handle=stagingHandler(auth,service,req=>{const ip=req.headers['x-rattery-client-ip'];return typeof ip==='string'&&isIP(ip)?ip:'shared';});
+ let season:SeasonService|undefined;
+ if(process.env.RATTERY_SEASON_ENABLED==='true'){season=new SeasonService(pool,auth,readOnlyRPC(process.env.RATTERY_RPC??''),process.env.RATTERY_SEASON_ROUTER??'',process.env.RATTERY_SEASON_RUNTIME_HASH??'',process.env.RATTERY_RPC??'',process.env.RATTERY_SEASON_SIGNER_KEY??'');await season.initialize();startSeasonWorker(season);}
+ const handle=stagingHandler(auth,service,req=>{const ip=req.headers['x-rattery-client-ip'];return typeof ip==='string'&&isIP(ip)?ip:'shared';},season);
  const expected=Buffer.from('Bearer '+secret);
  const server=createServer((req,res)=>{
   if(req.method==='GET'&&req.url==='/health'){res.setHeader('Content-Type','application/json');res.end('{"ok":true}');return;}

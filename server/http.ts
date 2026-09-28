@@ -1,9 +1,10 @@
+import type {SeasonService} from './season-service.js';
 import {publicCareError} from '../src/careErrors.js';
 import {createServer,type IncomingMessage,type ServerResponse} from 'node:http';
 import {randomBytes} from 'node:crypto';
 import {digest,type StagingAuth} from './auth.js';
 import type {Persistence} from './persistence.js';
-export function stagingHandler(auth:StagingAuth,service:Persistence|null,clientIP=(req:IncomingMessage)=>req.socket.remoteAddress??'unknown'){
+export function stagingHandler(auth:StagingAuth,service:Persistence|null,clientIP=(req:IncomingMessage)=>req.socket.remoteAddress??'unknown',season?:SeasonService){
  return async(req:IncomingMessage,res:ServerResponse)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Type','application/json');res.setHeader('Content-Security-Policy',"default-src 'none'; frame-ancestors 'none'");
@@ -22,6 +23,13 @@ export function stagingHandler(auth:StagingAuth,service:Persistence|null,clientI
    const count=(await auth.pool.query('INSERT INTO rate_windows(bucket,hits,expires_at) VALUES($1,1,$2) ON CONFLICT(bucket) DO UPDATE SET hits=rate_windows.hits+1 RETURNING hits',[bucket,Date.now()+120000])).rows[0].hits;
    if(count>(observing?600:100)){res.setHeader('Retry-After','60');return send(429,{error:'Rate limit'});}
    const data=await body(req),session=parseCookie(req.headers.cookie);
+   if(req.url?.startsWith('/season/')){
+    if(!season)return send(503,{error:'Season unavailable'});
+    if(req.url==='/season/overview')return send(200,await season.overview(session));
+    if(req.url==='/season/quote')return send(200,await season.quote(session,data.kind,data.nest));
+    if(req.url==='/season/finalize')return send(200,await season.finalize(session,data.quoteHash,data.hash));
+    return send(404,{error:'Not found'});
+   }
    if(req.url==='/colony/snapshot')return service?send(200,await service.sharedSnapshot()):send(503,{error:'Colony unavailable'});
    if(req.url==='/auth/session'){
     let wallet:string|null=null;try{wallet=await auth.wallet(session);}catch{/* Anonymous or expired. */}
