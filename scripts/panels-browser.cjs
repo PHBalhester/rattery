@@ -26,7 +26,7 @@ const path=require('node:path');
   await p.getByText('Individual observation',{exact:true}).waitFor();
   assert(await p.getByText('Demo mode · fictional tokens',{exact:true}).count());
   assert.equal(await p.locator('.care-group').count(),2);
-  assert.deepEqual(await p.locator('.care-option strong').allTextContents(),['Name','Sociability','Irritability']);
+  assert.deepEqual(await p.locator('.care-option strong').allTextContents(),['Name','Water','Feed','Play']);
   assert.equal(await p.locator('.rat-vitals [role="meter"]').count(),5);
   await p.screenshot({path:path.join(outputDir,`rat-${width}.png`)});
   await p.getByRole('button',{name:'Events',exact:true}).click();

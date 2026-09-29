@@ -16,10 +16,10 @@ const BLURBS:Record<CareAction,[string,string]>={
  aggression:['More irritable for 2h','2小时内更易怒'],
  snake:['Can kill a rat','可能杀死大鼠'],
 };
-export const VISIBLE_CARE_ACTIONS:CareAction[]=['mint','name','prosocial','aggression'];
+export const VISIBLE_CARE_ACTIONS:CareAction[]=['mint','name','water','feed','play'];
 const GROUPS:{id:string;title:[string,string];actions:CareAction[]}[]=[
  {id:'identity',title:['Name','名字'],actions:['mint','name']},
- {id:'advanced',title:['Stimuli · adults','刺激 · 成年个体'],actions:['prosocial','aggression']},
+ {id:'daily',title:['Care','照护'],actions:['water','feed','play']},
 ];
 
 type Props={
