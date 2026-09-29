@@ -32,14 +32,16 @@ try{
  const c=await auth.challenge(wallet.address),session=await auth.verify(c.id,c.message,await wallet.signMessage(c.message));
  const world=createWorld();world.realStartedAt=now;ecologyStep(world,0);const ratId=Object.keys(world.rats)[0];world.rats[ratId].energy=.4;
  await service.initialize(world);assert.equal((await service.advanceSimulation()).steps,0);
+ now+=1500; // Healthy production workers commit roughly 1–2 seconds behind wall time.
  const mint=await service.reserve(session,randomUUID(),ratId,'mint','Shared Rat');
+ await service.beginSubmission(session,mint.id);
  const hash='0x'+'1'.repeat(64);burns.set(hash,{amount:BigInt(mint.units),time:now});
- now+=1000;
+ now+=100;
  const racing=await Promise.all([service.finalize(session,mint.id,hash),...Array.from({length:12},()=>service.advanceSimulation())]);
- assert.equal((await service.sharedSnapshot()).tick,10);
+ assert.equal((await service.sharedSnapshot()).tick,16);
  let snapshot=await service.sharedSnapshot();assert.equal(snapshot.world.care?.owners[ratId],wallet.address.toLowerCase());assert.equal(snapshot.world.rats[ratId].name,'Shared Rat');
  assert.equal(racing.filter(x=>'steps' in x&&x.steps>0).length,1);
- ok('12 workers and mint serialize: ten ticks total, one owner, no lost mint');
+ ok('12 workers and mint serialize: sixteen ticks total; care accepts normal worker lag, one owner, no lost mint');
  const stale=snapshot;
  const feed=await service.reserve(session,randomUUID(),ratId,'feed');const feedHash='0x'+'2'.repeat(64);burns.set(feedHash,{amount:BigInt(feed.units),time:now});
  const beforeEnergy=snapshot.world.rats[ratId].energy;now+=100;
@@ -67,7 +69,7 @@ try{
  const [readerA,readerB]=await Promise.all([service.sharedSnapshot(),new Persistence(db,auth,token,18,rpc,()=>now).sharedSnapshot()]);assert.deepEqual(readerA,readerB);
  assert.equal(readerA.world.care?.lastSequence,2);assert.equal(readerA.world.care?.owners[ratId],wallet.address.toLowerCase());
  ok('Independent readers receive identical persisted colony and care');
- await db.query("UPDATE colony_state SET engine_version='incompatible'");await assert.rejects(service.advanceSimulation(),/version mismatch/);
+ await db.query("UPDATE colony_state SET engine_version='incompatible'");await assert.rejects(service.advanceSimulation(),/version mismatch/);await assert.rejects(service.reserve(session,randomUUID(),ratId,'water'),/catching up/);
  await db.query('UPDATE colony_state SET engine_version=$1',[ENGINE_VERSION]);
  ok('Incompatible engine version fails closed');
  const death=await service.sharedSnapshot();kill(death.world,death.world.rats[ratId],'age');await service.checkpoint(death.world,death.revision);now+=100;await service.advanceSimulation();

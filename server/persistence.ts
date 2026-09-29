@@ -12,6 +12,8 @@ import {applyQueuedTrades} from './trade-ledger.js';
 import {worldRng} from '../src/sim/rng.js';
 export const ENGINE_VERSION='shared-colony-v25:'+digest(JSON.stringify(CONFIG)).slice(0,16);
 export const MAX_SIMULATION_BATCH=40;
+// Allow the worker polling/commit cycle, while refusing genuinely stale care writes.
+export const MAX_CARE_SIMULATION_LAG_MS=5000;
 const uuid=(s:string)=>/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(s);
 export class Persistence{
  constructor(readonly pool:Pool,readonly auth:StagingAuth,readonly token:string,readonly decimals:number,readonly rpc:BurnRPC,readonly clock=Date.now){
@@ -118,7 +120,7 @@ export class Persistence{
   });
  }
  private requireCurrentSimulation(row:any){
-  if(row.engine_version&&(row.engine_version!==ENGINE_VERSION||this.clock()-Number(row.simulation_at)>1000))throw Error('Colony catching up');
+  if(row.engine_version&&(row.engine_version!==ENGINE_VERSION||this.clock()-Number(row.simulation_at)>MAX_CARE_SIMULATION_LAG_MS))throw Error('Colony catching up');
  }
  // Operator-only clock advancement. Never exposed as an HTTP mutation.
  async advanceSimulation(at=this.clock()){
