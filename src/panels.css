@@ -656,7 +656,8 @@
  .burn-nest{font-size:10px}
 }
 @media (prefers-reduced-motion:reduce){.burn-board,.burn-row,.burn-bar i,.burn-row.is-skeleton>*,.burn-live i{animation:none!important}}
-.burn-board-host{z-index:9}
+.burn-board-host{z-index:12}
+@media(max-width:780px){.burn-board-host{z-index:40}}
 @media(min-width:781px){.burn-open .rat-tour{opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}}
 
 /* ---- Mobile dock: bottom navigation for phones (780 px and below) ---- */
