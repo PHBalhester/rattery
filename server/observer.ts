@@ -21,21 +21,36 @@ export async function readObservation(pool:Pool,runId='rattery-staging-round1'){
  }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{c.release();}
 }
 export const BURNER_LIMIT=50;
-/** Public leaderboard of confirmed burns recorded by the ledger. Read-only; no account or payment data. */
-export async function readBurners(pool:Pool,limit=BURNER_LIMIT){
+export const BURNER_SEASON_START=1790611200000; // 28 September 2026, 13:00 America/Sao_Paulo.
+export type BurnerNest='NVDA'|'AAPL'|'AMZN'|null;
+export type BurnerRecord={block:number;logIndex:number;hash:string;from:string;units:string};
+export interface BurnerChain {
+ owner(burn:BurnerRecord):Promise<string>;
+ nests(wallets:string[]):Promise<BurnerNest[]>;
+}
+/** Season-only read model. The historical ledger and simulation effects are never modified. */
+export async function readBurners(pool:Pool,limit=BURNER_LIMIT,chain?:BurnerChain){
  if(!Number.isInteger(limit)||limit<1||limit>100)throw Error('Invalid limit');
- const c=await pool.connect();
+ const c=await pool.connect();let market:any,rows:any[];
  try{await c.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
-  const market=(await c.query('SELECT chain_id,token FROM trade_stream WHERE id=1')).rows[0];
-  const total=(await c.query("SELECT count(*)::int AS burns,count(DISTINCT lower(raw->>'from'))::int AS wallets,coalesce(sum((raw->>'units')::numeric),0)::text AS units,min(block_number)::text AS first_block,max(block_number)::text AS last_block FROM colony_burns")).rows[0];
-  const rows=(await c.query("SELECT lower(raw->>'from') AS wallet,sum((raw->>'units')::numeric)::text AS units,count(*)::int AS burns FROM colony_burns GROUP BY 1 ORDER BY sum((raw->>'units')::numeric) DESC,1 ASC LIMIT $1",[limit])).rows;
+  market=(await c.query('SELECT chain_id,token FROM trade_stream WHERE id=1')).rows[0];
+  rows=(await c.query("SELECT block_number,log_index,raw FROM colony_burns WHERE (raw->>'timestamp')::bigint >= $1 ORDER BY block_number,log_index",[BURNER_SEASON_START])).rows;
   await c.query('COMMIT');
-  const digits=(v:unknown)=>typeof v==='string'&&/^[0-9]{1,78}$/.test(v)?v:'0';
-  return {protocol:1,kind:'burners',chainId:Number(market?.chain_id)||null,token:typeof market?.token==='string'?market.token.toLowerCase():null,at:Date.now(),
-   totalUnits:digits(total?.units),burns:Number(total?.burns)||0,wallets:Number(total?.wallets)||0,firstBlock:total?.first_block?Number(total.first_block):null,lastBlock:total?.last_block?Number(total.last_block):null,
-   // Nest membership starts with Season I; until then every row has nest:null.
-   leaders:rows.filter(r=>/^0x[0-9a-f]{40}$/.test(r.wallet)).map(r=>({wallet:r.wallet as string,units:digits(r.units),burns:Number(r.burns)||0,nest:null}))};
  }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{c.release();}
+ const grouped=new Map<string,{wallet:string;units:bigint;burns:number}>();let total=0n;
+ // Resolve the router's burns to the emitting action's player, never the transaction sender.
+ for(const row of rows){
+  const burn:BurnerRecord={block:Number(row.block_number),logIndex:row.log_index,hash:row.raw.hash,from:String(row.raw.from).toLowerCase(),units:row.raw.units};
+  if(!/^[0-9]{1,78}$/.test(burn.units))throw Error('Invalid burn');
+  const wallet=chain?await chain.owner(burn):burn.from;
+  if(!/^0x[0-9a-f]{40}$/.test(wallet))throw Error('Invalid burner');
+  const entry=grouped.get(wallet)??{wallet,units:0n,burns:0};entry.units+=BigInt(burn.units);entry.burns++;total+=BigInt(burn.units);grouped.set(wallet,entry);
+ }
+ const leaders=[...grouped.values()].sort((a,b)=>a.units===b.units?a.wallet.localeCompare(b.wallet):a.units>b.units?-1:1).slice(0,limit);
+ const nests=chain?await chain.nests(leaders.map(r=>r.wallet)):leaders.map(()=>null);
+ return {protocol:1,kind:'burners',season:1,startsAt:BURNER_SEASON_START,chainId:Number(market?.chain_id)||null,token:typeof market?.token==='string'?market.token.toLowerCase():null,at:Date.now(),
+  totalUnits:String(total),burns:rows.length,wallets:grouped.size,firstBlock:rows.length?Number(rows[0].block_number):null,lastBlock:rows.length?Number(rows[rows.length-1].block_number):null,
+  leaders:leaders.map((r,i)=>({wallet:r.wallet,units:String(r.units),burns:r.burns,nest:nests[i]}))};
 }
 /** Dedicated read-only service. Authenticated proxy requests share one bounded cache. */
 export function observerServer(read:()=>Promise<unknown>,secret:string,clock=Date.now,readBurnersRoute?:()=>Promise<unknown>){

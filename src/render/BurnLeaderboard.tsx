@@ -4,8 +4,8 @@ import {useWallet} from '../wallet';
 import Count from './Count';
 
 /*
- * Top burners: share of all confirmed RATTERY burns recorded by the colony ledger (/api/burners).
- * Nest membership starts with Season I; until then rows carry nest:null.
+ * Top burners: share of confirmed RATTERY burns since Season I opened recorded by the colony ledger (/api/burners).
+ * Nest membership is read from the Season I contract; nonmembers carry nest:null.
  * Review builds fall back to clearly labelled DEMO rows when the endpoint is not deployed.
  */
 type Nest='NVDA'|'AAPL'|'AMZN';
@@ -41,6 +41,7 @@ export default function BurnLeaderboard({onClose,allowDemo}:{onClose:()=>void;al
    try{
     const r=await fetch('/api/burners',{cache:'no-store',signal:AbortSignal.timeout(10000)});
     if(!r.ok)throw Error('unavailable');const d=await r.json();
+    if(d.season!==1||d.startsAt!==1790611200000)throw Error('Wrong season');
     if(alive){setBoard({totalUnits:d.totalUnits,burns:d.burns,wallets:d.wallets,at:d.at,leaders:d.leaders});setFailed(false);}
    }catch{if(alive){if(allowDemo)setBoard(b=>b&&!b.demo?b:demoBoard());else setFailed(true);}}
   };
@@ -58,14 +59,14 @@ export default function BurnLeaderboard({onClose,allowDemo}:{onClose:()=>void;al
    <button type="button" className="burn-close" onClick={onClose} aria-label={tr('Close leaderboard','关闭排行榜')}>×</button>
   </header>
   {board&&<div className="burn-totals">
-   <div><small>{tr('Total burned','累计销毁')}</small><strong>{compact(board.totalUnits)}</strong><em>RATTERY</em></div>
+   <div><small>{tr('Season burned','本赛季销毁')}</small><strong>{compact(board.totalUnits)}</strong><em>RATTERY</em></div>
    <div><small>{tr('Burners','销毁钱包')}</small><strong><Count value={board.wallets}/></strong></div>
    <div><small>{tr('Burns','销毁次数')}</small><strong><Count value={board.burns}/></strong></div>
   </div>}
-  <ol className="burn-list" aria-label={tr('Wallets ranked by share of all burns','按销毁占比排序的钱包')}>
+  <ol className="burn-list" aria-label={tr('Wallets ranked by share of Season I burns','按第一赛季销毁占比排序的钱包')}>
    {!board&&!failed&&Array.from({length:6},(_,i)=><li key={i} className="burn-row is-skeleton" aria-hidden="true"><i/><span/><span/></li>)}
    {failed&&<li className="burn-empty">{tr('The leaderboard is unavailable right now. Try again in a moment.','排行榜暂时不可用，请稍后再试。')}</li>}
-   {board&&!board.leaders.length&&<li className="burn-empty">{tr('No burns recorded yet.','尚无销毁记录。')}</li>}
+   {board&&!board.leaders.length&&<li className="burn-empty">{tr('No burns recorded since Season I opened.','第一赛季开始后尚无销毁记录。')}</li>}
    {board?.leaders.map((r,i)=>{const s=share(r.units,board.totalUnits),nest=r.nest?NEST[r.nest]:null,mine=me===r.wallet;
     return <li key={r.wallet} className={`burn-row${i<3?' is-podium':''}${mine?' is-me':''}`} data-rank={i+1} style={{'--i':i,'--w':top?Math.max(.03,s/top):0,'--c':nest?.color??'#6f6a5c'} as CSSProperties}>
      <span className="burn-rank" aria-label={tr('Rank','排名')+' '+(i+1)}>{i+1}</span>
@@ -74,14 +75,14 @@ export default function BurnLeaderboard({onClose,allowDemo}:{onClose:()=>void;al
       {mine&&<b className="burn-me">{tr('You','你')}</b>}
       <small>{compact(r.units)} RATTERY · {r.burns} {r.burns===1?tr('burn','次'):tr('burns','次')}</small>
      </div>
-     <span className={`burn-nest${nest?'':' is-none'}`} title={nest?nest.name:tr('Nests open with Season I','巢穴将在第一赛季开放')}>{nest?<><i>{nest.letter}</i>{nest.name}</>:'—'}</span>
+     <span className={`burn-nest${nest?'':' is-none'}`} title={nest?nest.name:tr('Not in a nest','尚未加入巢穴')}>{nest?<><i>{nest.letter}</i>{nest.name}</>:'—'}</span>
      <strong className="burn-share">{pct(s)}</strong>
      <span className="burn-bar" aria-hidden="true"><i/></span>
     </li>;})}
   </ol>
   <footer className="burn-foot">
    <span className="burn-live"><i aria-hidden="true"/>{board?(age<10?tr('Updated just now','刚刚更新'):tr(`Updated ${age}s ago`,`${age}秒前更新`)):tr('Loading…','加载中…')}</span>
-   <span>{tr('Share of all confirmed RATTERY burns. Nests appear when Season I opens.','占全部已确认RATTERY销毁的比例。巢穴将在第一赛季开放后显示。')}</span>
+   <span>{tr('Share of confirmed burns since 28 Sep 2026, 13:00 São Paulo (UTC−3). Current nest shown for members.','统计自2026年9月28日圣保罗时间13:00（UTC−3）起确认的销毁占比，并显示成员当前巢穴。')}</span>
   </footer>
  </section>;
 }

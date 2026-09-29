@@ -1,4 +1,6 @@
 import {Pool} from 'pg';
+import {SeasonBurnerChain} from '../server/burner-chain.js';
+import {readOnlyRPC} from '../server/market-io.js';
 import {observerServer,readObservation,readBurners} from '../server/observer.js';
 async function main(){
  const production=process.env.RATTERY_OBSERVER_MODE==='production-readonly';
@@ -8,7 +10,10 @@ async function main(){
  const pool=new Pool({connectionString:url.toString(),ssl:{rejectUnauthorized:true,ca:process.env.RATTERY_OBSERVER_DATABASE_CA},max:2,connectionTimeoutMillis:5000,statement_timeout:5000,idle_in_transaction_session_timeout:5000});
  const runId=process.env.RATTERY_OBSERVER_RUN_ID??'rattery-staging-round1';
  await readObservation(pool,runId);
- const server=observerServer(()=>readObservation(pool,runId),process.env.RATTERY_OBSERVER_SECRET??'',Date.now,()=>readBurners(pool));
+ const rpc=production?readOnlyRPC(process.env.RATTERY_RPC??''):undefined;
+ const chain=rpc?new SeasonBurnerChain(rpc):undefined;
+ const leaderboard=async()=>{if(rpc&&Number(await rpc('eth_chainId',[]))!==4663)throw Error('Wrong leaderboard chain');return readBurners(pool,50,chain);};
+ const server=observerServer(()=>readObservation(pool,runId),process.env.RATTERY_OBSERVER_SECRET??'',Date.now,leaderboard);
  const port=Number(process.env.PORT||8080);if(!Number.isInteger(port)||port<1||port>65535)throw Error('Port invalid');
  server.listen(port,'0.0.0.0',()=>console.log('Read-only observer started'));
  const stop=()=>{server.close(()=>void pool.end());setTimeout(()=>process.exit(0),10000).unref();};process.once('SIGTERM',stop);process.once('SIGINT',stop);

@@ -1,12 +1,12 @@
 // Top-burner leaderboard UI: hidden until toggled, real API data rendered with exact shares,
-// nest column empty before Season I, Escape closes and returns focus, released toggle on the default page.
+// current nest shown for members, blank for nonmembers, Escape closes and returns focus, released toggle on the default page.
 // Run against the dev server: RATTERY_TEST_URL=http://127.0.0.1:5173/ node scripts/burn-leaderboard-browser.cjs
 const {chromium}=require('./lib/browser-runtime.cjs');
 const assert=require('node:assert/strict');
 (async()=>{
  const base=process.env.RATTERY_TEST_URL||'http://localhost:5173/',E=10n**18n,u=n=>(BigInt(n)*E).toString();
- const board={protocol:1,kind:'burners',chainId:4663,at:Date.now(),totalUnits:u(2000000),burns:9,wallets:3,firstBlock:1,lastBlock:9,
-  leaders:[{wallet:'0x'+'a'.repeat(40),units:u(1000000),burns:2,nest:null},{wallet:'0x'+'b'.repeat(40),units:u(500000),burns:6,nest:null},{wallet:'0x'+'c'.repeat(40),units:u(1),burns:1,nest:null}]};
+ const board={protocol:1,kind:'burners',season:1,startsAt:1790611200000,chainId:4663,at:Date.now(),totalUnits:u(2000000),burns:9,wallets:3,firstBlock:1,lastBlock:9,
+  leaders:[{wallet:'0x'+'a'.repeat(40),units:u(1000000),burns:2,nest:'NVDA'},{wallet:'0x'+'b'.repeat(40),units:u(500000),burns:6,nest:null},{wallet:'0x'+'c'.repeat(40),units:u(1),burns:1,nest:null}]};
  const browser=await chromium.launch({headless:true});
  try{
   for(const [width,height] of [[1440,900],[390,844]]){
@@ -28,7 +28,9 @@ const assert=require('node:assert/strict');
    if(width>=780)assert.equal(await toggle.getAttribute('aria-expanded'),'true');
    assert.deepEqual((await p.locator('.burn-share').allTextContents()).map(s=>s.trim()),['50.00%','25.00%','<0.01%']);
    assert.deepEqual((await p.locator('.burn-who a').allTextContents()),['0xaaaa…aaaa','0xbbbb…bbbb','0xcccc…cccc']);
-   assert.equal(await p.locator('.burn-nest.is-none').count(),3,'No nests before Season I');
+   assert.equal(await p.locator('.burn-nest.is-none').count(),2,'Only nonmembers have no nest');
+   assert.match(await p.locator('.burn-nest').first().innerText(),/NVIDIA/);
+   assert.match(await p.locator('.burn-foot').innerText(),/28 Sep 2026, 13:00/);
    assert.equal(await p.locator('.burn-board .swin-badge.is-demo').count(),0,'Real data is not labelled DEMO');
    assert.equal(await p.locator('.burn-who a').first().getAttribute('rel'),'noopener noreferrer');
    const box=await p.locator('.burn-board').boundingBox();assert(box&&box.x>=0&&box.x+box.width<=width+1,'Panel inside viewport');
