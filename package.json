@@ -66,7 +66,10 @@
     "test:survival:prod": "tsx scripts/survival-production-resolution-test.ts",
     "test:restart": "tsx scripts/restart-colony-test.ts",
     "test:burn:support": "tsx scripts/burn-support-test.ts",
-    "test:permanent-core": "tsx scripts/permanent-core-test.ts"
+    "test:permanent-core": "tsx scripts/permanent-core-test.ts",
+    "settlement": "tsx scripts/season-settlement.ts",
+    "test:settlement": "tsx scripts/settlement-test.ts && tsx scripts/settlement-collector-test.ts",
+    "test:settlement:evm": "tsx scripts/settlement-evm-test.ts"
   },
   "dependencies": {
     "ethers": "6.17.0",

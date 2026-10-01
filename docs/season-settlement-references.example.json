@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "season": "RATTERY-SEASON-1-2026-09-28",
+  "passiveThreshold": null,
+  "holdingThreshold": null,
+  "thresholdEvidence": "REPLACE: published five-minute opening reference and its archived evidence",
+  "stocks": [
+    {"nest": 1, "startPrice": null, "endPrice": null, "startSession": "2026-09-25", "endSession": "2026-10-02", "evidence": "REPLACE: NVDA regular-session closes and split adjustment evidence", "splitAdjusted": null},
+    {"nest": 2, "startPrice": null, "endPrice": null, "startSession": "2026-09-25", "endSession": "2026-10-02", "evidence": "REPLACE: AAPL regular-session closes and split adjustment evidence", "splitAdjusted": null},
+    {"nest": 3, "startPrice": null, "endPrice": null, "startSession": "2026-09-25", "endSession": "2026-10-02", "evidence": "REPLACE: AMZN regular-session closes and split adjustment evidence", "splitAdjusted": null}
+  ],
+  "additionalExclusions": []
+}
