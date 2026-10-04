@@ -54,3 +54,26 @@ funding transaction, token transfer or payment activation.
   Mock results are test fixtures, never published reference prices.
 - Build and API typecheck before deployment; verify the live endpoint and
   production asset afterward.
+
+## Release verification — October 4, 2026
+
+Published commit `bf9c384` to production deployment
+`rattery-728xkn069-pedrohbalhester-2682s-projects.vercel.app`, aliased to
+`rattery.tech`. Production build passed; the CLI lost its connection after the
+build, but `vercel inspect` independently confirmed Ready and the live alias.
+The live page serves `index-D39Sasai.js`; `/api/season-result` returned HTTP 200,
+phase open, with the expected cutoff and confirmed checkpoint count.
+
+The finale fixture tests passed in Edge on NVIDIA RTX 4060 Ti / D3D11 at 1440
+and 390 pixels. They covered the clock-only cutoff while the overview still
+said open, pending result, final scores, crown/fireworks, one-time reveal,
+reopening the result and reduced motion (zero particles). These are simulated
+results, not the real champion. No physical mobile-device test was performed.
+The production smoke test passed for live nests, actions, stock quotes and
+mobile layout, with no page exceptions or development globals. The backend
+continued advancing to checkpoint 866 during verification.
+
+Official price references remain intentionally null pending review. Payment
+execution remains deferred to Monday late morning. The operator was separately
+asked to replenish the scoring wallet's low gas balance; funding is not implied
+by this release.
