@@ -1,3 +1,5 @@
+import SeasonFinaleHost,{SeasonFinaleCard} from './SeasonFinale';
+import {useSeasonClosed} from '../season/resultState';
 import SeasonLiveSummary from './SeasonLiveSummary';
 import {useSeason,refreshSeason} from '../seasonState';
 import {useWallet} from '../wallet';
@@ -47,17 +49,18 @@ const GAMEPLAY_ACTIONS=[
  {id:'attack',label:['Attack','攻击'],hint:['Send a snake to a rival','向对手放出蛇'],path:'M4 18c3 0 3-4 6-4s3 4 6 4 3-6 0-8-6-1-6-4 3-3 6-2M17 4h3m-1-1 1 1-1 1'},
 ] as const;
 
-/** One action group for the desktop banner and the mobile Season sheet. Gameplay is not live yet. */
+/** One action group for the desktop banner and the mobile Season sheet. Closure is shared by both layouts. */
 function SeasonActivities({onAction}:{onAction?:()=>void}){
- const {snapshot,available}=useSeason();const live=available&&snapshot?.phase==='open';
+ const {snapshot,available}=useSeason();const closed=useSeasonClosed();const live=!closed&&available&&snapshot?.phase==='open';
  return <div className="season-activity-area">
   <section className="season-gameplay" aria-label={tr('Season I nest actions','第一赛季巢穴操作')}>
-   <div className="season-gameplay-heading"><h3>{tr('Nest actions','巢穴操作')}</h3><span>{live?tr('Open','进行中'):snapshot?.phase==='scheduled'?tr('Opens at 13:00 São Paulo','圣保罗13:00开启'):tr('Not open','尚未开启')}</span></div>
-   <div className="season-gameplay-grid">{GAMEPLAY_ACTIONS.map((a,index)=><button key={a.id} type="button" className={'season-gameplay-action is-'+a.id} disabled={!live} onClick={()=>{onAction?.();useSeason.setState({action:index});}} title={tr('Available when Season I opens','第一赛季开启后可用')}>
+   <div className="season-gameplay-heading"><h3>{tr('Nest actions','巢穴操作')}</h3><span>{closed?tr('Ended','已结束'):live?tr('Open','进行中'):snapshot?.phase==='scheduled'?tr('Opens at 13:00 São Paulo','圣保罗13:00开启'):tr('Not open','尚未开启')}</span></div>
+   <div className="season-gameplay-grid">{GAMEPLAY_ACTIONS.map((a,index)=><button key={a.id} type="button" className={'season-gameplay-action is-'+a.id} disabled={!live} onClick={()=>{onAction?.();useSeason.setState({action:index});}} title={closed?tr('Season I has ended','第一赛季已结束'):tr('Nest action','巢穴操作')}>
     <span className="season-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d={a.path}/></svg></span>
     <strong>{tr(a.label[0],a.label[1])}</strong><span className="season-action-hint">{tr(a.hint[0],a.hint[1])}</span>
    </button>)}</div>
   </section>
+  <SeasonFinaleCard/>
   <SeasonLiveSummary/>
   <div className="season-resources"><button type="button" className="season-stocks-toggle" aria-haspopup="dialog" onClick={()=>{onAction?.();useStocks.setState({open:true});}}><span aria-hidden="true">↗</span>{tr('Stock watch','股票行情')}<span>NVDA · AAPL · AMZN</span></button>
    <div className="season-actions">
@@ -91,7 +94,7 @@ function WindowsHost(){
  return SeasonWindows?<Suspense fallback={null}><SeasonWindows/></Suspense>:null;
 }
 
-function SeasonStatus(){const {snapshot,available}=useSeason();return <>{available&&snapshot?.phase==='open'?tr('Season open','赛季进行中'):snapshot?.phase==='scheduled'?tr('Today · 13:00 São Paulo','今天 · 圣保罗13:00'):snapshot?.phase==='closed'?tr('Season closed','赛季已结束'):tr('Preparing Season I','正在准备第一赛季')}</>;}
+function SeasonStatus(){const {snapshot,available}=useSeason();const closed=useSeasonClosed();return <>{closed?tr('Season ended','赛季已结束'):available&&snapshot?.phase==='open'?tr('Season open','赛季进行中'):snapshot?.phase==='scheduled'?tr('Today · 13:00 São Paulo','今天 · 圣保罗13:00'):snapshot?.phase==='closed'?tr('Season closed','赛季已结束'):tr('Preparing Season I','正在准备第一赛季')}</>;}
 function Flourish({flip=false}:{flip?:boolean}){
  return <svg className={`season-flourish${flip?' is-flipped':''}`} viewBox="0 0 64 16" aria-hidden="true"><path d="M2 8h38" /><path d="M40 8c6 0 8-6 13-6 4 0 6 3 6 6s-2 6-6 6c-3 0-5-2-5-4" /><path d="M44 8l4-4 4 4-4 4z" className="gem" /><circle cx="6" cy="8" r="1.6" className="gem" /></svg>;
 }
@@ -109,7 +112,7 @@ export default function SeasonRail(){
   </header>
   <SeasonActivities/>
   {TUTORIAL_ON&&<TutorialHost/>}
- </aside>{WINDOWS_ON&&<WindowsHost/>}</div>{BOARD_ON&&<BoardHost/>}<StocksHost/><ActionsHost/></>;
+ </aside>{WINDOWS_ON&&<WindowsHost/>}</div>{BOARD_ON&&<BoardHost/>}<StocksHost/><ActionsHost/><SeasonFinaleHost/></>;
 }
 
 /** Season content for the mobile dock's Season sheet: same gates and actions as the desktop card. */
