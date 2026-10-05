@@ -5,6 +5,13 @@ import { PAYOUT_ABI, CHAIN, TREASURY, ROUTER } from './config.js';
 import { addr, CLOSE } from './math.js';
 import type { Plan } from './plan.js';
 const abi = new Interface(PAYOUT_ABI);
+/** Bound concurrent read RPCs; signing and journal writes remain sequential. */
+async function readBatches<T, R>(rows: T[], read: (row: T) => Promise<R>): Promise<R[]> {
+    const results: R[] = [];
+    for (let i = 0; i < rows.length; i += 12)
+        results.push(...await Promise.all(rows.slice(i, i + 12).map(read)));
+    return results;
+}
 const ercABI = ['function balanceOf(address) view returns(uint256)', 'function decimals() view returns(uint8)'];
 export interface ExecutionPolicy {
     maxGasPrice: bigint;
@@ -42,14 +49,14 @@ export async function verifyDeployment(provider: JsonRpcProvider, p: Plan, deplo
     return { c, token, head };
 }
 export async function status(provider: JsonRpcProvider, p: Plan, deploymentHash: string) {
-    const { c, token, head } = await verifyDeployment(provider, p, deploymentHash), root = await c.root(), hash = await c.manifestHash();
+    const { c, token, head } = await verifyDeployment(provider, p, deploymentHash), root = await c.root({blockTag:head}), hash = await c.manifestHash({blockTag:head});
     if (root !== ZeroHash && (root !== p.distribution.root || hash !== p.manifestHash))
         throw Error('Funded manifest mismatch');
     const paid: number[] = [], pending: number[] = [];
-    for (const row of p.distribution.payments)
-        (await c.paid(row.index) ? paid : pending).push(row.index);
+    const flags = await readBatches(p.distribution.payments, row => c.paid(row.index, {blockTag:head}));
+    p.distribution.payments.forEach((row, i) => (flags[i] ? paid : pending).push(row.index));
     const paidSet = new Set(paid), expected = p.distribution.payments.filter(r => !paidSet.has(r.index)).reduce((s, r) => s + r.amount, 0n);
-    if (root !== ZeroHash && (BigInt(await c.remaining()) !== expected || BigInt(await token.balanceOf(p.distributor)) < expected))
+    if (root !== ZeroHash && (BigInt(await c.remaining({blockTag:head})) !== expected || BigInt(await token.balanceOf(p.distributor, {blockTag:head})) < expected))
         throw Error('Payout reserve mismatch');
     return { head, funded: root !== ZeroHash, paid, pending, remaining: expected, treasuryBalance: BigInt(await token.balanceOf(TREASURY)) };
 }
@@ -73,15 +80,12 @@ export async function step(db: PoolClient, provider: JsonRpcProvider, signer: Pi
             throw Error('Funding needs more confirmations');
         // Check all previous receipts before any new spend, including rows previously marked final.
         const history = await db.query('SELECT * FROM settlement_transactions WHERE manifest=$1 ORDER BY created_at,attempt', [p.manifestHash]);
-        let spent = 0n;
-        for (const row of history.rows) {
-            spent += BigInt(row.gas_budget);
-            if (row.state !== 'signed') {
-                const receipt = await provider.getTransactionReceipt(row.hash);
-                if (!receipt || receipt.blockHash !== row.receipt_hash || (await provider.getBlock(receipt.blockNumber))?.hash !== receipt.blockHash || confirmationCount(state.head, receipt.blockNumber) < policy.confirmations)
-                    throw Error('Previously reconciled payment changed; halt for reorg review');
-            }
-        }
+        const spent = history.rows.reduce((sum: bigint, row: any) => sum + BigInt(row.gas_budget), 0n);
+        await readBatches(history.rows.filter(row => row.state !== 'signed'), async row => {
+            const receipt = await provider.getTransactionReceipt(row.hash);
+            if (!receipt || receipt.blockHash !== row.receipt_hash || (await provider.getBlock(receipt.blockNumber))?.hash !== receipt.blockHash || confirmationCount(state.head, receipt.blockNumber) < policy.confirmations)
+                throw Error('Previously reconciled payment changed; halt for reorg review');
+        });
         const signed = history.rows.filter(r => r.state === 'signed');
         if (signed.length > 1)
             throw Error('Multiple unresolved nonces');
