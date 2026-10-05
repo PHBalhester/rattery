@@ -39,6 +39,7 @@ export function hydrateSnapshot(raw: any): Snapshot {
 }
 export async function prepare(snapshot: Snapshot, reference: References, options: {
     stockAmount: string;
+    prizeFunding?: { playersUSD: number; holdersUSD: number };
     stockDecimals: number;
     deploymentNonce: number;
     bytecode: string;
@@ -56,10 +57,10 @@ export async function prepare(snapshot: Snapshot, reference: References, options
     const excluded = new Set([...EXCLUDED, ...reference.additionalExclusions, distributor].map(addr));
     if (new Set(snapshot.areas.map(([w]) => addr(w))).size !== snapshot.areas.length)
         throw Error('Duplicate holder evidence');
-    const allocation = rewards({ stockUnits: units, activeCarry: 0n, passiveCarry: 0n, winner: winning, members: snapshot.members, areas: new Map(snapshot.areas), duration: snapshot.duration, threshold: BigInt(reference.passiveThreshold), excluded });
+    const allocation = rewards({ stockUnits: units, prizeFunding: options.prizeFunding, activeCarry: 0n, passiveCarry: 0n, winner: winning, members: snapshot.members, areas: new Map(snapshot.areas), duration: snapshot.duration, threshold: BigInt(reference.passiveThreshold), excluded });
     const distribution = allocation.rows.length ? tree(CHAIN, distributor, allocation.rows.map(r => ({ wallet: r.wallet, amount: r.total }))) : { root: '0x' + '0'.repeat(64), total: 0n, payments: [] };
     const deployment = await new ContractFactory(PAYOUT_ABI, options.bytecode).getDeployTransaction(token, TREASURY, CLOSE);
-    const body = { version: 1, chainId: CHAIN, season: SEASON, treasury: TREASURY, router: ROUTER, token, distributor, opensAt: OPEN, closesAt: CLOSE, stockDecimals: options.stockDecimals, stockUnits: units, referenceHash, snapshotHash: digest(snapshot), snapshotAnchor: snapshot.anchor, standings, allocation, distribution, deployment: { from: TREASURY, nonce: options.deploymentNonce, chainId: CHAIN, data: deployment.data, value: '0x0' } };
+    const body = { ...(options.prizeFunding ? { prizeFunding: options.prizeFunding } : {}), version: 1, chainId: CHAIN, season: SEASON, treasury: TREASURY, router: ROUTER, token, distributor, opensAt: OPEN, closesAt: CLOSE, stockDecimals: options.stockDecimals, stockUnits: units, referenceHash, snapshotHash: digest(snapshot), snapshotAnchor: snapshot.anchor, standings, allocation, distribution, deployment: { from: TREASURY, nonce: options.deploymentNonce, chainId: CHAIN, data: deployment.data, value: '0x0' } };
     const manifestHash = digest(body), abi = new Interface(PAYOUT_ABI), erc = new Interface(['function approve(address,uint256)']);
     return { ...body, manifestHash, transactions: distribution.total === 0n ? [] : [
             { label: 'approve-exact-prize', from: TREASURY, to: token, chainId: CHAIN, value: '0x0', data: erc.encodeFunctionData('approve', [distributor, distribution.total]) },

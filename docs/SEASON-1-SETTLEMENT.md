@@ -2,7 +2,7 @@
 
 ## Current scope
 
-The operator deposits the winning company's Stock Token into **0xd40ed0214353b746fd567fa4a57409d1b5709988**. The declared deposit is **entirely prize funding**, split 80% active / 20% passive. There are no fee collectors, acquisition swaps, buybacks, or operating deductions in this implementation. ETH pays gas separately. This follows the operator's October 1 instruction; it does not silently alter the published game scoring rules.
+The operator deposits the winning company's Stock Token into **0xd40ed0214353b746fd567fa4a57409d1b5709988**. The declared deposit is **entirely prize funding**, allocated in the owner-approved ratio **USD 1,000 active / USD 300 passive** (10:3). There are no fee collectors, acquisition swaps, buybacks, or operating deductions in this implementation. ETH pays gas separately. The October 5 instruction supersedes the earlier 80/20 prize split; game scoring and recipient eligibility are unchanged. Token quantity must be explicitly declared: the USD reference is not a live price guarantee.
 
 This is a standalone settlement tool. It is not enabled in the website, payment service, or scoring worker. No existing key is reused, no real contract is deployed by tests, and nothing is scheduled merely by merging the code.
 
@@ -34,10 +34,12 @@ Use Node 24, the repository lockfile, and solc **0.8.24**. `RATTERY_SOLC` can po
 
 ```sh
 npm run settlement -- collect /private/references.json /private/snapshot.json
-npm run settlement -- prepare /private/snapshot.json /private/references.json TOKEN_AMOUNT /private/new-settlement-directory
+npm run settlement -- prepare /private/snapshot.json /private/references.json TOKEN_AMOUNT /private/new-settlement-directory --funding docs/season1-prize-funding.json
 ```
 
 `TOKEN_AMOUNT` is the exact declared deposit in **stock token display units**, not USD. Preparation independently recollects the snapshot at its original anchor and requires an identical evidence hash, then checks that the treasury holds that amount. It does not sweep unrelated balances or automatically add later donations. Token decimals come from the selected token contract.
+
+New distributions require an explicit reviewed funding file; the CLI refuses to prepare without it. Legacy bundles without it retain 80/20 for verification; they must not be used for the October 5 payout. Funding weights are bound into the manifest. The deposit is divided directly in integer stock units at 10:3, without rounding individual USD rewards first.
 
 Outputs:
 

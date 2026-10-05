@@ -53,3 +53,14 @@ assert.throws(() => tree(4663, w(999), [{ wallet: w(0), amount: 1n }]), /recipie
 assert.equal(digest({ a: 1, b: 2n }), digest({ b: 2n, a: 1 }));
 assert.equal(CLOSE - OPEN, 155 * 3600);
 console.log('PASS: scoring, signed rounding, exact TWAB, thresholds, Season I bonuses, exclusions, switches, no-recipient rollover, dust preservation, conservation and Merkle domain separation');
+
+const custom = rewards({...input, stockUnits:1300n, prizeFunding:{playersUSD:1000,holdersUSD:300}});
+assert.equal(custom.activePool,1000n); assert.equal(custom.passivePool,300n);
+assert.deepEqual(custom.rows.map(x=>[x.active,x.passive]),[[1000n,150n],[0n,150n]]);
+for(const invalid of [0,-1,1.5,Number.MAX_SAFE_INTEGER+1,NaN,Infinity])
+ assert.throws(()=>rewards({...input,prizeFunding:{playersUSD:invalid,holdersUSD:300}}),/funding/);
+for(let units=1n;units<1000n;units++){
+ const result=rewards({...input,stockUnits:units,prizeFunding:{playersUSD:1000,holdersUSD:300}});
+ assert.equal(result.rows.reduce((sum,row)=>sum+row.total,0n)+result.activeRollover+result.passiveRollover,units);
+}
+console.log('PASS explicit 1000/300 allocation, overlap, invalid funding and token conservation');

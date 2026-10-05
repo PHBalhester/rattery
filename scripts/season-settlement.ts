@@ -29,6 +29,11 @@ async function main() {
     }
     if (command === 'prepare') {
         const snapshot = hydrateSnapshot(read(need(args[0], 'snapshot.json'))), references = read(need(args[1], 'references.json')), amount = need(args[2], 'stock token amount'), directory = resolve(need(args[3], 'new output directory'));
+        const fundingIndex = args.indexOf('--funding');
+        if (fundingIndex < 0) throw Error('Explicit --funding funding.json required for new distributions');
+        const prizeFunding = read(need(args[fundingIndex + 1], 'funding.json'));
+        if (!prizeFunding || ![prizeFunding.playersUSD, prizeFunding.holdersUSD].every(n => Number.isSafeInteger(n) && n > 0))
+            throw Error('Positive integer prize funding required');
         if (existsSync(directory))
             throw Error('Use a new output directory; never overwrite a reviewed manifest');
         const provider = new JsonRpcProvider(endpoint());
@@ -48,7 +53,7 @@ async function main() {
             if (!/0\.8\.24/.test(execFileSync(solc, ['--version'], { encoding: 'utf8' })))
                 throw Error('Use solc 0.8.24');
             const build = JSON.parse(execFileSync(solc, ['--optimize', '--evm-version', 'paris', '--combined-json', 'abi,bin', 'contracts/SeasonPayout.sol'], { encoding: 'utf8' }));
-            const options = { stockAmount: amount, stockDecimals: Number(await token.decimals()), deploymentNonce: nonce, bytecode: '0x' + build.contracts['contracts/SeasonPayout.sol:SeasonPayout'].bin };
+            const options = { ...(prizeFunding ? { prizeFunding } : {}), stockAmount: amount, stockDecimals: Number(await token.decimals()), deploymentNonce: nonce, bytecode: '0x' + build.contracts['contracts/SeasonPayout.sol:SeasonPayout'].bin };
             const plan = await prepare(snapshot, references, options);
             if (await provider.getCode(plan.distributor) !== '0x')
                 throw Error('Predicted distributor address already has code');
@@ -128,6 +133,6 @@ async function main() {
         }
         return;
     }
-    throw Error('Usage: collect references.json snapshot.json | prepare snapshot.json references.json AMOUNT NEW_DIRECTORY | init-db | serve bundle.json | status bundle.json DEPLOY_HASH | run bundle.json DEPLOY_HASH [--watch]');
+    throw Error('Usage: collect references.json snapshot.json | prepare snapshot.json references.json AMOUNT NEW_DIRECTORY [--funding funding.json] | init-db | serve bundle.json | status bundle.json DEPLOY_HASH | run bundle.json DEPLOY_HASH [--watch]');
 }
 main().catch(e => { console.error('Settlement stopped:', safeError(e)); process.exitCode = 1; });

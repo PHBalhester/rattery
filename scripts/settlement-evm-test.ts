@@ -13,7 +13,7 @@ const solc = process.env.RATTERY_SOLC ?? '/home/phbal/.svm/0.8.24/solc-0.8.24';
 assert.match(execFileSync(solc, ['--version'], { encoding: 'utf8' }), /0\.8\.24/);
 const build = JSON.parse(execFileSync(solc, ['--optimize', '--evm-version', 'paris', '--combined-json', 'abi,bin,bin-runtime', 'contracts/SeasonPayout.sol', 'contracts/test/PayoutTestToken.sol'], { encoding: 'utf8' })).contracts;
 const artifact = build['contracts/SeasonPayout.sol:SeasonPayout'], mock = build['contracts/test/PayoutTestToken.sol:PayoutTestToken'], action = build['contracts/test/PayoutTestToken.sol:PayoutActionMock'];
-const child = spawn(process.env.RATTERY_ANVIL ?? '/home/phbal/Rattery/.tools/foundry/anvil', ['--host', '127.0.0.1', '--port', '18767', '--chain-id', '4663', '--silent'], { stdio: 'ignore' });
+const child = spawn(process.env.RATTERY_ANVIL ?? '/home/phbal/Rattery/.tools/foundry/anvil', ['--host', '127.0.0.1', '--port', '18767', '--chain-id', '4663', '--timestamp', String(CLOSE - 3600), '--silent'], { stdio: 'ignore' });
 const provider = new JsonRpcProvider(url, undefined, { cacheTimeout: -1 });
 let connected = false, pool: pg.Pool | undefined, db: pg.PoolClient | undefined, schema = '';
 async function rpc(method: string, params: any[] = []) { if (!connected && !['eth_chainId', 'web3_clientVersion'].includes(method))
@@ -49,9 +49,12 @@ try {
             string,
             bigint
         ][], duration: BigInt(CLOSE - OPEN), nests: ([1, 2, 3] as const).map(nest => ({ nest, halves: nest === 1 ? 200n : 0n, gross: nest === 1 ? 100n : 0n, lastProductionOrder: nest === 1 ? 1n : 0n })), audit: { transfers: 0, actions: 1, transferHash: digest([]), actionHash: digest([]), openingSupply: '0', closingSupply: '0' } };
-    const options = { stockAmount: '0.000000000000001001', stockDecimals: 18, deploymentNonce: 1, bytecode: '0x' + artifact.bin };
+    const options = { prizeFunding: {playersUSD:1000,holdersUSD:300}, stockAmount: '0.000000000000001001', stockDecimals: 18, deploymentNonce: 1, bytecode: '0x' + artifact.bin };
     const plan = await prepare(snapshot, references, options), bundle = { snapshot, references, options, plan };
     await validateBundle(bundle);
+    assert.equal(plan.allocation.activePool, 770n);
+    assert.equal(plan.allocation.passivePool, 231n);
+    await assert.rejects(validateBundle({...bundle,options:{...options,prizeFunding:{playersUSD:80,holdersUSD:20}}}),/changed/);
     await assert.rejects(validateBundle({ ...bundle, plan: { ...plan, stockUnits: 1002n } }), /changed/);
     await assert.rejects(prepare({ ...snapshot, colonySlot: 929 }, references, options), /snapshot/);
     const deploy = await send(TREASURY, undefined, plan.deployment.data);

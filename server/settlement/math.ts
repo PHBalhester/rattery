@@ -80,6 +80,7 @@ export interface Member {
 }
 export function rewards(input: {
     stockUnits: bigint;
+    prizeFunding?: { playersUSD: number; holdersUSD: number };
     activeCarry: bigint;
     passiveCarry: bigint;
     winner: Nest;
@@ -118,6 +119,11 @@ export function rewards(input: {
         if (!excluded.has(w) && area >= threshold * duration)
             passive.set(w, area);
     }
-    const activePool = stockUnits * 80n / 100n + input.activeCarry, passivePool = stockUnits - stockUnits * 80n / 100n + input.passiveCarry, a = allocate(activePool, active), p = allocate(passivePool, passive), wallets = new Set([...a.amounts.keys(), ...p.amounts.keys()]);
+    const funding = input.prizeFunding ?? { playersUSD: 80, holdersUSD: 20 };
+    if (![funding.playersUSD, funding.holdersUSD].every(n => Number.isSafeInteger(n) && n > 0))
+        throw Error('Positive integer prize funding required');
+    const players = BigInt(funding.playersUSD), holders = BigInt(funding.holdersUSD);
+    const activeBase = stockUnits * players / (players + holders);
+    const activePool = activeBase + input.activeCarry, passivePool = stockUnits - activeBase + input.passiveCarry, a = allocate(activePool, active), p = allocate(passivePool, passive), wallets = new Set([...a.amounts.keys(), ...p.amounts.keys()]);
     return { activePool, passivePool, activeRollover: a.rollover, passiveRollover: p.rollover, rows: [...wallets].sort().map(wallet => ({ wallet, active: a.amounts.get(wallet) ?? 0n, passive: p.amounts.get(wallet) ?? 0n, total: (a.amounts.get(wallet) ?? 0n) + (p.amounts.get(wallet) ?? 0n) })) };
 }
