@@ -19,3 +19,7 @@ Prepared private inputs are in `/home/phbal/Rattery/output/season1-payment-input
 5. Reconcile receipts and each onchain paid flag before reporting payment completion.
 
 No final token manifest, production distributor or production relayer is active yet. Merely depositing tokens does not trigger an unreviewed transfer.
+
+## Current stock compatibility check
+
+NVDA, AAPL and AMZN funding and delivery passed on a local Anvil fork at Robinhood block 80786264 (hash 0xb4be0fea38479ee0a55c0587a3f96911a629428893fcf51c0e1b0dc365b2fb1c). Synthetic local balances only; zero public-chain writes. This checks the current token implementation, not all 133 recipients or future issuer restrictions.
