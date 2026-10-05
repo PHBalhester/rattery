@@ -155,7 +155,8 @@ export async function step(db: PoolClient, provider: JsonRpcProvider, signer: Pi
         }
         if (blocked.length === candidates.length)
             return { state: 'blocked-recipients', pending: blocked };
-        const gasPrice = BigInt(await provider.send('eth_gasPrice', []));
+        const quotedGasPrice = BigInt(await provider.send('eth_gasPrice', []));
+        const gasPrice = (quotedGasPrice * 125n + 99n) / 100n;
         if (gasPrice > policy.maxGasPrice)
             throw Error('Gas price above configured cap');
         const gasLimit = (estimate * 120n + 99n) / 100n;
@@ -180,3 +181,6 @@ export async function step(db: PoolClient, provider: JsonRpcProvider, signer: Pi
         return { state: 'submitted', index: payment.index, hash };
     }));
 }
+
+
+
