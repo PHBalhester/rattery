@@ -1,0 +1,76 @@
+{
+  "kind": "classification-invariant",
+  "season": "RATTERY-SEASON-1-2026-09-28",
+  "slots": [
+    878,
+    930
+  ],
+  "deltas": [
+    2,
+    2,
+    2
+  ],
+  "pointsPerNestPerSlot": 1,
+  "stressUpperBound": 0.2,
+  "stressMeasured": false,
+  "coreIds": [
+    "F1516",
+    "F1517",
+    "F1518",
+    "M1519",
+    "M1520",
+    "M1521"
+  ],
+  "engine": "shared-colony-v25:89a8df0d94369f62",
+  "intervalSimulationDays": {
+    "lowerConservative": 13878,
+    "upperConservative": 14400
+  },
+  "lastNonCoreDeath": 12947.59241902248,
+  "residentEvidence": [
+    {
+      "id": "M1520",
+      "bornAt": 11396.447418718693,
+      "deadAt": null
+    },
+    {
+      "id": "M1521",
+      "bornAt": 11396.447418718693,
+      "deadAt": null
+    },
+    {
+      "id": "F1518",
+      "bornAt": 11396.447418718693,
+      "deadAt": null
+    },
+    {
+      "id": "M1519",
+      "bornAt": 11396.447418718693,
+      "deadAt": null
+    },
+    {
+      "id": "F1516",
+      "bornAt": 11396.447418718693,
+      "deadAt": null
+    },
+    {
+      "id": "F1517",
+      "bornAt": 11396.447418718693,
+      "deadAt": null
+    }
+  ],
+  "operatorHistory": [
+    {
+      "transition": "operator-milo-path-recovery-20261002",
+      "simulationAt": 1790993081798
+    }
+  ],
+  "careEvents": 0,
+  "sourceHashes": {
+    "permanentCore": "c940a85a8b71f2e73bb51342563bf01b53db06cd246a61ce759f059b21d286a1",
+    "tick": "8055fa5c88d86bdb05f4348ea82d1fea750fd16e4cf037dfe095a1c17a58cd61",
+    "seasonWorker": "1aab990335f4d212cf2dd3506fdcd430ba9f40dd7cbbc9f3bb76cdbf6529b5f5"
+  },
+  "evidenceHash": "947f35cce75f443306c5a1ace053ae5bc8f076d810ce357869780325ede7d389",
+  "explanation": "All six and only the six permanent core residents were alive throughout slots 878-930. The final operation of every simulation tick clamps each core resident acute and chronic stress to at most 0.2. There were no paid care writes or intervening operator changes. Therefore mean weighted stress was below 0.3 at every possible observation in the interval. US regular trading was closed, so the rule uniquely yields +1 point (two half units) per nest per slot. No exact stress observation is fabricated. An offline replay additionally matched the first 50 saved observations but was not used as a complete replay proof."
+}
